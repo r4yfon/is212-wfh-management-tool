@@ -13,7 +13,7 @@ db = SQLAlchemy(app)
 CORS(app)
 
 
-class Staff(db.Model):
+class Employee(db.Model):
     __tablename__ = "employee"
 
     staff_id = db.Column(db.Integer, primary_key=True)
@@ -23,7 +23,8 @@ class Staff(db.Model):
     position = db.Column(db.String(50), nullable=False)
     country = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(50), nullable=False)
-    reporting_manager = db.Column(db.Integer, nullable=True)
+    reporting_manager = db.Column(
+        db.Integer, db.ForeignKey('employee.staff_id'), nullable=True)
     role = db.Column(db.Integer, nullable=False)
 
     def __init__(self, staff_id, staff_fname, staff_lname, dept, position, country, email, role, reporting_manager=None):
@@ -51,23 +52,23 @@ class Staff(db.Model):
         }
 
 
-@app.route("/staff/<int:staff_id>")
-def get_staff_details(staff_id):
+@app.route("/employee/<int:staff_id>")
+def get_employee_details(staff_id):
     try:
-        # based on the email that was login, retrieve guest details
-        staff = db.session.query(Staff).filter_by(staff_id=staff_id).first()
-        if staff:
+        employee = db.session.query(Employee).filter_by(
+            staff_id=staff_id).first()
+        if employee:
             return jsonify(
                 {
                     "code": 200,
-                    "data": staff.json()
+                    "data": employee.json()
                 }
             )
 
     except Exception as e:
         return jsonify({
             "code": 404,
-            "error": "Staff not found." + str(e)
+            "error": "Employee not found. " + str(e)
         }), 404
 
 
