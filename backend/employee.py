@@ -1,16 +1,9 @@
 from flask import Flask, request, jsonify
-from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
-from os import environ
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = environ.get(
-    'dbURL') or 'mysql+mysqlconnector://root:root@localhost:3306/wfh_scheduling'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_recycle': 299}
-
+app.config.from_object('config.Config')
 db = SQLAlchemy(app)
-CORS(app)
 
 
 class Employee(db.Model):

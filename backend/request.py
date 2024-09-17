@@ -1,16 +1,9 @@
 from flask import Flask, request, jsonify
-from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
-from os import environ
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = environ.get(
-    'dbURL') or 'mysql+mysqlconnector://root:root@localhost:3306/wfh_scheduling'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_recycle': 299}
-
+app.config.from_object('config.Config')
 db = SQLAlchemy(app)
-CORS(app, resources={r"/*": {"origins": "*"}})
 
 
 class Request(db.Model):
@@ -92,6 +85,48 @@ def get_requests_by_staff_id(staff_id):
         return jsonify({
             "code": 500,
             "error": f"An error occurred while fetching the requests. Details: {str(e)}"
+        }), 500
+
+
+# Get request IDs made by a staff_id
+@app.route('/get_request_ids/<int:staff_id>')
+def get_request_ids_by_staff_id(staff_id):
+    """
+    Get request IDs by staff id
+    ---
+    Parameters:
+        staff_id (int): The staff_id
+
+    Success response:
+        {
+            "code": 200,
+            "data": [1, 2, 3]
+        }
+    """
+
+    try:
+        requests = Request.query.filter_by(staff_id=staff_id).all()
+        if requests:
+            # Return a list of request IDs
+            request_ids = [request.request_id for request in requests]
+            return jsonify(
+                {
+                    "code": 200,
+                    "data": request_ids
+                }
+            )
+        else:
+            # If no requests are found for the given staff_id
+            return jsonify({
+                "code": 404,
+                "error": f"No requests found for staff_id: {staff_id}"
+            }), 404
+
+    except Exception as e:
+        # In case of an exception (e.g., database connection issues)
+        return jsonify({
+            "code": 500,
+            "error": f"An error occurred while fetching the request IDs. Details: {str(e)}"
         }), 500
 
 
