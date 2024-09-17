@@ -33,10 +33,12 @@ CREATE TABLE Request_Dates (
     Request_Date_ID INT PRIMARY KEY AUTO_INCREMENT,
     Request_ID INT,
     Request_Date DATE NOT NULL,
+    Period VARCHAR(5) NOT NULL,
     Request_Status VARCHAR(20) NOT NULL,
     CONSTRAINT FK_Request_ID FOREIGN KEY (Request_ID)
     REFERENCES Request(Request_ID)
 );
+
 
 
 INSERT INTO Employee (Staff_ID, Staff_FName, Staff_LName, Dept, Position, Country, Email, Reporting_Manager, Role) VALUES (130002, 'Jack', 'Sim', 'CEO', 'MD', 'Singapore', 'jack.sim@allinone.com.sg', 130002, 1);
@@ -614,16 +616,16 @@ VALUES
 -- Insert into Request_Dates Table
 INSERT INTO Request_Dates (Request_ID, Request_Date, Request_Status)
 VALUES 
-(1, '2024-09-15', 'Approved'),
-(1, '2024-09-22', 'Approved'),
-(1, '2024-09-29', 'Approved'),
-(2, '2024-09-10', 'Pending'),
-(2, '2024-09-17', 'Pending'),
-(3, '2024-09-12', 'Rejected'),
-(4, '2024-09-11', 'Approved'),
-(5, '2024-09-05', 'Pending'),
-(6, '2024-09-18', 'Approved'),
-(7, '2024-09-14', 'Rejected'),
-(8, '2024-09-13', 'Pending'),
-(9, '2024-09-17', 'Approved'),
-(10, '2024-09-16', 'Rejected');
+(1, '2024-09-15', 'PM', 'Approved'),
+(1, '2024-09-22', 'Full', 'Approved'),
+(1, '2024-09-29', 'AM', 'Approved'),
+(2, '2024-09-10', 'Full', 'Pending'),
+(2, '2024-09-17', 'Full', 'Pending'),
+(3, '2024-09-12', 'AM', 'Rejected'),
+(4, '2024-09-11', 'Full', 'Approved'),
+(5, '2024-09-05', 'Full', 'Pending'),
+(6, '2024-09-18', 'Full', 'Approved'),
+(7, '2024-09-14', 'Full', 'Rejected'),
+(8, '2024-09-13', 'Full', 'Pending'),
+(9, '2024-09-17', 'PM', 'Approved'),
+(10, '2024-09-16', 'Full', 'Rejected');
