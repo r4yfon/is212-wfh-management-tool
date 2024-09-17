@@ -19,13 +19,13 @@ class RequestDates(db.Model):
     request_date_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     request_id = db.Column(db.Integer, db.ForeignKey('request.request_id'), nullable=False)
     request_date = db.Column(db.Date, nullable=False)
-    period = db.Column(db.String(5), nullable=False)
+    request_shift = db.Column(db.String(5), nullable=False)
     request_status = db.Column(db.String(20), nullable=False)
 
-    def __init__(self, request_id, request_date, request_status, period):
+    def __init__(self, request_id, request_date, request_status, request_shift):
         self.request_id = request_id
         self.request_date = request_date
-        self.period = period
+        self.request_shift = request_shift
         self.request_status = request_status
 
     def json(self):
@@ -33,7 +33,7 @@ class RequestDates(db.Model):
             "request_date_id": self.request_date_id,
             "request_id": self.request_id,
             "request_date": self.request_date.isoformat(),
-            "period": self.period,
+            "request_shift": self.request_shift,
             "request_status": self.request_status
         }
 
