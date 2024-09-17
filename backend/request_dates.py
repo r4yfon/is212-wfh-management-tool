@@ -16,8 +16,10 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 class RequestDates(db.Model):
     __tablename__ = "request_dates"
 
-    request_date_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    request_id = db.Column(db.Integer, db.ForeignKey('request.request_id'), nullable=False)
+    request_date_id = db.Column(
+        db.Integer, primary_key=True, autoincrement=True)
+    request_id = db.Column(db.Integer, db.ForeignKey(
+        'request.request_id'), nullable=False)
     request_date = db.Column(db.Date, nullable=False)
     request_shift = db.Column(db.String(5), nullable=False)
     request_status = db.Column(db.String(20), nullable=False)
@@ -52,6 +54,44 @@ def get_request_dates(request_id):
     try:
         request_dates = RequestDates.query.filter_by(
             request_id=request_id).all()
+        return jsonify(
+            {
+                "code": 200,
+                "data": [request_date.json() for request_date in request_dates]
+            }
+        )
+    except Exception as e:
+        return jsonify({
+            "code": 404,
+            "error": "Request dates not found. " + str(e)
+        }), 404
+
+
+@app.route('/get_request_dates_by_request_ids', methods=['POST'])
+def get_request_dates_in_batch():
+    """
+    Get request dates by multiple request IDs in a list
+    Example request:
+    {
+        "request_ids": [1, 2, 3]
+    }
+    ---
+    responses:
+        200:
+            description: Return request dates
+        404:
+            description: Unable to find request dates
+    """
+    try:
+        request_id_list = request.json.get('request_ids', [])
+        if not request_id_list:
+            return jsonify({
+                "code": 400,
+                "message": "No request IDs provided."
+            }), 400
+
+        request_dates = RequestDates.query.filter(
+            RequestDates.request_id.in_(request_id_list)).all()
         return jsonify(
             {
                 "code": 200,

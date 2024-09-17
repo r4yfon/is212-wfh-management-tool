@@ -17,7 +17,7 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 # employee_URL = environ.get('employee_URL') or "http://localhost:5000/employee"
 request_URL = environ.get('request_URL') or "http://localhost:5001/"
 request_dates_URL = environ.get(
-    'request_dates_URL') or "http://localhost:5002/request_dates"
+    'request_dates_URL') or "http://localhost:5002/"
 
 
 @app.route("/view_weekly_schedule/<int:staff_id>/<string:date_entered>")
@@ -32,41 +32,55 @@ def view_weekly_schedule(staff_id, date_entered):
             description: Unable to find weekly schedule
     """
     # Get the start and end dates of the week based on the date_entered
+    # By default, week starts on Monday and ends on Sunday, so will need to modify it for a week to be from Sunday to Monday; otherwise, it messes up the display of the week
     date_entered = datetime.strptime(date_entered, '%Y-%m-%d').date()
-    start_date = date_entered - timedelta(days=date_entered.weekday())
+
+    # Check if date entered falls on a Sunday
+    if date_entered.weekday() == 6:
+        # If it does, set it to be the start date
+        start_date = date_entered
+    else:
+        # If it doesn't, set it to be the previous Sunday
+        start_date = date_entered - \
+            timedelta(days=(date_entered.weekday() + 1) % 7)
     end_date = start_date + timedelta(days=6)
 
     # Query the requests submitted by the staff_id
     try:
+        # This will get all the WFH requests made by the staff_id
         all_requests = requests.get(
             f'{request_URL}/get_all_requests/{int(staff_id)}').json()['data']
-        
-        return jsonify(all_requests)
+
+        weekly_arrangement = {}
+        request_id_list = []
+        for request in all_requests:
+            request_id = request['request_id']
+            request_id_list.append(request_id)
+
+        # Save all the re quest_ids in a list to get all request dates: make the function more efficient
+        requests_in_request_id = requests.post(
+            f'{request_dates_URL}/get_request_dates_by_request_ids', json={'request_ids': request_id_list}).json()['data']
+        for request_info in requests_in_request_id:
+            request_date = datetime.strptime(
+                request_info['request_date'], '%Y-%m-%d').date()
+            if start_date <= request_date <= end_date and request_info['request_status'] == 'Approved':
+                weekly_arrangement[str(
+                    request_date)] = f'Home - {request_info["request_shift"]}'
+
+        for date in (start_date + timedelta(n) for n in range((end_date - start_date).days + 1)):
+            if str(date) not in weekly_arrangement:
+                weekly_arrangement[str(date)] = "Office"
+
+        return jsonify({
+            "code": 200,
+            "start_date": start_date,
+            "end_date": end_date,
+            "data": weekly_arrangement,
+        }), 200
+
     except Exception as e:
         return jsonify({"error": f"Failed to fetch requests: {str(e)}"}), 500
 
-    # Get the request dates for the week
-    # request_dates = []
-    # for request in requests:
-    #     dates = RequestDates.query.filter(
-    #         RequestDates.request_id == request.id,
-    #         RequestDates.date >= start_date,
-    #         RequestDates.date <= end_date
-    #     ).all()
-    #     request_dates.extend(dates)
-
-    # # Process the request dates and return the response
-    # if request_dates:
-    #     return jsonify({
-    #         "code": 200,
-    #         "data": [date.json() for date in request_dates]
-    #     })
-    # else:
-    #     return jsonify({
-    #         "code": 404,
-    #         "error": "No request dates found for the specified week"
-    #     }), 404
-
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5011, debug=True)
+    app.run(host='0.0.0.0', port=5100, debug=True)
