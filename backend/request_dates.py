@@ -16,23 +16,24 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 class RequestDates(db.Model):
     __tablename__ = "request_dates"
 
-    request_date_id = db.Column(db.Integer, primary_key=True)
-    request_id = db.Column(db.Integer, db.ForeignKey(
-        'request.request_id'), nullable=False)
+    request_date_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    request_id = db.Column(db.Integer, db.ForeignKey('request.request_id'), nullable=False)
     request_date = db.Column(db.Date, nullable=False)
+    period = db.Column(db.String(5), nullable=False)
     request_status = db.Column(db.String(20), nullable=False)
 
-    def __init__(self, request_date_id, request_id, request_date, request_status):
-        self.request_date_id = request_date_id
+    def __init__(self, request_id, request_date, request_status, period):
         self.request_id = request_id
         self.request_date = request_date
+        self.period = period
         self.request_status = request_status
 
     def json(self):
         return {
             "request_date_id": self.request_date_id,
             "request_id": self.request_id,
-            "request_date": self.request_date,
+            "request_date": self.request_date.isoformat(),
+            "period": self.period,
             "request_status": self.request_status
         }
 
