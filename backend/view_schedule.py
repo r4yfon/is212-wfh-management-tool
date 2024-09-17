@@ -20,21 +20,21 @@ request_dates_URL = environ.get(
     'request_dates_URL') or "http://localhost:5002/"
 
 
-@app.route("/view_weekly_schedule/<int:staff_id>/<string:date_entered>")
-def view_weekly_schedule(staff_id, date_entered):
+def get_week_from_date(date_entered):
     """
-    View weekly schedule based on date entered
+    Get the start and end dates of the week based on the date_entered. By default, week starts on Monday and ends on Sunday, so we change it to be from Sunday to Monday.
     ---
-    responses:
-        200:
-            description: Return weekly schedule
-        404:
-            description: Unable to find weekly schedule
-    """
-    # Get the start and end dates of the week based on the date_entered
-    # By default, week starts on Monday and ends on Sunday, so will need to modify it for a week to be from Sunday to Monday; otherwise, it messes up the display of the week
-    date_entered = datetime.strptime(date_entered, '%Y-%m-%d').date()
+    Parameters:
+        date_entered (string): The date in the format YYYY-MM-DD
 
+    Returns:
+        tuple(
+            start_date (date): The start date of the week
+            end_date (date): The end date of the week
+        )
+    """
+
+    date_entered = datetime.strptime(date_entered, '%Y-%m-%d').date()
     # Check if date entered falls on a Sunday
     if date_entered.weekday() == 6:
         # If it does, set it to be the start date
@@ -45,6 +45,36 @@ def view_weekly_schedule(staff_id, date_entered):
             timedelta(days=(date_entered.weekday() + 1) % 7)
     end_date = start_date + timedelta(days=6)
 
+    return start_date, end_date
+
+
+@app.route("/view_weekly_schedule/<int:staff_id>/<string:date_entered>")
+def view_weekly_schedule(staff_id, date_entered):
+    """
+    View weekly schedule based on staff_id and date entered
+    ---
+    Parameters:
+        staff_id (int): The ID of the staff
+        date_entered (string): The date in the format YYYY-MM-DD
+
+    Success response:
+            Weekly schedule for the given staff. The week is calculated based on the date_entered.
+            It will be in a dictionary, where the keys are the dates and the values are the location and shift (if applicable).
+
+            Example:
+            {
+                "2023-10-01": "Home - PM",
+                "2023-10-02": "Office",
+                "2023-10-03": "Office",
+                "2023-10-04": "Office",
+                "2023-10-05": "Office",
+                "2023-10-06": "Office",
+                "2023-10-07": "Office",
+            }
+    """
+
+    week_start, week_end = get_week_from_date(date_entered)
+
     # Query the requests submitted by the staff_id
     try:
         # This will get all the WFH requests made by the staff_id
@@ -53,28 +83,30 @@ def view_weekly_schedule(staff_id, date_entered):
 
         weekly_arrangement = {}
         request_id_list = []
+
+        # Store all the request_ids for the given staff_id into request_id_list
         for request in all_requests:
             request_id = request['request_id']
             request_id_list.append(request_id)
 
         # Save all the re quest_ids in a list to get all request dates: make the function more efficient
         requests_in_request_id = requests.post(
-            f'{request_dates_URL}/get_request_dates_by_request_ids', json={'request_ids': request_id_list}).json()['data']
+            f'{request_dates_URL}/get_request_dates_by_request_ids',
+            json={'request_ids': request_id_list}).json()['data']
+
         for request_info in requests_in_request_id:
             request_date = datetime.strptime(
                 request_info['request_date'], '%Y-%m-%d').date()
-            if start_date <= request_date <= end_date and request_info['request_status'] == 'Approved':
+            if week_start <= request_date <= week_end and request_info['request_status'] == 'Approved':
                 weekly_arrangement[str(
                     request_date)] = f'Home - {request_info["request_shift"]}'
 
-        for date in (start_date + timedelta(n) for n in range((end_date - start_date).days + 1)):
+        for date in (week_start + timedelta(n) for n in range((week_end - week_start).days + 1)):
             if str(date) not in weekly_arrangement:
                 weekly_arrangement[str(date)] = "Office"
 
         return jsonify({
             "code": 200,
-            "start_date": start_date,
-            "end_date": end_date,
             "data": weekly_arrangement,
         }), 200
 

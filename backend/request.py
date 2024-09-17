@@ -13,14 +13,12 @@ db = SQLAlchemy(app)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 
-# employee_URL = environ.get('employee_URL') or "http://localhost:5000/employee"
-
-
 class Request(db.Model):
     __tablename__ = "request"
 
     request_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    staff_id = db.Column(db.Integer, db.ForeignKey('employee.staff_id'), nullable=False)
+    staff_id = db.Column(db.Integer, db.ForeignKey(
+        'employee.staff_id'), nullable=False)
     request_date = db.Column(db.Date, nullable=False)
     request_status = db.Column(db.String(20), nullable=False)
     manager_approval_date = db.Column(db.Date, nullable=True)
@@ -41,41 +39,39 @@ class Request(db.Model):
         }
 
 
-# Get all requests
+# Get all requests made by a staff_id
 @app.route('/get_all_requests/<int:staff_id>')
 def get_requests_by_staff_id(staff_id):
     """
     Get all requests by staff id
     ---
-    responses:
-        200:
-            description: Return all requests
-        404:
-            description: Unable to find requests
+    Parameters:
+        staff_id (int): The staff_id
+
+    Success response:
+        {
+            "code": 200,
+            "data": [
+                {
+                    "request_id": 1,
+                    "staff_id": 1,
+                    "request_date": "2023-10-01",
+                    "request_status": "Approved",
+                    "manager_approval_date": "2023-10-01"
+                },
+                {
+                    "request_id": 2,
+                    "staff_id": 1,
+                    "request_date": "2023-10-02",
+                    "request_status": "Approved",
+                    "manager_approval_date": "2023-10-02"
+                }
+            ]
+        }
     """
+
     try:
         requests = Request.query.filter_by(staff_id=staff_id).all()
-        return jsonify(
-            {
-                "code": 200,
-                "data": [request.json() for request in requests]
-            }
-        )
-
-    except Exception as e:
-        return jsonify({
-            "code": 404,
-            "error": "Requests not found. " + str(e)
-        }), 404
-
-
-# Get requests by staff ID
-@app.route("/request/<int:staff_id>")
-def get_employee_requests(staff_id):
-    try:
-        # Fetch all requests for the given staff_id
-        requests = Request.query.filter_by(staff_id=staff_id).all()
-
         if requests:
             # Return a list of all requests
             return jsonify(
@@ -97,7 +93,6 @@ def get_employee_requests(staff_id):
             "code": 500,
             "error": f"An error occurred while fetching the requests. Details: {str(e)}"
         }), 500
-
 
 
 if __name__ == '__main__':

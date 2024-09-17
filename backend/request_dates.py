@@ -45,11 +45,22 @@ def get_request_dates(request_id):
     """
     Get request dates by request ID
     ---
-    responses:
-        200:
-            description: Return request dates
-        404:
-            description: Unable to find request dates
+    Parameters:
+        request_id (int): The request_id
+
+    Success response:
+        {
+            "code": 200,
+            "data": [
+                {
+                    "request_date_id": 1,
+                    "request_id": 1,
+                    "request_date": "2023-10-01",
+                    "request_shift": "PM",
+                    "request_status": "Approved"
+                }
+            ]
+        }
     """
     try:
         request_dates = RequestDates.query.filter_by(
@@ -71,17 +82,33 @@ def get_request_dates(request_id):
 def get_request_dates_in_batch():
     """
     Get request dates by multiple request IDs in a list
-    Example request:
-    {
-        "request_ids": [1, 2, 3]
-    }
+    Parameters (in request body):
+        {
+            "request_ids": [1, 2, 3]
+        }
     ---
-    responses:
-        200:
-            description: Return request dates
-        404:
-            description: Unable to find request dates
+    Success response:
+        {
+            "code": 200,
+            "data": [
+                {
+                    "request_date_id": 1,
+                    "request_id": 1,
+                    "request_date": "2023-10-01",
+                    "request_shift": "PM",
+                    "request_status": "Approved"
+                },
+                {
+                    "request_date_id": 2,
+                    "request_id": 2,
+                    "request_date": "2023-10-02",
+                    "request_shift": "PM",
+                    "request_status": "Approved"
+                }
+            ]
+        }
     """
+
     try:
         request_id_list = request.json.get('request_ids', [])
         if not request_id_list:
@@ -90,6 +117,7 @@ def get_request_dates_in_batch():
                 "message": "No request IDs provided."
             }), 400
 
+        # Get all the request dates for the given request_ids
         request_dates = RequestDates.query.filter(
             RequestDates.request_id.in_(request_id_list)).all()
         return jsonify(
