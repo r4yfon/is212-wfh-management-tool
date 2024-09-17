@@ -33,7 +33,7 @@ CREATE TABLE Request_Dates (
     Request_Date_ID INT PRIMARY KEY AUTO_INCREMENT,
     Request_ID INT,
     Request_Date DATE NOT NULL,
-    Period VARCHAR(5) NOT NULL,
+    Request_Shift VARCHAR(5) NOT NULL,
     Request_Status VARCHAR(20) NOT NULL,
     CONSTRAINT FK_Request_ID FOREIGN KEY (Request_ID)
     REFERENCES Request(Request_ID)
@@ -614,7 +614,7 @@ VALUES
 
 
 -- Insert into Request_Dates Table
-INSERT INTO Request_Dates (Request_ID, Request_Date, Request_Status)
+INSERT INTO Request_Dates (Request_ID, Request_Date, Request_Shift, Request_Status)
 VALUES 
 (1, '2024-09-15', 'PM', 'Approved'),
 (1, '2024-09-22', 'Full', 'Approved'),
