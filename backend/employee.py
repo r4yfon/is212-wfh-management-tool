@@ -54,6 +54,16 @@ class Employee(db.Model):
 
 @app.route("/employee/<int:staff_id>")
 def get_employee_details(staff_id):
+    """
+    Get employee details based on id
+    ---
+    responses:
+        200:
+            description: Return employee
+        404:
+            description: Unable to find employee
+    """
+
     try:
         employee = db.session.query(Employee).filter_by(
             staff_id=staff_id).first()
