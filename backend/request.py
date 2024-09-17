@@ -12,7 +12,9 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_recycle': 299}
 db = SQLAlchemy(app)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
+
 # employee_URL = environ.get('employee_URL') or "http://localhost:5000/employee"
+
 
 class Request(db.Model):
     __tablename__ = "request"
@@ -68,35 +70,31 @@ class RequestDates(db.Model):
 
 
 
-@app.route("/view_weekly_schedule/<int: staff_id>/<date:date_entered>")
-def view_weekly_schedule(staff_id, date_entered):
+@app.route('/get_all_requests/<int:staff_id>')
+def get_requests_by_staff_id(staff_id):
     """
-    View weekly schedule based on date entered
+    Get all requests by staff id
     ---
     responses:
         200:
-            description: Return weekly schedule
+            description: Return all requests
         404:
-            description: Unable to find weekly schedule
+            description: Unable to find requests
     """
-    pass
+    try:
+        requests = Request.query.filter_by(staff_id=staff_id).all()
+        return jsonify(
+            {
+                "code": 200,
+                "data": [request.json() for request in requests]
+            }
+        )
 
-    # try:
-    #     employee = db.session.query(Employee).filter_by(
-    #         staff_id=staff_id).first()
-    #     if employee:
-    #         return jsonify(
-    #             {
-    #                 "code": 200,
-    #                 "data": employee.json()
-    #             }
-    #         )
-
-    # except Exception as e:
-    #     return jsonify({
-    #         "code": 404,
-    #         "error": "Employee not found. " + str(e)
-    #     }), 404
+    except Exception as e:
+        return jsonify({
+            "code": 404,
+            "error": "Requests not found. " + str(e)
+        }), 404
 
 
 @app.route("/request/<int:staff_id>")
@@ -130,4 +128,4 @@ def get_employee_requests(staff_id):
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8000, debug=True)
+    app.run(host='0.0.0.0', port=5001, debug=True)
