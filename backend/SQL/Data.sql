@@ -1,4 +1,4 @@
-drop database WFH_Scheduling;
+DROP DATABASE IF EXISTS WFH_Scheduling;
 CREATE DATABASE IF NOT EXISTS WFH_Scheduling;
 USE WFH_Scheduling;
 
