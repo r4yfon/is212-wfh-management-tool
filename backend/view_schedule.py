@@ -10,7 +10,7 @@ app = Flask(__name__)
 app.config.from_object('config.Config')
 db = SQLAlchemy(app)
 
-request_URL = environ.get('request_URL') or "http://localhost:5001/"
+request_URL = environ.get('request_URL') or "http://localhost:5001/request"
 
 
 def get_week_from_date(date_entered):
@@ -106,8 +106,6 @@ def view_weekly_schedule(staff_id, date_entered):
                 "request_id": req.request_id,
                 "staff_id": req.staff_id,
                 "request_submission_date": req.request_date,
-                "request_overall_status": req.request_status,
-                "manager_approval_date": req.manager_approval_date.isoformat() if req.manager_approval_date else None,
                 "request_date": req_date.request_date.isoformat(),
                 "request_shift": req_date.request_shift,
                 "request_status": req_date.request_status
