@@ -44,37 +44,32 @@ class Employee(db.Model):
             "role": self.role
         }
 
+
 class Request(db.Model):
     __tablename__ = "request"
 
     request_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    staff_id = db.Column(db.Integer, db.ForeignKey('employee.staff_id'), nullable=False)
+    staff_id = db.Column(db.Integer, db.ForeignKey(
+        'employee.staff_id'), nullable=False)
     request_date = db.Column(db.Date, nullable=False)
     apply_reason = db.Column(db.String(100), nullable=False)
-    withdraw_reason = db.Column(db.String(100), nullable=True)
     reject_reason = db.Column(db.String(100), nullable=True)
-    cancel_reason = db.Column(db.String(100), nullable=True)
-    
 
-    def __init__(self, staff_id, request_date, apply_reason,
-        withdraw_reason=None, reject_reason=None, cancel_reason=None):
+    def __init__(self, request_id, staff_id, request_date, apply_reason, reject_reason=None):
+        self.request_id = request_id
         self.staff_id = staff_id
         self.request_date = request_date
         self.apply_reason = apply_reason
-        self.withdraw_reason = withdraw_reason
         self.reject_reason = reject_reason
-        self.cancel_reason = cancel_reason
 
     def json(self):
         return {
             "request_id": self.request_id,
             "staff_id": self.staff_id,
             "request_date": self.request_date.isoformat(),
-            "withdraw_reason": self.withdraw_reason,
+            "apply_reason": self.apply_reason,
             "reject_reason": self.reject_reason,
-            "cancel_reason": self.cancel_reason
         }
-
 
 
 # Get all requests made by a staff_id
@@ -175,7 +170,7 @@ def get_request_ids_by_staff_id(staff_id):
         }), 500
 
 
-# Add the reason if the request is rejected, withdrawn or cancelled 
+# Add the reason if the request is rejected, withdrawn or cancelled
 @app.route('/request/update_reason', methods=['PUT'])
 def update_reason():
     try:
@@ -193,13 +188,12 @@ def update_reason():
 
         if new_status == "Pending Withdrawal":
             request_record.withdraw_reason = request.json.get('reason')
-        
+
         if new_status == "Pending Cancellation":
             request_record.cancel_reason = request.json.get('reason')
 
         if new_status == "Rejected":
             request_record.reject_reason = request.json.get('reason')
-
 
         # Commit the changes to the database
         db.session.commit()

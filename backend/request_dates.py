@@ -13,24 +13,32 @@ class Request(db.Model):
     staff_id = db.Column(db.Integer, db.ForeignKey(
         'employee.staff_id'), nullable=False)
     request_date = db.Column(db.Date, nullable=False)
+    request_shift = db.Column(db.String(5), nullable=False)
     request_status = db.Column(db.String(20), nullable=False)
-    manager_approval_date = db.Column(db.Date, nullable=True)
+    rescind_reason = db.Column(db.String(100), nullable=True)
+    withdraw_reason = db.Column(db.String(100), nullable=True)
 
-    def __init__(self, staff_id, request_date, request_status, manager_approval_date=None):
+    def __init__(self, request_id, staff_id, request_date, request_shift, request_status, rescind_reason=None, withdraw_reason=None):
+        self.request_id = request_id
         self.staff_id = staff_id
         self.request_date = request_date
+        self.request_shift = request_shift
         self.request_status = request_status
-        self.manager_approval_date = manager_approval_date
+        self.rescind_reason = rescind_reason
+        self.withdraw_reason = withdraw_reason
 
     def json(self):
         return {
             "request_id": self.request_id,
             "staff_id": self.staff_id,
             "request_date": self.request_date.isoformat(),
+            "request_shift": self.request_shift,
             "request_status": self.request_status,
-            "manager_approval_date": self.manager_approval_date.isoformat() if self.manager_approval_date else None
+            "rescind_reason": self.rescind_reason,
+            "withdraw_reason": self.withdraw_reason
         }
-    
+
+
 class RequestDates(db.Model):
     __tablename__ = "request_dates"
 
@@ -41,12 +49,17 @@ class RequestDates(db.Model):
     request_date = db.Column(db.Date, nullable=False)
     request_shift = db.Column(db.String(5), nullable=False)
     request_status = db.Column(db.String(20), nullable=False)
+    rescind_reason = db.Column(db.String(100), nullable=True)
+    withdraw_reason = db.Column(db.String(100), nullable=True)
 
-    def __init__(self, request_id, request_date, request_status, request_shift):
+    def __init__(self, request_date_id, request_id, request_date, request_status, request_shift, rescind_reason=None, withdraw_reason=None):
+        self.request_date_id = request_date_id
         self.request_id = request_id
         self.request_date = request_date
         self.request_shift = request_shift
         self.request_status = request_status
+        self.rescind_reason = rescind_reason
+        self.withdraw_reason = withdraw_reason
 
     def json(self):
         return {
@@ -54,7 +67,9 @@ class RequestDates(db.Model):
             "request_id": self.request_id,
             "request_date": self.request_date.isoformat(),
             "request_shift": self.request_shift,
-            "request_status": self.request_status
+            "request_status": self.request_status,
+            "rescind_reason": self.rescind_reason,
+            "withdraw_reason": self.withdraw_reason
         }
 
 
@@ -168,7 +183,8 @@ def change_status():
             }), 400
 
         # Query the request dates by request_id
-        request_dates = RequestDates.query.filter_by(request_id=request_id).all()
+        request_dates = RequestDates.query.filter_by(
+            request_id=request_id).all()
 
         if not request_dates:
             return jsonify({
@@ -194,7 +210,6 @@ def change_status():
             "code": 500,
             "error": "An error occurred while updating the request status. " + str(e)
         }), 500
-
 
 
 if __name__ == '__main__':
