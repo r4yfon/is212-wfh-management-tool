@@ -6,6 +6,31 @@ app.config.from_object('config.Config')
 db = SQLAlchemy(app)
 
 
+class Request(db.Model):
+    __tablename__ = "request"
+
+    request_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    staff_id = db.Column(db.Integer, db.ForeignKey(
+        'employee.staff_id'), nullable=False)
+    request_date = db.Column(db.Date, nullable=False)
+    request_status = db.Column(db.String(20), nullable=False)
+    manager_approval_date = db.Column(db.Date, nullable=True)
+
+    def __init__(self, staff_id, request_date, request_status, manager_approval_date=None):
+        self.staff_id = staff_id
+        self.request_date = request_date
+        self.request_status = request_status
+        self.manager_approval_date = manager_approval_date
+
+    def json(self):
+        return {
+            "request_id": self.request_id,
+            "staff_id": self.staff_id,
+            "request_date": self.request_date.isoformat(),
+            "request_status": self.request_status,
+            "manager_approval_date": self.manager_approval_date.isoformat() if self.manager_approval_date else None
+        }
+    
 class RequestDates(db.Model):
     __tablename__ = "request_dates"
 
@@ -33,7 +58,7 @@ class RequestDates(db.Model):
         }
 
 
-@app.route('/get_request_dates_by_request_id/<int:request_id>')
+@app.route('/request_dates/get_request_dates_by_request_id/<int:request_id>')
 def get_request_dates(request_id):
     """
     Get request dates by request ID
@@ -71,7 +96,7 @@ def get_request_dates(request_id):
         }), 404
 
 
-@app.route('/get_request_dates_by_request_ids', methods=['POST'])
+@app.route('/request_dates/get_request_dates_by_request_ids', methods=['POST'])
 def get_request_dates_in_batch():
     """
     Get request dates by multiple request IDs in a list
@@ -124,6 +149,52 @@ def get_request_dates_in_batch():
             "code": 404,
             "error": "Request dates not found. " + str(e)
         }), 404
+
+
+# Change status to all the records that belongs to the same request_id
+@app.route('/request_dates/change_status', methods=['PUT'])
+def change_status():
+
+    try:
+        # Get request data
+        request_id = request.json.get('request_id')
+        new_status = request.json.get('status')
+
+        # Check if the necessary data is provided
+        if not request_id or not new_status:
+            return jsonify({
+                "code": 400,
+                "message": "Request ID or status not provided."
+            }), 400
+
+        # Query the request dates by request_id
+        request_dates = RequestDates.query.filter_by(request_id=request_id).all()
+
+        if not request_dates:
+            return jsonify({
+                "code": 404,
+                "message": f"No request dates found for request ID {request_id}."
+            }), 404
+
+        # Update the Request_Status for each record
+        for request_date in request_dates:
+            request_date.request_status = new_status
+
+        # Commit the changes to the database
+        db.session.commit()
+
+        return jsonify({
+            "code": 200,
+            "message": f"Request status for request ID {request_id} updated to {new_status}.",
+            "data": [request_date.json() for request_date in request_dates]
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "code": 500,
+            "error": "An error occurred while updating the request status. " + str(e)
+        }), 500
+
 
 
 if __name__ == '__main__':

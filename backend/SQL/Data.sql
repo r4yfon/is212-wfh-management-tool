@@ -22,8 +22,10 @@ CREATE TABLE Request (
     Request_ID INT PRIMARY KEY AUTO_INCREMENT,
     Staff_ID INT,
     Request_Date DATE NOT NULL,
-    Request_Status VARCHAR(20) NOT NULL,
-    Manager_Approval_Date DATE,
+    Apply_Reason VARCHAR(100),
+    Withdraw_Reason VARCHAR(100),
+    Reject_Reason VARCHAR(100),
+    Cancel_Reason VARCHAR(100),
     CONSTRAINT FK_Staff_ID FOREIGN KEY (Staff_ID)
     REFERENCES Employee(Staff_ID)
 );
@@ -598,18 +600,18 @@ INSERT INTO Employee (Staff_ID, Staff_FName, Staff_LName, Dept, Position, Countr
 
 
 -- Insert into Request Table
-INSERT INTO Request (Request_ID, Staff_ID, Request_Date, Request_Status, Manager_Approval_Date)
+INSERT INTO Request (Request_ID, Staff_ID, Request_Date, Apply_Reason, Withdraw_Reason, Reject_Reason, Cancel_Reason)
 VALUES 
-(1, 150488, '2024-09-15', 'Approved', '2024-09-16'),
-(2, 150445, '2024-09-10', 'Pending', NULL),
-(3, 150446, '2024-09-12', 'Rejected', '2024-09-14'),
-(4, 150632, '2024-09-11', 'Approved', '2024-09-12'),
-(5, 150638, '2024-09-05', 'Pending', NULL),
-(6, 150645, '2024-09-18', 'Approved', '2024-09-19'),
-(7, 151595, '2024-09-14', 'Rejected', '2024-09-15'),
-(8, 151591, '2024-09-13', 'Pending', NULL),
-(9, 151596, '2024-09-17', 'Approved', '2024-09-18'),
-(10, 151598, '2024-09-16', 'Rejected', '2024-09-17');
+(1, 150488, '2024-09-15', NULL, NULL, NULL, NULL),
+(2, 150445, '2024-09-10', NULL, NULL, NULL, NULL),
+(3, 150446, '2024-09-12', NULL, NULL, NULL, NULL),
+(4, 150632, '2024-09-11', NULL, NULL, NULL, NULL),
+(5, 150638, '2024-09-05', NULL, NULL, NULL, NULL),
+(6, 150645, '2024-09-18', NULL, NULL, NULL, NULL),
+(7, 151595, '2024-09-14', NULL, NULL, NULL, NULL),
+(8, 151591, '2024-09-13', NULL, NULL, NULL, NULL),
+(9, 151596, '2024-09-17', NULL, NULL, NULL, NULL),
+(10, 151598, '2024-09-16', NULL, NULL, NULL, NULL);
 
 
 
