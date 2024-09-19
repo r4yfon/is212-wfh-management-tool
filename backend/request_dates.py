@@ -169,7 +169,6 @@ def get_request_dates_in_batch():
 # Change status to all the records that belongs to the same request_id
 @app.route('/request_dates/change_status', methods=['PUT'])
 def change_status():
-
     try:
         # Get request data
         request_id = request.json.get('request_id')
@@ -183,8 +182,7 @@ def change_status():
             }), 400
 
         # Query the request dates by request_id
-        request_dates = RequestDates.query.filter_by(
-            request_id=request_id).all()
+        request_dates = RequestDates.query.filter_by(request_id=request_id).all()
 
         if not request_dates:
             return jsonify({
@@ -195,6 +193,24 @@ def change_status():
         # Update the Request_Status for each record
         for request_date in request_dates:
             request_date.request_status = new_status
+            
+            # If the new status is 'pending_rescind', update the Rescind_Reason
+            if new_status == "pending_rescind":
+                if not request.json.get('reason'):
+                    return jsonify({
+                        "code": 400,
+                        "message": "Rescind reason must be provided."
+                    }), 400
+                request_date.rescind_reason = request.json.get('reason')
+
+            # If the new status is 'pending_withdraw', update the Rescind_Reason
+            if new_status == "withdrawn":
+                if not request.json.get('reason'):
+                    return jsonify({
+                        "code": 400,
+                        "message": "Withdraw reason must be provided."
+                    }), 400
+                request_date.withdraw_reason = request.json.get('reason')
 
         # Commit the changes to the database
         db.session.commit()
@@ -210,6 +226,7 @@ def change_status():
             "code": 500,
             "error": "An error occurred while updating the request status. " + str(e)
         }), 500
+
 
 
 if __name__ == '__main__':
