@@ -20,7 +20,7 @@ def retrieve_requests():
             request_id = request["request_id"]
             
             # Construct the URL using the request_id
-            url = f"http://localhost:5002/request_dates/get_request_dates_by_request_id/{request_id}"
+            url = f"http://localhost:5002/request_dates/get_by_request_id/{request_id}"
             
             # Make the invoke_http call to get request dates
             request_dates_response = invoke_http(url, method='GET')
@@ -33,4 +33,4 @@ def retrieve_requests():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5110, debug=True)
+    app.run(host='0.0.0.0', port=5101, debug=True)
