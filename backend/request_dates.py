@@ -6,6 +6,7 @@ app.config.from_object('config.Config')
 db = SQLAlchemy(app)
 
 
+# Defining the tables
 class Request(db.Model):
     __tablename__ = "request"
 
@@ -13,29 +14,23 @@ class Request(db.Model):
     staff_id = db.Column(db.Integer, db.ForeignKey(
         'employee.staff_id'), nullable=False)
     request_date = db.Column(db.Date, nullable=False)
-    request_shift = db.Column(db.String(5), nullable=False)
-    request_status = db.Column(db.String(20), nullable=False)
-    rescind_reason = db.Column(db.String(100), nullable=True)
-    withdraw_reason = db.Column(db.String(100), nullable=True)
+    apply_reason = db.Column(db.String(100), nullable=False)
+    reject_reason = db.Column(db.String(100), nullable=True)
 
-    def __init__(self, request_id, staff_id, request_date, request_shift, request_status, rescind_reason=None, withdraw_reason=None):
+    def __init__(self, staff_id, request_date, apply_reason, reject_reason=None, request_id=None):
         self.request_id = request_id
         self.staff_id = staff_id
         self.request_date = request_date
-        self.request_shift = request_shift
-        self.request_status = request_status
-        self.rescind_reason = rescind_reason
-        self.withdraw_reason = withdraw_reason
+        self.apply_reason = apply_reason
+        self.reject_reason = reject_reason
 
     def json(self):
         return {
             "request_id": self.request_id,
             "staff_id": self.staff_id,
             "request_date": self.request_date.isoformat(),
-            "request_shift": self.request_shift,
-            "request_status": self.request_status,
-            "rescind_reason": self.rescind_reason,
-            "withdraw_reason": self.withdraw_reason
+            "apply_reason": self.apply_reason,
+            "reject_reason": self.reject_reason,
         }
 
 
@@ -52,7 +47,7 @@ class RequestDates(db.Model):
     rescind_reason = db.Column(db.String(100), nullable=True)
     withdraw_reason = db.Column(db.String(100), nullable=True)
 
-    def __init__(self, request_date_id, request_id, request_date, request_status, request_shift, rescind_reason=None, withdraw_reason=None):
+    def __init__(self, request_id, request_date, request_shift, request_date_id=None, request_status="Pending Approval", rescind_reason=None, withdraw_reason=None):
         self.request_date_id = request_date_id
         self.request_id = request_id
         self.request_date = request_date
@@ -73,13 +68,90 @@ class RequestDates(db.Model):
         }
 
 
+# Create
+@app.route('/request_dates/create', methods=['POST'])
+def create_request_dates():
+    """
+    Create a new request date
+    ---
+    Parameters (in JSON body):
+        request_id (int): The request_id
+        request_dates (dict): A dictionary with dates in YYYY-MM-DD format as keys and request shifts as values
+            {
+                "2024-09-24": "PM",
+                "2024-09-25": "Full",
+            }
+
+    Success response:
+        {
+            "code": 201,
+            "message": "Request dates created successfully.",
+            "data": [
+                {
+                    "request_date_id": 1,
+                    "request_id": 1,
+                    "request_date": "2023-10-01",
+                    "request_shift": "PM",
+                    "request_status": "Approved"
+                }
+            ]
+        }
+    """
+    try:
+        data = request.get_json()
+        request_id = data.get('request_id')
+        request_dates = data.get('request_dates')
+
+        if not request_id or not request_dates:
+            return jsonify({
+                "code": 400,
+                "message": "Request ID or request dates not provided."
+            }), 400
+
+        # Check if the (foreign key constraint) request_id exists
+        request_record = Request.query.filter_by(request_id=request_id).first()
+        if not request_record:
+            return jsonify({
+                "code": 404,
+                "message": f"No request found for request ID {request_id}."
+            }), 404
+
+        new_request_dates = []
+
+        # Create new request dates
+        for request_date, request_shift in request_dates.items():
+            print(request_id, request_date, request_shift)
+            new_request_date = RequestDates(
+                request_id=request_id,
+                request_date=request_date,
+                request_shift=request_shift
+            )
+            print(request_id, request_date, request_shift)
+            db.session.add(new_request_date)
+            db.session.commit()
+            new_request_dates.append(new_request_date)
+
+        return jsonify({
+            "code": 200,
+            "message": "Request dates created successfully.",
+            "data": [request_date.json() for request_date in new_request_dates]
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "code": 500,
+            "error": "An error occurred while creating the request dates. " + str(e)
+        }),
+
+
+# Retrieve
 @app.route('/request_dates/get_by_request_id/<int:request_id>')
 def get_request_dates(request_id):
     """
     Get request dates by request ID
     ---
     Parameters:
-        request_id (int): The request_id
+        request_id(int): The request_id
 
     Success response:
         {
@@ -115,7 +187,7 @@ def get_request_dates(request_id):
 def get_request_dates_in_batch():
     """
     Get request dates by multiple request IDs in a list
-    Parameters (in request body):
+    Parameters ( in request body):
         {
             "request_ids": [1, 2, 3]
         }
@@ -182,7 +254,8 @@ def change_status():
             }), 400
 
         # Query the request dates by request_id
-        request_dates = RequestDates.query.filter_by(request_id=request_id).all()
+        request_dates = RequestDates.query.filter_by(
+            request_id=request_id).all()
 
         if not request_dates:
             return jsonify({
@@ -193,7 +266,7 @@ def change_status():
         # Update the Request_Status for each record
         for request_date in request_dates:
             request_date.request_status = new_status
-            
+
             # If the new status is 'pending_rescind', update the Rescind_Reason
             if new_status == "pending_rescind":
                 if not request.json.get('reason'):
@@ -226,7 +299,6 @@ def change_status():
             "code": 500,
             "error": "An error occurred while updating the request status. " + str(e)
         }), 500
-
 
 
 if __name__ == '__main__':

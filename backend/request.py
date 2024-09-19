@@ -1,5 +1,8 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from input_validation import string_length_valid
+from os import environ
+import requests
 
 app = Flask(__name__)
 app.config.from_object('config.Config')
@@ -55,7 +58,7 @@ class Request(db.Model):
     apply_reason = db.Column(db.String(100), nullable=False)
     reject_reason = db.Column(db.String(100), nullable=True)
 
-    def __init__(self, request_id, staff_id, request_date, apply_reason, reject_reason=None):
+    def __init__(self, staff_id, request_date, apply_reason, reject_reason=None, request_id=None):
         self.request_id = request_id
         self.staff_id = staff_id
         self.request_date = request_date
@@ -70,6 +73,95 @@ class Request(db.Model):
             "apply_reason": self.apply_reason,
             "reject_reason": self.reject_reason,
         }
+
+
+request_dates_URL = environ.get(
+    'request_dates_URL') or "http://localhost:5002/request_dates"
+
+# Create a new request
+
+
+@app.route('/request/create', methods=['POST'])
+def create_request():
+    """
+    Create a new request
+    ---
+    Parameters (in JSON body):
+        staff_id (int): The staff_id
+        request_date (str): The date that staff sent this request in YYYY-MM-DD format
+        request_dates (dict): A dictionary with dates in YYYY-MM-DD format as keys and request shifts as values
+            {
+                "2024-09-24": "PM",
+                "2024-09-25": "Full",
+            }
+        apply_reason (str): The reason for the request
+
+    Success response:
+        {
+            "code": 201,
+            "message": "Request created successfully.",
+            "data": {
+                "request_id": 1,
+                "staff_id": 1,
+                "request_date": "2023-10-01",
+                "request_dates": ["2023-10-01", "2023-10-02"],
+                "apply_reason": "Reason for request"
+            }
+        }
+    """
+    try:
+        data = request.get_json()
+        staff_id = data.get('staff_id')
+        request_date = data.get('request_date')
+        request_dates = data.get('request_dates')
+        apply_reason = data.get('apply_reason')
+
+        # Check if length of apply_reason is at most 100 characters
+        if not string_length_valid(input_string=apply_reason, max_length=100):
+            return jsonify({
+                "code": 400,
+                "error": "Your request reason is too long. Please keep it under 100 characters."
+            })
+
+        # Check if length of all requested_shifts are at most 5 characters
+        # Not sure if needed, assuming requested_shifts will be radio buttons for frontend TODO: check with frontend
+        # requested_shifts_concat_str = ''.join(request_dates.values())
+        # number_of_requested_shifts = len(request_dates)
+        # if not string_length_valid(input_string=requested_shifts_concat_str, max_length=(number_of_requested_shifts * 5)):
+        #     return jsonify({
+        #         "code": 400,
+        #         "error": "One of more of your requested shifts is too long. Please keep it under 5 characters."
+        #     })
+
+        # TODO: check if staff already has a request for the same date
+
+        new_request = Request(
+            staff_id=staff_id,
+            request_date=request_date,
+            apply_reason=apply_reason
+        )
+
+        # TODO: need the request's request_id, then send request_dates with request_id to RequestDates table
+        create_request_dates = requests.post(f'{request_dates_URL}/create', json={
+            "request_id": new_request.request_id,
+            "request_dates": request_dates
+        })
+
+        if create_request_dates.status_code == 200:
+            db.session.add(new_request)
+            db.session.commit()
+
+            return jsonify({
+                "code": 200,
+                "message": "Request created successfully. Sending requested dates to RequestDates table.",
+                "data": new_request.json()
+            }), 200
+
+    except Exception as e:
+        return jsonify({
+            "code": 500,
+            "error": f"An error occurred while creating the request. Details: {str(e)}"
+        }), 500
 
 
 # Get all requests made by a staff_id
@@ -173,6 +265,27 @@ def get_request_ids_by_staff_id(staff_id):
 # Add the reason if the request is rejected, withdrawn or cancelled
 @app.route('/request/update_reason', methods=['PUT'])
 def update_reason():
+    """
+    Update "reason" field when the request is rejected, withdrawn or cancelled
+    ---
+    Parameters:
+        request_id (int): The request ID
+        status (str): The status of the request
+        reason (str): The reason for the status change
+
+    Success response:
+        {
+            "code": 200,
+            "message": "Reason has been updated.",
+            "data": {
+                "request_id": 1,
+                "staff_id": 1,
+                "request_date": "2023-10-01",
+                "request_status": "Approved",
+                "manager_approval_date": "2023-10-01"
+            }
+        }
+    """
     try:
         # Get request data from the request body
         request_id = request.json.get('request_id')
