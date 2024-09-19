@@ -98,7 +98,7 @@ def create_request():
 
     Success response:
         {
-            "code": 201,
+            "code": 200,
             "message": "Request created successfully.",
             "data": {
                 "request_id": 1,
@@ -141,21 +141,26 @@ def create_request():
             apply_reason=apply_reason
         )
 
+        db.session.add(new_request)
+        db.session.commit()
+        # print(new_request)
+        print(new_request.request_id)
+
         # TODO: need the request's request_id, then send request_dates with request_id to RequestDates table
-        create_request_dates = requests.post(f'{request_dates_URL}/create', json={
+        requests.post(f'{request_dates_URL}/create', json={
             "request_id": new_request.request_id,
             "request_dates": request_dates
         })
 
-        if create_request_dates.status_code == 200:
-            db.session.add(new_request)
-            db.session.commit()
+        # print(create_request_dates.status_code)
 
-            return jsonify({
-                "code": 200,
-                "message": "Request created successfully. Sending requested dates to RequestDates table.",
-                "data": new_request.json()
-            }), 200
+        # if create_request_dates.status_code == 200:
+
+        return jsonify({
+            "code": 200,
+            "message": "Request created successfully. Sending requested dates to RequestDates table.",
+            "data": new_request.json()
+        }), 200
 
     except Exception as e:
         return jsonify({

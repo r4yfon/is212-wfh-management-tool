@@ -120,13 +120,11 @@ def create_request_dates():
 
         # Create new request dates
         for request_date, request_shift in request_dates.items():
-            print(request_id, request_date, request_shift)
             new_request_date = RequestDates(
                 request_id=request_id,
                 request_date=request_date,
                 request_shift=request_shift
             )
-            print(request_id, request_date, request_shift)
             db.session.add(new_request_date)
             db.session.commit()
             new_request_dates.append(new_request_date)
