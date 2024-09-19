@@ -143,8 +143,6 @@ def create_request():
 
         db.session.add(new_request)
         db.session.commit()
-        # print(new_request)
-        print(new_request.request_id)
 
         # TODO: need the request's request_id, then send request_dates with request_id to RequestDates table
         requests.post(f'{request_dates_URL}/create', json={
