@@ -73,7 +73,7 @@ class RequestDates(db.Model):
         }
 
 
-@app.route('/request_dates/get_request_dates_by_request_id/<int:request_id>')
+@app.route('/request_dates/get_by_request_id/<int:request_id>')
 def get_request_dates(request_id):
     """
     Get request dates by request ID
@@ -111,7 +111,7 @@ def get_request_dates(request_id):
         }), 404
 
 
-@app.route('/request_dates/get_request_dates_by_request_ids', methods=['POST'])
+@app.route('/request_dates/get_by_request_ids', methods=['POST'])
 def get_request_dates_in_batch():
     """
     Get request dates by multiple request IDs in a list

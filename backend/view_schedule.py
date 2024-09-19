@@ -34,7 +34,7 @@ def get_week_from_date(date_entered):
     return start_date, end_date
 
 
-@app.route("/view_weekly_schedule/<int:staff_id>/<string:date_entered>")
+@app.route("/view_schedule/weekly/<int:staff_id>/<string:date_entered>")
 def view_weekly_schedule(staff_id, date_entered):
     """
     View weekly schedule based on staff_id and date entered
