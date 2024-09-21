@@ -119,15 +119,17 @@ def create_request_dates():
         new_request_dates = []
 
         # Create new request dates
-        for request_date, request_shift in request_dates.items():
-            new_request_date = RequestDates(
-                request_id=request_id,
-                request_date=request_date,
-                request_shift=request_shift
-            )
-            db.session.add(new_request_date)
-            db.session.commit()
-            new_request_dates.append(new_request_date)
+        with db.session.begin_nested():
+            for request_date, request_shift in request_dates.items():
+                new_request_date = RequestDates(
+                    request_id=request_id,
+                    request_date=request_date,
+                    request_shift=request_shift
+                )
+                db.session.add(new_request_date)
+                new_request_dates.append(new_request_date)
+
+        db.session.commit()
 
         return jsonify({
             "code": 200,
@@ -172,7 +174,7 @@ def get_request_dates(request_id):
             {
                 "code": 200,
                 "data": [request_date.json() for request_date in request_dates]
-            }
+            }, 200
         )
     except Exception as e:
         return jsonify({

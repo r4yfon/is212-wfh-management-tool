@@ -124,14 +124,15 @@ def create_request():
             })
 
         # Check if length of all requested_shifts are at most 5 characters
-        # Not sure if needed, assuming requested_shifts will be radio buttons for frontend TODO: check with frontend
-        # requested_shifts_concat_str = ''.join(request_dates.values())
-        # number_of_requested_shifts = len(request_dates)
-        # if not string_length_valid(input_string=requested_shifts_concat_str, max_length=(number_of_requested_shifts * 5)):
-        #     return jsonify({
-        #         "code": 400,
-        #         "error": "One of more of your requested shifts is too long. Please keep it under 5 characters."
-        #     })
+        # Not sure if needed, assuming requested_shifts will be radio buttons for frontend
+        # TODO: check with frontend
+        requested_shifts_concat_str = ''.join(request_dates.values())
+        number_of_requested_shifts = len(request_dates)
+        if not string_length_valid(input_string=requested_shifts_concat_str, max_length=(number_of_requested_shifts * 5)):
+            return jsonify({
+                "code": 400,
+                "error": "One of more of your requested shifts is too long. Please keep it under 5 characters."
+            })
 
         # TODO: check if staff already has a request for the same date
 
@@ -144,19 +145,26 @@ def create_request():
         db.session.add(new_request)
         db.session.commit()
 
-        # TODO: need the request's request_id, then send request_dates with request_id to RequestDates table
-        requests.post(f'{request_dates_URL}/create', json={
-            "request_id": new_request.request_id,
-            "request_dates": request_dates
-        })
+        try:
+            # Make the API call to add request_dates
+            add_request_dates = requests.post(f'{request_dates_URL}/create', json={
+                "request_id": new_request.request_id,
+                "request_dates": request_dates
+            })
 
-        # print(create_request_dates.status_code)
+            # Check if the API call was successful
+            if add_request_dates.status_code != 200:
+                raise Exception("Failed to add request dates.")
 
-        # if create_request_dates.status_code == 200:
+        except Exception as e:
+            # Compensating transaction: delete the previously committed request
+            db.session.delete(new_request)
+            db.session.commit()
+            raise e
 
         return jsonify({
             "code": 200,
-            "message": "Request created successfully. Sending requested dates to RequestDates table.",
+            "message": "Request created successfully.",
             "data": new_request.json()
         }), 200
 
