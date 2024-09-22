@@ -29,14 +29,10 @@ export default {
         'Home - AM': 'cyan',
         'Home - PM': 'cyan',
         'Home': 'cyan', 
-        'Office - AM': 'green',
-        'Office - PM': 'green',
-        'Office' : 'green'
-
         },
         scheduleData: {
-        "2024-09-22": "Office - AM",
-        "2024-09-23": "Office - PM",
+        "2024-09-22": "Home - AM",
+        "2024-09-23": "Home - PM",
         "2024-09-24": "Home - AM",
         "2024-09-15": "Home",
         "2024-09-16": "Office",
@@ -60,12 +56,9 @@ export default {
         const min = start
         const max = end
         const timeMapping = {
-            "Home - AM": { start: 9, end: 18 },  
+            "Home - AM": { start: 9, end: 13 },  
             "Home - PM": { start: 14, end: 18 }, 
-            "Home": { start: 9, end: 18 },       
-            "Office - AM": { start: 9, end: 13 },
-            "Office - PM": { start: 14, end: 18 },
-            "Office": { start: 9, end: 18 },   
+            "Home": { start: 9, end: 18 },        
         };
 
         // Loop through each day in the date range
