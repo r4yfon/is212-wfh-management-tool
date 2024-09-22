@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from input_validation import string_length_valid
+from input_validation import string_length_valid, check_date_valid
 from os import environ
 import requests
 
@@ -135,6 +135,21 @@ def create_request():
             })
 
         # TODO: check if staff already has a request for the same date
+
+        # Check if dates that staff request for is within 2 months before and 3 months after current date
+        earliest_requested_date = next(iter(request_dates))
+        latest_requested_date = earliest_requested_date
+        for date in request_dates:
+            if date < earliest_requested_date:
+                earliest_requested_date = date
+            if date > latest_requested_date:
+                latest_requested_date = date
+
+        if not check_date_valid(earliest_requested_date, latest_requested_date):
+            return jsonify({
+                "code": 400,
+                "error": "Your selected range of dates are not within 2 months before and 3 months after the current date."
+            }),400
 
         new_request = Request(
             staff_id=staff_id,

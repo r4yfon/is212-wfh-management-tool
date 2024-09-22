@@ -1,3 +1,6 @@
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
+
 def string_length_valid(input_string, min_length=0, max_length=None):
     """
     Validates if the input string length is within the specified range.
@@ -34,3 +37,29 @@ def has_existing_request(employee_requests, employee_id, request_date):
         if request['employee_id'] == employee_id and request['request_date'] == request_date:
             return True
     return False
+
+def check_date_valid(request_start_date, request_end_date):
+    """
+    Checks if the request start date is within 2 months before the current date 
+    and if the request end date is within 3 months after the current date.
+
+    Args:
+        request_start_date (str): The start date of the request in 'YYYY-MM-DD' format.
+        request_end_date (str): The end date of the request in 'YYYY-MM-DD' format.
+
+    Returns:
+        bool: True if the input dates fulfill the check criteria, False otherwise.
+    """
+    current_date = datetime.now().date()  # Correct usage to get the current date
+    two_months_before = current_date - relativedelta(months=2)
+    three_months_after = current_date + relativedelta(months=3)
+
+    # Convert input strings to date objects
+    request_start_date = datetime.strptime(request_start_date, "%Y-%m-%d").date()
+    request_end_date = datetime.strptime(request_end_date, "%Y-%m-%d").date()
+
+    # Check if start date is within 2 months before and end date within 3 months after
+    if (two_months_before <= request_start_date <= three_months_after) and (two_months_before <= request_end_date <= three_months_after):
+        return True
+    else:
+        return False

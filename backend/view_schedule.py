@@ -5,6 +5,7 @@ from os import environ
 from datetime import datetime, timedelta
 from request import Request
 from request_dates import RequestDates
+from input_validation import check_date_valid
 
 app = Flask(__name__)
 app.config.from_object('config.Config')
@@ -58,6 +59,13 @@ def view_weekly_schedule(staff_id, date_entered):
             }
     """
 
+    #check if date_entered is within 2 months back, 3 month forward (OVS06)
+    if not check_date_valid(date_entered, date_entered):
+        return jsonify({
+            "code": 400,
+            "message": "Date entered is not within 2 months back and 3 months forward."
+        }),400
+    
     week_start, week_end = get_week_from_date(date_entered)
     weekly_arrangement = {}
     for n in range((week_end - week_start).days + 1):
