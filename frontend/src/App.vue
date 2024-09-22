@@ -1,29 +1,51 @@
 <script setup>
 import { RouterLink, RouterView } from 'vue-router'
-import HelloWorld from './components/HelloWorld.vue'
 </script>
 
 <template>
   <header>
-    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
-
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
-
-      <nav>
-        <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
-      </nav>
-    </div>
+    <!-- <div class="wrapper"> -->
+      <h1 class="title">WFH Management System</h1>
+      <v-menu>
+        <template v-slot:activator="{ props }">
+          <v-btn icon="mdi-dots-vertical" variant="text" v-bind="props"></v-btn>
+        </template>
+        <v-list>
+          <v-list-item>
+            <RouterLink to= "/weeklycalendar">Own Weekly Schedule</RouterLink>
+          </v-list-item>
+        </v-list>
+      </v-menu>
+    <!-- </div> -->
   </header>
+  <div class = "content">
+    <RouterView />
+  </div>
 
-  <RouterView />
 </template>
 
 <style scoped>
 header {
-  line-height: 1.5;
   max-height: 100vh;
+  position: fixed; 
+  top: 0; 
+  left: 0;
+  right: 0;
+  height: 50px;
+  background-color: rgb(115, 236, 240); 
+  z-index: 1000; /* Ensures the header is always on top of other elements */
+  width: 100%;
+  display: flex;
+  justify-content: space-between; /* Space between title and nav */
+  align-items: center;
+  padding-left: 10px;
+}
+
+.content {
+  padding-top: 30px; 
+  padding-bottom: 30px;
+  height: calc(100vh - 50px); 
+  width: 100%; /* Ensure content spans full width */
 }
 
 .logo {
