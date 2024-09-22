@@ -4,8 +4,20 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
 
-const app = createApp(App)
+import Vue from 'vue';
+import Vuetify from 'vuetify';
+import 'vuetify/dist/vuetify.min.css';
 
-app.use(router)
+Vue.use(Vuetify);
 
-app.mount('#app')
+new Vue({
+  vuetify: new Vuetify(),
+  render: h => h(App),
+}).$mount('#app');
+
+
+// const app = createApp(App)
+
+// app.use(router)
+
+// app.mount('#app')
