@@ -27,12 +27,12 @@ export default {
         events: [],
         colors: {
         'Home - AM': 'cyan',
-        'Home - PM': 'cyan',
-        'Home': 'cyan', 
+        'Home - PM': 'green',
+        'Home': 'blue', 
         },
         scheduleData: {
-        "2024-09-22": "Home - AM",
-        "2024-09-23": "Home - PM",
+        "2024-09-23": "Home - AM",
+        "2024-09-25": "Home - PM",
         "2024-09-24": "Home - AM",
         "2024-09-15": "Home",
         "2024-09-16": "Office",
@@ -62,20 +62,25 @@ export default {
         };
 
         // Loop through each day in the date range
-        for (let day = new Date(min); day <= max; day.setDate(day.getDate() + 1)) {
+        for (let day = new Date(min); day <= max; day.setDate(day.getDate()) + 1) {
             const dateString = day.toISOString().split('T')[0]; // Format the date as YYYY-MM-DD
             const eventTitle = this.scheduleData[dateString]; // Get Home or Office from schedule data
+            console.log(dateString)
+            console.log(day)
 
             const times = timeMapping[eventTitle];
-
+            console.log(times)
         // Only create the event if a valid title is found
             if (times) {
                 const event = {
                     title: eventTitle,
                     start: new Date(day.getFullYear(), day.getMonth(), day.getDate(), times.start, 0),
                     end: new Date(day.getFullYear(), day.getMonth(), day.getDate(), times.end, 0),
+
                     color: this.colors[eventTitle] // Use the color defined for the title
                 };
+                console.log(event.start);
+                console.log(event.end);
 
                 events.push(event);
             }
