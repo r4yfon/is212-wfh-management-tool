@@ -22,24 +22,21 @@ import { useDate } from 'vuetify'
 export default {
     data: () => ({
         type: 'week',
-        weekdays: [0, 1, 2, 3, 4, 5, 6],
+        weekdays: [0, 1, 2,3, 4, 5, 6],
         value: [new Date()],
         events: [],
         colors: {
         'Home - AM': 'cyan',
-        'Home - PM': 'cyan',
-        'Home': 'cyan', 
-        'Office - AM': 'green',
-        'Office - PM': 'green',
-        'Office' : 'green'
+        'Home - PM': 'blue',
+        'Home': 'green', 
 
         },
         scheduleData: {
-        "2024-09-22": "Office - AM",
-        "2024-09-23": "Office - PM",
-        "2024-09-24": "Home - AM",
-        "2024-09-15": "Home",
-        "2024-09-16": "Office",
+        "2024-09-23": "Home - AM",
+        "2024-09-24": "Home - PM",
+        "2024-09-25": "Home - AM",
+        "2024-09-16": "Home",
+        "2024-09-17": "Home",
         "2024-09-30": "Home - PM",
         },
 }),
@@ -60,12 +57,9 @@ export default {
         const min = start
         const max = end
         const timeMapping = {
-            "Home - AM": { start: 9, end: 18 },  
+            "Home - AM": { start: 9, end: 13 },  
             "Home - PM": { start: 14, end: 18 }, 
-            "Home": { start: 9, end: 18 },       
-            "Office - AM": { start: 9, end: 13 },
-            "Office - PM": { start: 14, end: 18 },
-            "Office": { start: 9, end: 18 },   
+            "Home": { start: 9, end: 18 },         
         };
 
         // Loop through each day in the date range
@@ -79,8 +73,8 @@ export default {
             if (times) {
                 const event = {
                     title: eventTitle,
-                    start: new Date(day.getFullYear(), day.getMonth(), day.getDate(), times.start, 0),
-                    end: new Date(day.getFullYear(), day.getMonth(), day.getDate(), times.end, 0),
+                    start: new Date(day.getFullYear(), day.getMonth(), day.getDate() - 1, times.start, 0),
+                    end: new Date(day.getFullYear(), day.getMonth(), day.getDate() - 1, times.end, 0),
                     color: this.colors[eventTitle] // Use the color defined for the title
                 };
 
