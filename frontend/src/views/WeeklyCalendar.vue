@@ -1,6 +1,6 @@
 <template>
   <div>
-    <v-sheet>
+    <v-sheet class="full-width">
       <v-calendar
         ref="calendar"
         v-model="value"
