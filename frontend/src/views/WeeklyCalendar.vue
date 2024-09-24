@@ -1,18 +1,41 @@
 <template>
 <div>
-    <v-sheet>
-    <v-calendar
-        ref="calendar"
-        v-model="value"
-        :events="events"
-        :view-mode="type"
-        :weekdays="weekday"
-        :interval-start="8"          
-        :interval-duration="60"     
-        :intervals="10"  
-        class= "full-width">
-    </v-calendar>
+    <v-sheet class="full-width">
+      <v-calendar
+          ref="calendar"
+          v-model="value"
+          :events="events"
+          :view-mode="type"
+          :weekdays="weekday"
+          :interval-start="8"          
+          :interval-duration="60"     
+          :intervals="10"  
+          class= "full-width">
+      </v-calendar>
+      <v-btn color="primary" @click="applyChanges">
+        Apply
+      </v-btn>
     </v-sheet>
+
+    <!-- Popup -->
+    <!-- Popup Dialog -->
+    <v-dialog v-model="dialog" max-width="400px">
+      <v-card>
+        <v-card-title class="headline">Apply for Work From Home</v-card-title>
+        <v-card-text>
+          Which day?
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="green darken-1" text @click="confirmApply">
+            Yes
+          </v-btn>
+          <v-btn color="red darken-1" text @click="dialog = false">
+            Cancel
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 </div>
 </template>
 
@@ -29,10 +52,6 @@ export default {
         'Home - AM': 'cyan',
         'Home - PM': 'cyan',
         'Home': 'cyan', 
-        'Office - AM': 'green',
-        'Office - PM': 'green',
-        'Office' : 'green'
-
         },
         scheduleData: {
         "2024-09-22": "Office - AM",
@@ -42,6 +61,7 @@ export default {
         "2024-09-16": "Office",
         "2024-09-30": "Home - PM",
         },
+        dialog: false // or some default value
 }),
     mounted () {
         const adapter = useDate()
@@ -60,12 +80,9 @@ export default {
         const min = start
         const max = end
         const timeMapping = {
-            "Home - AM": { start: 9, end: 18 },  
+            "Home - AM": { start: 9, end: 13 },  
             "Home - PM": { start: 14, end: 18 }, 
-            "Home": { start: 9, end: 18 },       
-            "Office - AM": { start: 9, end: 13 },
-            "Office - PM": { start: 14, end: 18 },
-            "Office": { start: 9, end: 18 },   
+            "Home": { start: 9, end: 18 },     
         };
 
         // Loop through each day in the date range
@@ -89,12 +106,21 @@ export default {
         }
 
             this.events = events;
-        }
+        },
+
+        applyChanges() {
+        // Open the popup dialog when the Apply button is clicked
+        this.dialog = true;
+        },
+        confirmApply() {
+        // Perform action when "Yes" is clicked in the dialog
+        this.dialog = false; // Close the dialog
+        },
     }
 }
 </script>
 
-<style scoped>
+<!-- <style scoped>
 .full-width {
 width: 100%; /* Makes the calendar span the full width of its container */
 }
@@ -110,5 +136,27 @@ font-size: 0.8rem;
 }
 }
 
-</style>
+</style> -->
 
+<style scoped>
+.full-width {
+  width: 100%;
+  padding: 0;
+  margin: 0;
+}
+
+.calendar-full-width {
+  width: 100%; /* Ensures the calendar spans full width */
+  min-width: 100%; /* Also ensures minimum width is 100% */
+}
+
+.text-right {
+  text-align: right;
+}
+
+@media (max-width: 768px) {
+  .calendar-full-width {
+    font-size: 0.8rem; /* Adjust calendar styling for smaller screens */
+  }
+}
+</style>

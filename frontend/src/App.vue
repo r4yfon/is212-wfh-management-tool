@@ -1,11 +1,99 @@
 <script setup>
 import { RouterLink, RouterView } from 'vue-router'
+import { VTextField, VDatePicker, VBtn, VDialog, VCard, VCardTitle, VCardText, VCardActions, VSpacer } from 'vuetify/components'; 
+import { ref, reactive } from 'vue';
+
+// State variables
+const dialog = ref(false);
+const newEvent = reactive({
+  staffId: '',
+  date: '',
+  time: '',
+  reason: '',
+});
+const events = ref([]);
+
+const confirmApply = () => {
+  if (newEvent.staffId && newEvent.date && newEvent.time && newEvent.reason) {
+    const event = {
+      staffId: newEvent.staffId,
+      date: newEvent.date,
+      time: newEvent.time,
+      reason: newEvent.reason,
+      color: 'blue',
+    };
+
+    events.value.push(event); // Add new event to the calendar
+
+    // Clear the form fields
+    Object.assign(newEvent, {
+      staffId: '',
+      date: '',
+      time: '',
+      reason: '',
+    });
+
+    dialog.value = false
+  }
+};
 </script>
 
 <template>
   <header>
     <!-- <div class="wrapper"> -->
+    <v-col cols="12">
+      <v-row align="center" justify="end" class="header-buttons">
       <h1 class="title">WFH Management System</h1>
+      <v-spacer></v-spacer>
+
+      <v-dialog v-model="dialog" max-width="400px">
+        <template v-slot:activator="{ props: activatorProps }">
+          <v-btn
+            v-bind="activatorProps"
+            color="primary"
+            text="Apply"
+            variant="flat"
+          ></v-btn>
+        </template>
+
+        <v-card title="Apply for Work From Home">
+          <v-card-text>
+            <v-form>
+              <!-- Event Title -->
+              <VTextField v-model="newEvent.staffId" label="Staff ID" required></VTextField>
+
+              <!-- Event Date -->
+              <VTextField v-model="newEvent.date" label="Date of Request" type="date" required></VTextField>
+
+              <v-radio-group
+                v-model="newEvent.time"
+                label="Timing for Work From Home"
+                row
+                required
+              >
+                <v-radio label="AM (09:00-13:00)" value="AM"></v-radio>
+                <v-radio label="PM (14:00-18:00)" value="PM"></v-radio>
+                <v-radio label="FULL (09:00-18:00)" value="Full"></v-radio>
+              </v-radio-group>
+
+              <v-text-field v-model="newEvent.reason" label="Reason for Request" required></v-text-field>
+
+            </v-form>
+          </v-card-text>
+
+          <v-card-actions>
+            <v-spacer></v-spacer>
+
+            <v-btn color="green darken-1" text @click="confirmApply">
+              Apply
+            </v-btn>
+            <v-btn color="red darken-1" text @click="dialog = false">
+              Cancel
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
       <v-menu>
         <template v-slot:activator="{ props }">
           <v-btn icon="mdi-dots-vertical" variant="text" v-bind="props"></v-btn>
@@ -16,8 +104,11 @@ import { RouterLink, RouterView } from 'vue-router'
           </v-list-item>
         </v-list>
       </v-menu>
-    <!-- </div> -->
+    </v-row>
+    </v-col>
+    
   </header>
+
   <div class = "content">
     <RouterView />
   </div>
@@ -32,13 +123,18 @@ header {
   left: 0;
   right: 0;
   height: 50px;
-  background-color: rgb(115, 236, 240); 
+  background-color: rgb(102, 136, 247); 
   z-index: 1000; /* Ensures the header is always on top of other elements */
   width: 100%;
   display: flex;
   justify-content: space-between; /* Space between title and nav */
   align-items: center;
   padding-left: 10px;
+}
+
+.header-buttons {
+  width: 100%;
+  justify-content: flex-end; /* Align buttons to the far right */
 }
 
 .content {
