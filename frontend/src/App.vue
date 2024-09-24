@@ -43,7 +43,7 @@ const confirmApply = () => {
     <!-- <div class="wrapper"> -->
     <v-col cols="12">
       <v-row align="center" justify="end" class="header-buttons">
-    <h1 class="title">WFH Management System</h1>
+      <h1 class="title">WFH Management System</h1>
       <v-spacer></v-spacer>
 
       <v-dialog v-model="dialog" max-width="400px">
