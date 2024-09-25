@@ -7,10 +7,11 @@ app.config.from_object('config.Config')
 db = SQLAlchemy(app)
 
 #######################################################
-staff_id = "150488"
+staff_id = "140894"
 
-@app.route("/retrieve_requests", methods=['GET'])
-def retrieve_requests():
+# Staff view own requests
+@app.route("/s_retrieve_requests", methods=['GET'])
+def s_retrieve_requests():
     # Get all requests made by the staff_id
     response = invoke_http("http://localhost:5001/request/get_all_requests/" + staff_id, method='GET')
 
@@ -26,10 +27,13 @@ def retrieve_requests():
             request_dates_response = invoke_http(url, method='GET')
             
             # Add the request_dates_response to the request as a new field
-            request["request_dates"] = request_dates_response["data"] if "data" in request_dates_response else []
+            request["wfh_dates"] = request_dates_response
     
     # Return the modified response including the request_dates
     return jsonify(response)
+
+
+
 
 
 if __name__ == '__main__':

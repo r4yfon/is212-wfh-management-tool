@@ -88,5 +88,58 @@ def get_employee_details(staff_id):
         }), 404
 
 
+@app.route("/employee/get_staff/<int:staff_id>")
+def get_staff_by_manager(staff_id):
+    """
+    Get the list of employees who report to a specific manager based on staff_id
+    ---
+    Parameters:
+        staff_id (int): The manager's staff_id
+
+    Success response:
+        {
+            "code": 200,
+            "data": [
+                {
+                    "country": "Singapore",
+                    "dept": "Sales",
+                    "email": "Susan.Goh@allinone.com.sg",
+                    "position": "Account Manager",
+                    "reporting_manager": 140894,
+                    "role": 2,
+                    "staff_fname": "Susan",
+                    "staff_id": 140002,
+                    "staff_lname": "Goh"
+                },
+                ...
+            ]
+        }
+    """
+
+    try:
+        # Fetch employees where reporting_manager matches the provided staff_id
+        staff_list = Employee.query.filter_by(reporting_manager=staff_id).all()
+
+        if not staff_list:
+            return jsonify({
+                "code": 404,
+                "message": f"No staff found reporting to manager with ID {staff_id}."
+            }), 404
+
+        # Serialize the list of employees
+        staff_data = [staff.json() for staff in staff_list]
+
+        return jsonify({
+            "code": 200,
+            "data": staff_data
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "code": 500,
+            "error": "An error occurred while fetching staff data. " + str(e)
+        }), 500
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
