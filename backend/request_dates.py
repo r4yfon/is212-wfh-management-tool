@@ -45,16 +45,14 @@ class RequestDates(db.Model):
     request_shift = db.Column(db.String(5), nullable=False)
     request_status = db.Column(db.String(20), nullable=False)
     rescind_reason = db.Column(db.String(100), nullable=True)
-    withdraw_reason = db.Column(db.String(100), nullable=True)
 
-    def __init__(self, request_id, request_date, request_shift, request_date_id=None, request_status="Pending Approval", rescind_reason=None, withdraw_reason=None):
+    def __init__(self, request_id, request_date, request_shift, request_date_id=None, request_status="Pending Approval", rescind_reason=None):
         self.request_date_id = request_date_id
         self.request_id = request_id
         self.request_date = request_date
         self.request_shift = request_shift
         self.request_status = request_status
         self.rescind_reason = rescind_reason
-        self.withdraw_reason = withdraw_reason
 
     def json(self):
         return {
@@ -64,7 +62,6 @@ class RequestDates(db.Model):
             "request_shift": self.request_shift,
             "request_status": self.request_status,
             "rescind_reason": self.rescind_reason,
-            "withdraw_reason": self.withdraw_reason
         }
 
 
@@ -92,7 +89,7 @@ def create_request_dates():
                     "request_id": 1,
                     "request_date": "2023-10-01",
                     "request_shift": "PM",
-                    "request_status": "Approved"
+                    "request_status": "Pending"
                 }
             ]
         }
@@ -268,22 +265,13 @@ def change_status():
             request_date.request_status = new_status
 
             # If the new status is 'pending_rescind', update the Rescind_Reason
-            if new_status == "pending_rescind":
+            if new_status == "rescinded":
                 if not request.json.get('reason'):
                     return jsonify({
                         "code": 400,
                         "message": "Rescind reason must be provided."
                     }), 400
                 request_date.rescind_reason = request.json.get('reason')
-
-            # If the new status is 'pending_withdraw', update the Rescind_Reason
-            if new_status == "withdrawn":
-                if not request.json.get('reason'):
-                    return jsonify({
-                        "code": 400,
-                        "message": "Withdraw reason must be provided."
-                    }), 400
-                request_date.withdraw_reason = request.json.get('reason')
 
         # Commit the changes to the database
         db.session.commit()
@@ -298,6 +286,54 @@ def change_status():
         return jsonify({
             "code": 500,
             "error": "An error occurred while updating the request status. " + str(e)
+        }), 500
+
+
+# get staff's pending and approved pending withdrawal requests
+@app.route('/request_dates/get_staff_request/<int:request_id>')
+def get_staff_request(request_id):
+    """
+    Get request dates by request ID
+    ---
+    Parameters:
+        request_id(int): The request_id
+
+    Success response:
+        {
+            "code": 200,
+            "data": [
+                {
+                    "request_date_id": 1,
+                    "request_id": 1,
+                    "request_date": "2023-10-01",
+                    "request_shift": "PM",
+                    "request_status": "Approved"
+                }
+            ]
+        }
+    """
+    try:
+        request_dates = RequestDates.query.filter(
+            (RequestDates.request_id == request_id) &
+            (RequestDates.request_status.in_(["Pending Approval", "Pending Withdrawal"]))
+        ).all()
+
+        if not request_dates:
+            return jsonify({
+                "code": 404,
+                "error": "No request dates found with the specified status."
+            }), 404
+
+        return jsonify(
+            {
+                "code": 200,
+                "data": [request_date.json() for request_date in request_dates]
+            }, 200
+        )
+    except Exception as e:
+        return jsonify({
+            "code": 500,
+            "error": "An error occurred while retrieving request dates. " + str(e)
         }), 500
 
 

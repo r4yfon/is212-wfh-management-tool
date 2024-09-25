@@ -57,13 +57,15 @@ class Request(db.Model):
     request_date = db.Column(db.Date, nullable=False)
     apply_reason = db.Column(db.String(100), nullable=False)
     reject_reason = db.Column(db.String(100), nullable=True)
+    withdraw_reason = db.Column(db.String(100), nullable=True)
 
-    def __init__(self, staff_id, request_date, apply_reason, reject_reason=None, request_id=None):
+    def __init__(self, staff_id, request_date, apply_reason, reject_reason=None, withdraw_reason=None, request_id=None):
         self.request_id = request_id
         self.staff_id = staff_id
         self.request_date = request_date
         self.apply_reason = apply_reason
         self.reject_reason = reject_reason
+        self.withdraw_reason = withdraw_reason
 
     def json(self):
         return {
@@ -72,15 +74,13 @@ class Request(db.Model):
             "request_date": self.request_date.isoformat(),
             "apply_reason": self.apply_reason,
             "reject_reason": self.reject_reason,
+            "withdraw_reason": self.withdraw_reason
         }
 
 
-request_dates_URL = environ.get(
-    'request_dates_URL') or "http://localhost:5002/request_dates"
+request_dates_URL = environ.get('request_dates_URL') or "http://localhost:5002/request_dates"
 
 # Create a new request
-
-
 @app.route('/request/create', methods=['POST'])
 def create_request():
     """
@@ -325,11 +325,8 @@ def update_reason():
                 "message": f"No request found for request ID {request_id}."
             }), 404
 
-        if new_status == "Pending Withdrawal":
+        if new_status == "Pending_Withdrawal" or new_status == "Withdrawn":
             request_record.withdraw_reason = request.json.get('reason')
-
-        if new_status == "Pending Cancellation":
-            request_record.cancel_reason = request.json.get('reason')
 
         if new_status == "Rejected":
             request_record.reject_reason = request.json.get('reason')
