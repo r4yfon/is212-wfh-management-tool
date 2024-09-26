@@ -1,37 +1,39 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from request import db, Request
 
 app = Flask(__name__)
 app.config.from_object('config.Config')
-db = SQLAlchemy(app)
+# db = SQLAlchemy(app)
+db.init_app(app)
 
 
 # Defining the tables
-class Request(db.Model):
-    __tablename__ = "request"
+# class Request(db.Model):
+#     __tablename__ = "request"
 
-    request_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    staff_id = db.Column(db.Integer, db.ForeignKey(
-        'employee.staff_id'), nullable=False)
-    request_date = db.Column(db.Date, nullable=False)
-    apply_reason = db.Column(db.String(100), nullable=False)
-    reject_reason = db.Column(db.String(100), nullable=True)
+#     request_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+#     staff_id = db.Column(db.Integer, db.ForeignKey(
+#         'employee.staff_id'), nullable=False)
+#     request_date = db.Column(db.Date, nullable=False)
+#     apply_reason = db.Column(db.String(100), nullable=False)
+#     reject_reason = db.Column(db.String(100), nullable=True)
 
-    def __init__(self, staff_id, request_date, apply_reason, reject_reason=None, request_id=None):
-        self.request_id = request_id
-        self.staff_id = staff_id
-        self.request_date = request_date
-        self.apply_reason = apply_reason
-        self.reject_reason = reject_reason
+#     def __init__(self, staff_id, request_date, apply_reason, reject_reason=None, request_id=None):
+#         self.request_id = request_id
+#         self.staff_id = staff_id
+#         self.request_date = request_date
+#         self.apply_reason = apply_reason
+#         self.reject_reason = reject_reason
 
-    def json(self):
-        return {
-            "request_id": self.request_id,
-            "staff_id": self.staff_id,
-            "request_date": self.request_date.isoformat(),
-            "apply_reason": self.apply_reason,
-            "reject_reason": self.reject_reason,
-        }
+#     def json(self):
+#         return {
+#             "request_id": self.request_id,
+#             "staff_id": self.staff_id,
+#             "request_date": self.request_date.isoformat(),
+#             "apply_reason": self.apply_reason,
+#             "reject_reason": self.reject_reason,
+#         }
 
 
 class RequestDates(db.Model):
@@ -106,33 +108,58 @@ def create_request_dates():
             }), 400
 
         # Check if the (foreign key constraint) request_id exists
-        request_record = Request.query.filter_by(request_id=request_id).first()
-        if not request_record:
+        try:
+            request_record = Request.query.filter_by(
+                request_id=request_id).first()
+
+            new_request_dates = []
+
+            # Create new request dates
+            with db.session.begin_nested():
+                for request_date, request_shift in request_dates.items():
+                    new_request_date = RequestDates(
+                        request_id=request_id,
+                        request_date=request_date,
+                        request_shift=request_shift
+                    )
+                    db.session.add(new_request_date)
+                    new_request_dates.append(new_request_date)
+
+            db.session.commit()
+
+            return jsonify({
+                "code": 200,
+                "message": "Request dates created successfully.",
+                "data": [request_date.json() for request_date in new_request_dates]
+            }), 200
+
+        except Exception as e:
+            # if not request_record:
             return jsonify({
                 "code": 404,
-                "message": f"No request found for request ID {request_id}."
+                "message": f"No request found for request ID {request_id}: {e}"
             }), 404
 
-        new_request_dates = []
+        # new_request_dates = []
 
-        # Create new request dates
-        with db.session.begin_nested():
-            for request_date, request_shift in request_dates.items():
-                new_request_date = RequestDates(
-                    request_id=request_id,
-                    request_date=request_date,
-                    request_shift=request_shift
-                )
-                db.session.add(new_request_date)
-                new_request_dates.append(new_request_date)
+        # # Create new request dates
+        # with db.session.begin_nested():
+        #     for request_date, request_shift in request_dates.items():
+        #         new_request_date = RequestDates(
+        #             request_id=request_id,
+        #             request_date=request_date,
+        #             request_shift=request_shift
+        #         )
+        #         db.session.add(new_request_date)
+        #         new_request_dates.append(new_request_date)
 
-        db.session.commit()
+        # db.session.commit()
 
-        return jsonify({
-            "code": 200,
-            "message": "Request dates created successfully.",
-            "data": [request_date.json() for request_date in new_request_dates]
-        }), 200
+        # return jsonify({
+        #     "code": 200,
+        #     "message": "Request dates created successfully.",
+        #     "data": [request_date.json() for request_date in new_request_dates]
+        # }), 200
 
     except Exception as e:
         return jsonify({
@@ -315,7 +342,8 @@ def get_staff_request(request_id):
     try:
         request_dates = RequestDates.query.filter(
             (RequestDates.request_id == request_id) &
-            (RequestDates.request_status.in_(["Pending Approval", "Pending Withdrawal"]))
+            (RequestDates.request_status.in_(
+                ["Pending Approval", "Pending Withdrawal"]))
         ).all()
 
         if not request_dates:

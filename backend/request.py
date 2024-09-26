@@ -3,49 +3,51 @@ from flask_sqlalchemy import SQLAlchemy
 from input_validation import string_length_valid, check_date_valid
 from os import environ
 import requests
+from employee import db, Employee
 
 app = Flask(__name__)
 app.config.from_object('config.Config')
-db = SQLAlchemy(app)
+# db = SQLAlchemy(app)
+db.init_app(app)
 
 
-class Employee(db.Model):
-    __tablename__ = "employee"
+# class Employee(db.Model):
+#     __tablename__ = "employee"
 
-    staff_id = db.Column(db.Integer, primary_key=True)
-    staff_fname = db.Column(db.String(50), nullable=False)
-    staff_lname = db.Column(db.String(50), nullable=False)
-    dept = db.Column(db.String(50), nullable=False)
-    position = db.Column(db.String(50), nullable=False)
-    country = db.Column(db.String(50), nullable=False)
-    email = db.Column(db.String(50), nullable=False)
-    reporting_manager = db.Column(
-        db.Integer, db.ForeignKey('employee.staff_id'), nullable=True)
-    role = db.Column(db.Integer, nullable=False)
+#     staff_id = db.Column(db.Integer, primary_key=True)
+#     staff_fname = db.Column(db.String(50), nullable=False)
+#     staff_lname = db.Column(db.String(50), nullable=False)
+#     dept = db.Column(db.String(50), nullable=False)
+#     position = db.Column(db.String(50), nullable=False)
+#     country = db.Column(db.String(50), nullable=False)
+#     email = db.Column(db.String(50), nullable=False)
+#     reporting_manager = db.Column(
+#         db.Integer, db.ForeignKey('employee.staff_id'), nullable=True)
+#     role = db.Column(db.Integer, nullable=False)
 
-    def __init__(self, staff_id, staff_fname, staff_lname, dept, position, country, email, role, reporting_manager=None):
-        self.staff_id = staff_id
-        self.staff_fname = staff_fname
-        self.staff_lname = staff_lname
-        self.dept = dept
-        self.position = position
-        self.country = country
-        self.email = email
-        self.reporting_manager = reporting_manager
-        self.role = role
+#     def __init__(self, staff_id, staff_fname, staff_lname, dept, position, country, email, role, reporting_manager=None):
+#         self.staff_id = staff_id
+#         self.staff_fname = staff_fname
+#         self.staff_lname = staff_lname
+#         self.dept = dept
+#         self.position = position
+#         self.country = country
+#         self.email = email
+#         self.reporting_manager = reporting_manager
+#         self.role = role
 
-    def json(self):
-        return {
-            "staff_id": self.staff_id,
-            "staff_fname": self.staff_fname,
-            "staff_lname": self.staff_lname,
-            "dept": self.dept,
-            "position": self.position,
-            "country": self.country,
-            "email": self.email,
-            "reporting_manager": self.reporting_manager,
-            "role": self.role
-        }
+#     def json(self):
+#         return {
+#             "staff_id": self.staff_id,
+#             "staff_fname": self.staff_fname,
+#             "staff_lname": self.staff_lname,
+#             "dept": self.dept,
+#             "position": self.position,
+#             "country": self.country,
+#             "email": self.email,
+#             "reporting_manager": self.reporting_manager,
+#             "role": self.role
+#         }
 
 
 class Request(db.Model):
@@ -78,9 +80,12 @@ class Request(db.Model):
         }
 
 
-request_dates_URL = environ.get('request_dates_URL') or "http://localhost:5002/request_dates"
+request_dates_URL = environ.get(
+    'request_dates_URL') or "http://localhost:5002/request_dates"
 
 # Create a new request
+
+
 @app.route('/request/create', methods=['POST'])
 def create_request():
     """
@@ -149,7 +154,7 @@ def create_request():
             return jsonify({
                 "code": 400,
                 "error": "Your selected range of dates are not within 2 months before and 3 months after the current date."
-            }),400
+            }), 400
 
         new_request = Request(
             staff_id=staff_id,
