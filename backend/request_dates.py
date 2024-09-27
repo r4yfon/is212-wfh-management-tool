@@ -266,8 +266,8 @@ def get_request_dates_in_batch():
 
 
 # Change status to all the records that belongs to the same request_id
-@app.route('/request_dates/change_status', methods=['PUT'])
-def change_status():
+@app.route('/request_dates/change_all_status', methods=['PUT'])
+def change_all_status():
     try:
         # Get request data
         request_id = request.json.get('request_id')
@@ -292,25 +292,26 @@ def change_status():
 
         # Update the Request_Status for each record
         for request_date in request_dates:
-            request_date.request_status = new_status
+            if request_date.request_status != "Withdrawn" and request_date.request_status != "Pending Withdrawal":
+                request_date.request_status = new_status
 
-            # If the new status is 'pending_rescind', update the Rescind_Reason
-            if new_status == "rescinded":
-                if not request.json.get('reason'):
-                    return jsonify({
-                        "code": 400,
-                        "message": "Rescind reason must be provided."
-                    }), 400
-                request_date.rescind_reason = request.json.get('reason')
+                # If the new status is 'pending_rescind', update the Rescind_Reason
+                if new_status == "Rescinded":
+                    if not request.json.get('reason'):
+                        return jsonify({
+                            "code": 400,
+                            "message": "Rescind reason must be provided."
+                        }), 400
+                    request_date.rescind_reason = request.json.get('reason')
 
-            # If the new status is 'withdraw', update the Withdraw_Reason
-            if new_status == "withdraw":
-                if not request.json.get('reason'):
-                    return jsonify({
-                        "code": 400,
-                        "message": "Withdraw reason must be provided."
-                    }), 400
-                request_date.withdraw_reason = request.json.get('reason')
+                # If the new status is 'withdraw', update the Withdraw_Reason
+                if new_status == "Withdrawn" or new_status == "Pending Withdrawal":
+                    if not request.json.get('reason'):
+                        return jsonify({
+                            "code": 400,
+                            "message": "Withdraw reason must be provided."
+                        }), 400
+                    request_date.withdraw_reason = request.json.get('reason')
 
         # Commit the changes to the database
         db.session.commit()
@@ -325,6 +326,74 @@ def change_status():
         return jsonify({
             "code": 500,
             "error": "An error occurred while updating the request status. " + str(e)
+        }), 500
+
+
+# Withdraw or rescind some of the dates in a request
+@app.route('/request_dates/change_partial_status', methods=['PUT'])
+def change_partial_status():
+    try:
+        # Get request data from JSON body
+        request_id = request.json.get('request_id')
+        new_status = request.json.get('status')
+        reason = request.json.get('reason')
+        dates = request.json.get('dates')  # List of dates to update
+
+        # Check if all necessary data is provided
+        if not request_id or not new_status or not dates:
+            return jsonify({
+                "code": 400,
+                "message": "Request ID, status, and dates must be provided."
+            }), 400
+
+        # Query the request dates that match the request_id and are in the provided dates list
+        request_dates = RequestDates.query.filter(
+            RequestDates.request_id == request_id,
+            RequestDates.request_date.in_(dates)
+        ).all()
+
+        if not request_dates:
+            return jsonify({
+                "code": 404,
+                "message": f"No request dates found for request ID {request_id} and provided dates."
+            }), 404
+
+        # Update the Request_Status and Reason for each matching record
+        for request_date in request_dates:
+            request_date.request_status = new_status
+
+            # Update the reason based on the status
+            if new_status == "Rescinded":
+                if not reason:
+                    return jsonify({
+                        "code": 400,
+                        "message": "Rescind reason must be provided."
+                    }), 400
+                request_date.rescind_reason = reason
+            elif new_status == "Withdrawn" or new_status == "Pending Withdrawal":
+                if not reason:
+                    return jsonify({
+                        "code": 400,
+                        "message": "Withdraw reason must be provided."
+                    }), 400
+                request_date.withdraw_reason = reason
+
+        # Commit the changes to the database
+        db.session.commit()
+
+        # Format the updated records for the response
+        updated_dates = [request_date.json() for request_date in request_dates]
+
+        return jsonify({
+            "code": 200,
+            "message": f"Request status for request ID {request_id} updated to {new_status} for the provided dates.",
+            "data": updated_dates
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "code": 500,
+            "error": f"An error occurred while updating the request status: {str(e)}"
         }), 500
 
 

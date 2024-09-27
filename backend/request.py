@@ -209,7 +209,6 @@ def get_all_requests():
                     "request_date": "2023-09-26",
                     "apply_reason": "Personal matters",
                     "reject_reason": null,
-                    "withdraw_reason": null
                 },
                 ...
             ]
@@ -226,8 +225,7 @@ def get_all_requests():
                 "staff_id": request.staff_id,
                 "request_date": request.request_date.isoformat(),
                 "apply_reason": request.apply_reason,
-                "reject_reason": request.reject_reason,
-                "withdraw_reason": request.withdraw_reason
+                "reject_reason": request.reject_reason
             } for request in requests]
 
             return jsonify({
@@ -346,11 +344,11 @@ def get_request_ids_by_staff_id(staff_id):
         }), 500
 
 
-# Add the reason if the request is rejected, withdrawn or cancelled
+# Add the reason if the request is rejected
 @app.route('/request/update_reason', methods=['PUT'])
 def update_reason():
     """
-    Update "reason" field when the request is rejected, withdrawn or cancelled
+    Update "reason" field when the request is rejected
     ---
     Parameters:
         request_id (int): The request ID
@@ -382,9 +380,6 @@ def update_reason():
                 "code": 404,
                 "message": f"No request found for request ID {request_id}."
             }), 404
-
-        if new_status == "Pending_Withdrawal" or new_status == "Withdrawn":
-            request_record.withdraw_reason = request.json.get('reason')
 
         if new_status == "Rejected":
             request_record.reject_reason = request.json.get('reason')
