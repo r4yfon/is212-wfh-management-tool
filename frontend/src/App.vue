@@ -5,21 +5,27 @@ import { ref, reactive } from 'vue';
 
 // State variables
 const dialog = ref(false);
+const applicationType = ref('oneDay'); // Toggles between "One Day" and "Recurring"
 const newEvent = reactive({
   staffId: '',
   date: '',
+  startDate: '',
+  endDate: '',
+  recurrence: '',
   time: '',
   reason: '',
 });
 const events = ref([]);
 
 const confirmApply = () => {
-  if (newEvent.staffId && newEvent.date && newEvent.time && newEvent.reason) {
+  if (newEvent.staffId && (newEvent.date || newEvent.startDate) && newEvent.time && newEvent.reason) {
     const event = {
       staffId: newEvent.staffId,
-      date: newEvent.date,
+      // date: newEvent.date,
+      date: applicationType.value === 'oneDay' ? newEvent.date : `${newEvent.startDate} to ${newEvent.endDate}`,
       time: newEvent.time,
       reason: newEvent.reason,
+      recurrence: applicationType.value === 'recurring' ? newEvent.recurrence : null,
       color: 'blue',
     };
 
@@ -30,6 +36,9 @@ const confirmApply = () => {
       staffId: '',
       date: '',
       time: '',
+      startDate: '',
+      endDate: '',
+      recurrence: '',
       reason: '',
     });
 
@@ -62,8 +71,35 @@ const confirmApply = () => {
               <!-- Event Title -->
               <VTextField v-model="newEvent.staffId" label="Staff ID" required></VTextField>
 
+              <!-- Toggle Buttons for One Day and Recurring -->
+              <v-btn-toggle v-model="applicationType" mandatory class="mb-4">
+                <v-btn value="oneDay" color="primary">One Day</v-btn>
+                <v-btn value="recurring" color="primary">Recurring</v-btn>
+              </v-btn-toggle>
+
+              <!-- One Day Request -->
+              <v-text-field
+                v-if="applicationType === 'oneDay'"
+                v-model="newEvent.date"
+                label="Date of Request"
+                type="date"
+                required
+              ></v-text-field>
+
+              <!-- Recurring Request Fields -->
+              <div v-if="applicationType === 'recurring'">
+                <v-text-field v-model="newEvent.startDate" label="Start Date" type="date" required></v-text-field>
+                <v-text-field v-model="newEvent.endDate" label="End Date" type="date" required></v-text-field>
+                <v-select
+                  v-model="newEvent.recurrence"
+                  :items="['Every Monday', 'Every Tuesday', 'Every Wednesday', 'Every Thursday', 'Every Friday']"
+                  label="Recurrence Type"
+                  required
+                ></v-select>
+              </div>
+
               <!-- Event Date -->
-              <VTextField v-model="newEvent.date" label="Date of Request" type="date" required></VTextField>
+              <!-- <VTextField v-model="newEvent.date" label="Date of Request" type="date" required></VTextField> -->
 
               <v-radio-group
                 v-model="newEvent.time"
