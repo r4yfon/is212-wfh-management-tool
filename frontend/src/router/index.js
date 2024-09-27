@@ -12,7 +12,7 @@ const router = createRouter({
     {
       path: "/weeklycalendar",
       name: "weeklycalendar",
-      component: () => import("../views/WeeklyCalendar.vue"),
+      component: () => import("../views/FullCalendar.vue"),
     },
   ],
 });
