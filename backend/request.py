@@ -59,15 +59,14 @@ class Request(db.Model):
     request_date = db.Column(db.Date, nullable=False)
     apply_reason = db.Column(db.String(100), nullable=False)
     reject_reason = db.Column(db.String(100), nullable=True)
-    withdraw_reason = db.Column(db.String(100), nullable=True)
 
-    def __init__(self, staff_id, request_date, apply_reason, reject_reason=None, withdraw_reason=None, request_id=None):
+    def __init__(self, staff_id, request_date, apply_reason, reject_reason=None, request_id=None):
         self.request_id = request_id
         self.staff_id = staff_id
         self.request_date = request_date
         self.apply_reason = apply_reason
         self.reject_reason = reject_reason
-        self.withdraw_reason = withdraw_reason
+
 
     def json(self):
         return {
@@ -76,7 +75,6 @@ class Request(db.Model):
             "request_date": self.request_date.isoformat(),
             "apply_reason": self.apply_reason,
             "reject_reason": self.reject_reason,
-            "withdraw_reason": self.withdraw_reason
         }
 
 
@@ -192,6 +190,61 @@ def create_request():
         return jsonify({
             "code": 500,
             "error": f"An error occurred while creating the request. Details: {str(e)}"
+        }), 500
+
+
+# Get all requests
+@app.route('/request/get_all_requests', methods=['GET'])
+def get_all_requests():
+    """
+    Get all WFH requests
+    ---
+    Success response:
+        {
+            "code": 200,
+            "data": [
+                {
+                    "request_id": 1,
+                    "staff_id": 140894,
+                    "request_date": "2023-09-26",
+                    "apply_reason": "Personal matters",
+                    "reject_reason": null,
+                    "withdraw_reason": null
+                },
+                ...
+            ]
+        }
+    """
+    try:
+        # Retrieve all requests from the database
+        requests = Request.query.all()
+
+        if requests:
+            # Format the response
+            request_list = [{
+                "request_id": request.request_id,
+                "staff_id": request.staff_id,
+                "request_date": request.request_date.isoformat(),
+                "apply_reason": request.apply_reason,
+                "reject_reason": request.reject_reason,
+                "withdraw_reason": request.withdraw_reason
+            } for request in requests]
+
+            return jsonify({
+                "code": 200,
+                "data": request_list
+            })
+        else:
+            return jsonify({
+                "code": 404,
+                "error": "No requests found."
+            }), 404
+
+    except Exception as e:
+        print("Error:", str(e))  # Debugging log
+        return jsonify({
+            "code": 500,
+            "error": f"An error occurred while fetching the requests. Details: {str(e)}"
         }), 500
 
 

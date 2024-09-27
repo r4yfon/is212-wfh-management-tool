@@ -33,7 +33,33 @@ def s_retrieve_requests():
     return jsonify(response)
 
 
+# manager view requests from requestors
+@app.route("/m_retrieve_requests", methods=['GET'])
+def m_retrieve_requests():
+    response = invoke_http("http://localhost:5000/employee/get_staff/" + staff_id, method='GET')
 
+    staff_list = []
+    for staff in response["data"]:    
+        staff_list.append((staff["staff_id"]))
+
+    staff_requests = invoke_http("http://localhost:5001/request/get_all_requests", method='GET')
+    
+    request_list = []
+    for request in staff_requests["data"]:
+        if request["staff_id"] in staff_list:
+            request_dict = {"staff_id": request["staff_id"], "request_id": request["request_id"], "request_dates": [], "reason": request["apply_reason"]}
+            request_list.append(request_dict)
+            staff_request_dates = invoke_http("http://localhost:5002/request_dates/get_by_request_id/" + str(request["request_id"]), method='GET')
+            for request_dates in staff_request_dates[0]["data"]:
+                request_dict["request_dates"].append(request_dates["request_date"])
+                request_dict["request_status"] = request_dates["request_status"]
+
+
+# Allow pending and pending cancel only, add in employee name
+
+
+    # Return the modified response including the request_dates
+    return jsonify(request_list)
 
 
 if __name__ == '__main__':

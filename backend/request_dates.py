@@ -47,14 +47,16 @@ class RequestDates(db.Model):
     request_shift = db.Column(db.String(5), nullable=False)
     request_status = db.Column(db.String(20), nullable=False)
     rescind_reason = db.Column(db.String(100), nullable=True)
+    withdraw_reason = db.Column(db.String(100), nullable=True)
 
-    def __init__(self, request_id, request_date, request_shift, request_date_id=None, request_status="Pending Approval", rescind_reason=None):
+    def __init__(self, request_id, request_date, request_shift, request_date_id=None, request_status="Pending Approval", withdraw_reason=None, rescind_reason=None):
         self.request_date_id = request_date_id
         self.request_id = request_id
         self.request_date = request_date
         self.request_shift = request_shift
         self.request_status = request_status
         self.rescind_reason = rescind_reason
+        self.withdraw_reason = withdraw_reason
 
     def json(self):
         return {
@@ -63,6 +65,7 @@ class RequestDates(db.Model):
             "request_date": self.request_date.isoformat(),
             "request_shift": self.request_shift,
             "request_status": self.request_status,
+            "withdraw_reason": self.withdraw_reason,
             "rescind_reason": self.rescind_reason,
         }
 
@@ -299,6 +302,15 @@ def change_status():
                         "message": "Rescind reason must be provided."
                     }), 400
                 request_date.rescind_reason = request.json.get('reason')
+
+            # If the new status is 'withdraw', update the Withdraw_Reason
+            if new_status == "withdraw":
+                if not request.json.get('reason'):
+                    return jsonify({
+                        "code": 400,
+                        "message": "Withdraw reason must be provided."
+                    }), 400
+                request_date.withdraw_reason = request.json.get('reason')
 
         # Commit the changes to the database
         db.session.commit()
