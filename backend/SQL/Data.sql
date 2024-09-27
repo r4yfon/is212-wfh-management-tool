@@ -605,16 +605,16 @@ VALUES
 -- Insert into Request Table
 INSERT INTO Request (Staff_ID, Request_Date, Apply_Reason, Reject_Reason)
 VALUES
-(150488, '2024-09-15', 'Family event', NULL, NULL),
-(150445, '2024-09-10', 'Medical appointment', NULL, NULL),
-(150446, '2024-09-12', 'Personal reasons', 'Insufficient documentation', NULL),
-(150632, '2024-09-11', 'Vacation', NULL, NULL),
-(150638, '2024-09-05', 'Family event', NULL, NULL),
-(150645, '2024-09-18', 'Conference', NULL, NULL),
-(151595, '2024-09-14', 'Personal reasons', 'Not enough staff coverage', NULL),
-(151591, '2024-09-13', 'Medical appointment', NULL, NULL),
-(151596, '2024-09-17', 'Family event', NULL, NULL),
-(151598, '2024-09-16', 'Vacation', 'Project deadline', NULL);
+(150488, '2024-09-15', 'Family event', NULL),
+(150445, '2024-09-10', 'Medical appointment', NULL),
+(150446, '2024-09-12', 'Personal reasons', 'Insufficient documentation'),
+(150632, '2024-09-11', 'Vacation', NULL),
+(150638, '2024-09-05', 'Family event', NULL),
+(150645, '2024-09-18', 'Conference', NULL),
+(151595, '2024-09-14', 'Personal reasons', 'Not enough staff coverage'),
+(151591, '2024-09-13', 'Medical appointment', NULL),
+(151596, '2024-09-17', 'Family event', NULL),
+(151598, '2024-09-16', 'Vacation', 'Project deadline');
 
 
 -- Insert into Request_Dates Table
