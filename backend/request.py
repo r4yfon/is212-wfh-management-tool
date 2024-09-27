@@ -3,49 +3,51 @@ from flask_sqlalchemy import SQLAlchemy
 from input_validation import string_length_valid, check_date_valid
 from os import environ
 import requests
+from employee import db, Employee
 
 app = Flask(__name__)
 app.config.from_object('config.Config')
-db = SQLAlchemy(app)
+# db = SQLAlchemy(app)
+db.init_app(app)
 
 
-class Employee(db.Model):
-    __tablename__ = "employee"
+# class Employee(db.Model):
+#     __tablename__ = "employee"
 
-    staff_id = db.Column(db.Integer, primary_key=True)
-    staff_fname = db.Column(db.String(50), nullable=False)
-    staff_lname = db.Column(db.String(50), nullable=False)
-    dept = db.Column(db.String(50), nullable=False)
-    position = db.Column(db.String(50), nullable=False)
-    country = db.Column(db.String(50), nullable=False)
-    email = db.Column(db.String(50), nullable=False)
-    reporting_manager = db.Column(
-        db.Integer, db.ForeignKey('employee.staff_id'), nullable=True)
-    role = db.Column(db.Integer, nullable=False)
+#     staff_id = db.Column(db.Integer, primary_key=True)
+#     staff_fname = db.Column(db.String(50), nullable=False)
+#     staff_lname = db.Column(db.String(50), nullable=False)
+#     dept = db.Column(db.String(50), nullable=False)
+#     position = db.Column(db.String(50), nullable=False)
+#     country = db.Column(db.String(50), nullable=False)
+#     email = db.Column(db.String(50), nullable=False)
+#     reporting_manager = db.Column(
+#         db.Integer, db.ForeignKey('employee.staff_id'), nullable=True)
+#     role = db.Column(db.Integer, nullable=False)
 
-    def __init__(self, staff_id, staff_fname, staff_lname, dept, position, country, email, role, reporting_manager=None):
-        self.staff_id = staff_id
-        self.staff_fname = staff_fname
-        self.staff_lname = staff_lname
-        self.dept = dept
-        self.position = position
-        self.country = country
-        self.email = email
-        self.reporting_manager = reporting_manager
-        self.role = role
+#     def __init__(self, staff_id, staff_fname, staff_lname, dept, position, country, email, role, reporting_manager=None):
+#         self.staff_id = staff_id
+#         self.staff_fname = staff_fname
+#         self.staff_lname = staff_lname
+#         self.dept = dept
+#         self.position = position
+#         self.country = country
+#         self.email = email
+#         self.reporting_manager = reporting_manager
+#         self.role = role
 
-    def json(self):
-        return {
-            "staff_id": self.staff_id,
-            "staff_fname": self.staff_fname,
-            "staff_lname": self.staff_lname,
-            "dept": self.dept,
-            "position": self.position,
-            "country": self.country,
-            "email": self.email,
-            "reporting_manager": self.reporting_manager,
-            "role": self.role
-        }
+#     def json(self):
+#         return {
+#             "staff_id": self.staff_id,
+#             "staff_fname": self.staff_fname,
+#             "staff_lname": self.staff_lname,
+#             "dept": self.dept,
+#             "position": self.position,
+#             "country": self.country,
+#             "email": self.email,
+#             "reporting_manager": self.reporting_manager,
+#             "role": self.role
+#         }
 
 
 class Request(db.Model):
@@ -57,15 +59,14 @@ class Request(db.Model):
     request_date = db.Column(db.Date, nullable=False)
     apply_reason = db.Column(db.String(100), nullable=False)
     reject_reason = db.Column(db.String(100), nullable=True)
-    withdraw_reason = db.Column(db.String(100), nullable=True)
 
-    def __init__(self, staff_id, request_date, apply_reason, reject_reason=None, withdraw_reason=None, request_id=None):
+    def __init__(self, staff_id, request_date, apply_reason, reject_reason=None, request_id=None):
         self.request_id = request_id
         self.staff_id = staff_id
         self.request_date = request_date
         self.apply_reason = apply_reason
         self.reject_reason = reject_reason
-        self.withdraw_reason = withdraw_reason
+
 
     def json(self):
         return {
@@ -74,13 +75,15 @@ class Request(db.Model):
             "request_date": self.request_date.isoformat(),
             "apply_reason": self.apply_reason,
             "reject_reason": self.reject_reason,
-            "withdraw_reason": self.withdraw_reason
         }
 
 
-request_dates_URL = environ.get('request_dates_URL') or "http://localhost:5002/request_dates"
+request_dates_URL = environ.get(
+    'request_dates_URL') or "http://localhost:5002/request_dates"
 
 # Create a new request
+
+
 @app.route('/request/create', methods=['POST'])
 def create_request():
     """
@@ -149,7 +152,7 @@ def create_request():
             return jsonify({
                 "code": 400,
                 "error": "Your selected range of dates are not within 2 months before and 3 months after the current date."
-            }),400
+            }), 400
 
         new_request = Request(
             staff_id=staff_id,
@@ -187,6 +190,59 @@ def create_request():
         return jsonify({
             "code": 500,
             "error": f"An error occurred while creating the request. Details: {str(e)}"
+        }), 500
+
+
+# Get all requests
+@app.route('/request/get_all_requests', methods=['GET'])
+def get_all_requests():
+    """
+    Get all WFH requests
+    ---
+    Success response:
+        {
+            "code": 200,
+            "data": [
+                {
+                    "request_id": 1,
+                    "staff_id": 140894,
+                    "request_date": "2023-09-26",
+                    "apply_reason": "Personal matters",
+                    "reject_reason": null,
+                },
+                ...
+            ]
+        }
+    """
+    try:
+        # Retrieve all requests from the database
+        requests = Request.query.all()
+
+        if requests:
+            # Format the response
+            request_list = [{
+                "request_id": request.request_id,
+                "staff_id": request.staff_id,
+                "request_date": request.request_date.isoformat(),
+                "apply_reason": request.apply_reason,
+                "reject_reason": request.reject_reason
+            } for request in requests]
+
+            return jsonify({
+                "code": 200,
+                "data": request_list
+            })
+        else:
+            return jsonify({
+                "code": 404,
+                "error": "No requests found."
+            }), 404
+
+    except Exception as e:
+        print("Error:", str(e))  # Debugging log
+        return jsonify({
+            "code": 500,
+            "error": f"An error occurred while fetching the requests. Details: {str(e)}"
         }), 500
 
 
@@ -288,11 +344,11 @@ def get_request_ids_by_staff_id(staff_id):
         }), 500
 
 
-# Add the reason if the request is rejected, withdrawn or cancelled
+# Add the reason if the request is rejected
 @app.route('/request/update_reason', methods=['PUT'])
 def update_reason():
     """
-    Update "reason" field when the request is rejected, withdrawn or cancelled
+    Update "reason" field when the request is rejected
     ---
     Parameters:
         request_id (int): The request ID
@@ -324,9 +380,6 @@ def update_reason():
                 "code": 404,
                 "message": f"No request found for request ID {request_id}."
             }), 404
-
-        if new_status == "Pending_Withdrawal" or new_status == "Withdrawn":
-            request_record.withdraw_reason = request.json.get('reason')
 
         if new_status == "Rejected":
             request_record.reject_reason = request.json.get('reason')

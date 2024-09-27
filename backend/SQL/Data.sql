@@ -25,7 +25,6 @@ CREATE TABLE Request (
     Request_Date DATE NOT NULL,
     Apply_Reason VARCHAR(100) NOT NULL,
     Reject_Reason VARCHAR(100),
-    Withdraw_Reason VARCHAR(100),
     CONSTRAINT FK_Staff_ID FOREIGN KEY (Staff_ID)
     REFERENCES Employee(Staff_ID)
 );
@@ -38,6 +37,7 @@ CREATE TABLE Request_Dates (
     Request_Date DATE NOT NULL,
     Request_Shift VARCHAR(5) NOT NULL,
     Request_Status VARCHAR(20) NOT NULL,
+    Withdraw_Reason VARCHAR(100),
     Rescind_Reason VARCHAR(100),
     CONSTRAINT FK_Request_ID FOREIGN KEY (Request_ID)
     REFERENCES Request(Request_ID)
@@ -603,33 +603,33 @@ VALUES
                 
 
 -- Insert into Request Table
-INSERT INTO Request (Staff_ID, Request_Date, Apply_Reason, Reject_Reason, Withdraw_Reason)
+INSERT INTO Request (Staff_ID, Request_Date, Apply_Reason, Reject_Reason)
 VALUES
-(150488, '2024-09-15', 'Family event', NULL, NULL),
-(150445, '2024-09-10', 'Medical appointment', NULL, NULL),
-(150446, '2024-09-12', 'Personal reasons', 'Insufficient documentation', NULL),
-(150632, '2024-09-11', 'Vacation', NULL, NULL),
-(150638, '2024-09-05', 'Family event', NULL, NULL),
-(150645, '2024-09-18', 'Conference', NULL, NULL),
-(151595, '2024-09-14', 'Personal reasons', 'Not enough staff coverage', NULL),
-(151591, '2024-09-13', 'Medical appointment', NULL, NULL),
-(151596, '2024-09-17', 'Family event', NULL, NULL),
-(151598, '2024-09-16', 'Vacation', 'Project deadline', NULL);
+(150488, '2024-09-15', 'Family event', NULL),
+(150445, '2024-09-10', 'Medical appointment', NULL),
+(150446, '2024-09-12', 'Personal reasons', 'Insufficient documentation'),
+(150632, '2024-09-11', 'Vacation', NULL),
+(150638, '2024-09-05', 'Family event', NULL),
+(150645, '2024-09-18', 'Conference', NULL),
+(151595, '2024-09-14', 'Personal reasons', 'Not enough staff coverage'),
+(151591, '2024-09-13', 'Medical appointment', NULL),
+(151596, '2024-09-17', 'Family event', NULL),
+(151598, '2024-09-16', 'Vacation', 'Project deadline');
 
 
 -- Insert into Request_Dates Table
-INSERT INTO Request_Dates (Request_ID, Request_Date, Request_Shift, Request_Status, Rescind_Reason)
+INSERT INTO Request_Dates (Request_ID, Request_Date, Request_Shift, Request_Status, Withdraw_Reason, Rescind_Reason)
 VALUES
-(1, '2024-09-15', 'PM', 'Approved', NULL),
-(1, '2024-09-22', 'Full', 'Approved', NULL),
-(1, '2024-09-29', 'AM', 'Approved', NULL),
-(2, '2024-09-10', 'Full', 'Pending Approval', NULL),
-(2, '2024-09-17', 'Full', 'Pending Approval', NULL),
-(3, '2024-09-12', 'AM', 'Rejected', NULL),
-(4, '2024-09-11', 'Full', 'Approved', NULL),
-(5, '2024-09-05', 'Full', 'Pending Approval', NULL),
-(6, '2024-09-18', 'Full', 'Approved', NULL),
-(7, '2024-09-14', 'Full', 'Rejected', NULL),
-(8, '2024-09-13', 'Full', 'Pending Approval', NULL),
-(9, '2024-09-17', 'PM', 'Approved', NULL),
-(10, '2024-09-16', 'Full', 'Rejected', NULL);
+(1, '2024-09-15', 'PM', 'Approved', NULL , NULL),
+(1, '2024-09-22', 'Full', 'Approved', NULL , NULL),
+(1, '2024-09-29', 'AM', 'Approved', NULL , NULL),
+(2, '2024-09-10', 'Full', 'Pending Approval', NULL , NULL),
+(2, '2024-09-17', 'Full', 'Pending Approval', NULL , NULL),
+(3, '2024-09-12', 'AM', 'Rejected', NULL , NULL),
+(4, '2024-09-11', 'Full', 'Approved', NULL , NULL),
+(5, '2024-09-05', 'Full', 'Pending Approval', NULL , NULL),
+(6, '2024-09-18', 'Full', 'Approved', NULL , NULL),
+(7, '2024-09-14', 'Full', 'Rejected', NULL , NULL),
+(8, '2024-09-13', 'Full', 'Pending Approval', NULL , NULL),
+(9, '2024-09-17', 'PM', 'Approved', NULL , NULL),
+(10, '2024-09-16', 'Full', 'Rejected', NULL , NULL);

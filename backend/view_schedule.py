@@ -51,13 +51,13 @@ def view_weekly_schedule(staff_id, date_entered):
 
             Example:
             {
-                "2023-10-01": "Home - PM",
-                "2023-10-02": "Office",
-                "2023-10-03": "Office",
-                "2023-10-04": "Office",
-                "2023-10-05": "Office",
-                "2023-10-06": "Office",
-                "2023-10-07": "Office",
+                "2023-10-01": ["WFH - PM"],
+                "2023-10-02": ["Office", "Pending: WFH - PM"],
+                "2023-10-03": ["Office", "Pending: WFH - Full"],
+                "2023-10-04": ["Office"],
+                "2023-10-05": ["Office"],
+                "2023-10-06": ["Office"],
+                "2023-10-07": ["Office"],
             }
     """
 
@@ -71,38 +71,14 @@ def view_weekly_schedule(staff_id, date_entered):
     week_start, week_end = get_week_from_date(date_entered)
     weekly_arrangement = {}
     for n in range((week_end - week_start).days + 1):
-        weekly_arrangement[str(week_start + timedelta(days=n))] = "Office"
+        weekly_arrangement[str(week_start + timedelta(days=n))] = ["Office"]
 
     # Query the requests submitted by the staff_id
     try:
-        # This will get all the WFH requests made by the staff_id
+        # This will get all the WFH requests made by the staff_id; check documentation in parent file for details
         all_request_ids = requests.get(
             f'{request_URL}/get_request_ids/{int(staff_id)}').json()['data']
 
-        """
-        Get requests based on the provided request_ids. The request_ids are all from the same staff_id.
-        ---
-        Parameters (in request body):
-            request_ids (list): A list of request IDs. [1, 2, 3]
-
-        Successful response:
-            {
-                "code": 200,
-                "data": [
-                    {
-                        "manager_approval_date": "2024-09-16",
-                        "request_date": "2024-09-15",
-                        "request_id": 1,
-                        "request_overall_status": "Approved",
-                        "request_shift": "PM",
-                        "request_status": "Approved",
-                        "request_submission_date": "Sun, 15 Sep 2024 00:00:00 GMT",
-                        "staff_id": 150488
-                    },
-                    ...
-                ]
-            }
-        """
         results = db.session.query(Request, RequestDates).join(
             RequestDates, Request.request_id == RequestDates.request_id
         ).filter(
@@ -124,9 +100,16 @@ def view_weekly_schedule(staff_id, date_entered):
         for request_info in requests_in_request_id:
             request_date = datetime.strptime(
                 request_info['request_date'], '%Y-%m-%d').date()
-            if week_start <= request_date <= week_end and request_info['request_status'] == 'Approved':
-                weekly_arrangement[str(
-                    request_date)] = f'Home - {request_info["request_shift"]}'
+            if week_start <= request_date <= week_end:
+                if request_info['request_status'] == 'Approved':
+                    weekly_arrangement[str(
+                        request_date)] = [f'WFH - {request_info["request_shift"]}']
+                elif request_info['request_status'] == 'Pending Withdrawal':
+                    weekly_arrangement[str(
+                        request_date)] = [f'Home - {request_info["request_shift"]}', "Pending: Office"]
+                elif request_info['request_status'] == 'Pending Approval':
+                    weekly_arrangement[str(
+                        request_date)] = ["Office", f'Pending: WFH - {request_info["request_shift"]}']
 
         return jsonify({
             "code": 200,
