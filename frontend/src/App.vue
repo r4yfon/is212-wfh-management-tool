@@ -1,50 +1,128 @@
 <script setup>
-import { RouterLink, RouterView } from 'vue-router'
-import { VTextField, VDatePicker, VBtn, VDialog, VCard, VCardTitle, VCardText, VCardActions, VSpacer } from 'vuetify/components'; 
-import { ref, reactive } from 'vue';
+  import { RouterLink, RouterView } from "vue-router";
+  import {
+    VTextField,
+    VBtn,
+    VDialog,
+    VCard,
+    VCardText,
+    VCardActions,
+    VSpacer,
+    VProgressCircular,
+  } from "vuetify/components";
+  import { ref, reactive } from "vue";
 
-// State variables
-const dialog = ref(false);
-const applicationType = ref('oneDay'); // Toggles between "One Day" and "Recurring"
-const newEvent = reactive({
-  staffId: '',
-  date: '',
-  startDate: '',
-  endDate: '',
-  recurrence: '',
-  time: '',
-  reason: '',
-});
-const events = ref([]);
+  // State variables
+  const dialog = ref(false);
+  const loading = ref(false);
+  const requestType = ref("one-time"); // Toggles between "One Day" and "Recurring"
+  const newEvent = reactive({
+    staffId: "",
+    date: "",
+    endDate: "",
+    dayOfWeek: "",
+    shift: "",
+    reason: "",
+  });
 
-const confirmApply = () => {
-  if (newEvent.staffId && (newEvent.date || newEvent.startDate) && newEvent.time && newEvent.reason) {
-    const event = {
-      staffId: newEvent.staffId,
-      // date: newEvent.date,
-      date: applicationType.value === 'oneDay' ? newEvent.date : `${newEvent.startDate} to ${newEvent.endDate}`,
-      time: newEvent.time,
-      reason: newEvent.reason,
-      recurrence: applicationType.value === 'recurring' ? newEvent.recurrence : null,
-      color: 'blue',
-    };
+  const updateRecurrenceDay = () => {
+    const date = new Date(newEvent.date);
+    newEvent.dayOfWeek = date.toLocaleString("en-US", { weekday: "long" });
+  };
 
-    events.value.push(event); // Add new event to the calendar
-
-    // Clear the form fields
-    Object.assign(newEvent, {
-      staffId: '',
-      date: '',
-      time: '',
-      startDate: '',
-      endDate: '',
-      recurrence: '',
-      reason: '',
-    });
-
-    dialog.value = false
+  function convertRecurringToObject(startDate, endDate, shift) {
+    const dates = {};
+    const startDateObj = new Date(startDate);
+    const endDateObj = new Date(endDate);
+    let currentDate = new Date(startDateObj);
+    while (currentDate <= endDateObj) {
+      dates[currentDate.toISOString().split("T")[0]] = shift;
+      currentDate.setDate(currentDate.getDate() + 7);
+    }
+    return dates;
   }
-};
+
+  function confirmApply() {
+    loading.value = true;
+    console.log("newEvent", newEvent);
+    if (
+      requestType.value === "one-time" &&
+      newEvent.staffId &&
+      newEvent.date &&
+      newEvent.shift &&
+      newEvent.reason
+    ) {
+      fetch("http://localhost:5001/request/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          staff_id: newEvent.staffId,
+          request_date: new Date().toISOString().split("T")[0],
+          request_dates: {
+            [newEvent.date]: newEvent.shift,
+          },
+          apply_reason: newEvent.reason,
+        }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          console.log("Success:", data);
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+        })
+        .finally(() => {
+          loading.value = false;
+          setTimeout(200);
+          dialog.value = false;
+        });
+    } else if (
+      requestType.value === "recurring" &&
+      newEvent.staffId &&
+      newEvent.date &&
+      newEvent.endDate &&
+      newEvent.shift &&
+      newEvent.reason
+    ) {
+      const recurringDates = convertRecurringToObject(
+        newEvent.date,
+        newEvent.endDate,
+        newEvent.shift,
+      );
+      fetch("http://localhost:5001/request/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          staff_id: newEvent.staffId,
+          request_date: new Date().toISOString().split("T")[0],
+          request_dates: recurringDates,
+          apply_reason: newEvent.reason,
+        }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          console.log("Success:", data);
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+        })
+        .finally(() => {
+          loading.value = false;
+          setTimeout(200);
+          dialog.value = false;
+        });
+    } else {
+      alert("Please fill in all required fields and try again.");
+      loading.value = false;
+    }
+    newEvent.staffId = "";
+    newEvent.date = "";
+    newEvent.endDate = "";
+    newEvent.shift = "";
+    newEvent.reason = "";
+    newEvent.requestType = "one-time";
+    newEvent.recurrence = "";
+  }
 </script>
 
 <template>
@@ -52,125 +130,133 @@ const confirmApply = () => {
     <!-- <div class="wrapper"> -->
     <v-col cols="12">
       <v-row align="center" justify="end" class="header-buttons">
-      <h1 class="title">WFH Management System</h1>
-      <v-spacer></v-spacer>
+        <h1 class="title">WFH Management System</h1>
+        <v-spacer></v-spacer>
 
-      <v-dialog v-model="dialog" max-width="400px">
-        <template v-slot:activator="{ props: activatorProps }">
-          <v-btn
-            v-bind="activatorProps"
-            color="primary"
-            text="Apply"
-            variant="flat"
-          ></v-btn>
-        </template>
+        <v-dialog v-model="dialog" max-width="400px">
+          <template v-slot:activator="{ props: activatorProps }">
+            <v-btn v-bind="activatorProps" color="primary" text="Apply" variant="flat"></v-btn>
+          </template>
 
-        <v-card title="Apply for Work From Home">
-          <v-card-text>
-            <v-form>
-              <!-- Event Title -->
-              <VTextField v-model="newEvent.staffId" label="Staff ID" required></VTextField>
+          <v-card title="Apply for Work From Home">
+            <v-card-text>
+              <v-form>
+                <!-- Event Title -->
+                <VTextField v-model="newEvent.staffId" label="Staff ID" required></VTextField>
 
-              <!-- Toggle Buttons for One Day and Recurring -->
-              <v-btn-toggle v-model="applicationType" mandatory class="mb-4">
-                <v-btn value="oneDay" color="primary">One Day</v-btn>
-                <v-btn value="recurring" color="primary">Recurring</v-btn>
-              </v-btn-toggle>
+                <!-- Toggle Buttons for One Day and Recurring -->
+                <v-btn-toggle v-model="requestType" mandatory class="mb-4">
+                  <v-btn value="one-time" color="primary">One Day</v-btn>
+                  <v-btn value="recurring" color="primary">Recurring</v-btn>
+                </v-btn-toggle>
 
-              <!-- One Day Request -->
-              <v-text-field
-                v-if="applicationType === 'oneDay'"
-                v-model="newEvent.date"
-                label="Date of Request"
-                type="date"
-                required
-              ></v-text-field>
+                <!-- One Day Request -->
+                <v-text-field
+                  v-if="requestType === 'one-time'"
+                  v-model="newEvent.date"
+                  label="Date of Request"
+                  type="date"
+                  required></v-text-field>
 
-              <!-- Recurring Request Fields -->
-              <div v-if="applicationType === 'recurring'">
-                <v-text-field v-model="newEvent.startDate" label="Start Date" type="date" required></v-text-field>
-                <v-text-field v-model="newEvent.endDate" label="End Date" type="date" required></v-text-field>
-                <v-select
-                  v-model="newEvent.recurrence"
-                  :items="['Every Monday', 'Every Tuesday', 'Every Wednesday', 'Every Thursday', 'Every Friday']"
-                  label="Recurrence Type"
-                  required
-                ></v-select>
-              </div>
+                <!-- Recurring Request Fields -->
+                <div v-if="requestType === 'recurring'">
+                  <v-text-field
+                    v-model="newEvent.date"
+                    label="Start Date"
+                    type="date"
+                    @change="updateRecurrenceDay"
+                    required></v-text-field>
+                  <v-text-field
+                    v-model="newEvent.endDate"
+                    label="End Date"
+                    type="date"
+                    required></v-text-field>
 
-              <!-- Event Date -->
-              <!-- <VTextField v-model="newEvent.date" label="Date of Request" type="date" required></VTextField> -->
+                  <p v-if="newEvent.date != '' && newEvent.endDate != ''">
+                    This event will repeat every {{ newEvent.dayOfWeek }} from
+                    {{ newEvent.date }} to
+                    {{ newEvent.endDate }}
+                  </p>
+                </div>
 
-              <v-radio-group
-                v-model="newEvent.time"
-                label="Timing for Work From Home"
-                row
-                required
-              >
-                <v-radio label="AM (09:00-13:00)" value="AM"></v-radio>
-                <v-radio label="PM (14:00-18:00)" value="PM"></v-radio>
-                <v-radio label="FULL (09:00-18:00)" value="Full"></v-radio>
-              </v-radio-group>
+                <!-- Event Date -->
+                <!-- <VTextField v-model="newEvent.date" label="Date of Request" type="date" required></VTextField> -->
 
-              <v-text-field v-model="newEvent.reason" label="Reason for Request" required></v-text-field>
+                <v-radio-group
+                  v-model="newEvent.shift"
+                  label="Timing for Work From Home"
+                  row
+                  required>
+                  <v-radio label="AM (09:00-13:00)" value="AM"></v-radio>
+                  <v-radio label="PM (14:00-18:00)" value="PM"></v-radio>
+                  <v-radio label="FULL (09:00-18:00)" value="Full"></v-radio>
+                </v-radio-group>
 
-            </v-form>
-          </v-card-text>
+                <v-text-field
+                  v-model="newEvent.reason"
+                  label="Reason for Request"
+                  required></v-text-field>
+              </v-form>
+            </v-card-text>
 
-          <v-card-actions>
-            <v-spacer></v-spacer>
+            <v-card-actions>
+              <v-spacer></v-spacer>
 
-            <v-btn color="green darken-1" text @click="confirmApply">
-              Apply
-            </v-btn>
-            <v-btn color="red darken-1" text @click="dialog = false">
-              Cancel
-            </v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
+              <v-btn color="green darken-1" text @click="confirmApply">
+                <span v-if="loading">
+                  <v-progress-circular
+                    indeterminate
+                    :size="15"
+                    :width="2"
+                    color="primary"></v-progress-circular>
+                </span>
+                Apply
+              </v-btn>
+              <v-btn color="red darken-1" text @click="dialog = false"> Cancel </v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
 
-    <v-menu>
-      <template v-slot:activator="{ props }">
-        <v-btn icon="mdi-dots-vertical" variant="text" v-bind="props"></v-btn>
-      </template>
-      <v-list>
-        <v-list-item>
-          <RouterLink to="/weeklycalendar">Own Weekly Schedule</RouterLink>
-        </v-list-item>
-      </v-list>
-    </v-menu>
-    </v-row>
+        <v-menu>
+          <template v-slot:activator="{ props }">
+            <v-btn icon="mdi-dots-vertical" variant="text" v-bind="props"></v-btn>
+          </template>
+          <v-list>
+            <v-list-item>
+              <RouterLink to="/weeklycalendar">Own Weekly Schedule</RouterLink>
+            </v-list-item>
+          </v-list>
+        </v-menu>
+      </v-row>
     </v-col>
-    
   </header>
 
-  <div class = "content">
+  <div class="content">
     <RouterView />
   </div>
 </template>
 
 <style scoped>
-header {
-  max-height: 100vh;
-  position: fixed; 
-  top: 0; 
-  left: 0;
-  right: 0;
-  height: 50px;
-  background-color: rgb(102, 136, 247); 
-  z-index: 1000; /* Ensures the header is always on top of other elements */
-  width: 100%;
-  display: flex;
-  justify-content: space-between; /* Space between title and nav */
-  align-items: center;
-  padding-left: 10px;
-}
+  header {
+    max-height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50px;
+    background-color: rgb(102, 136, 247);
+    z-index: 1000; /* Ensures the header is always on top of other elements */
+    width: 100%;
+    display: flex;
+    justify-content: space-between; /* Space between title and nav */
+    align-items: center;
+    padding-left: 10px;
+  }
 
-.header-buttons {
-  width: 100%;
-  justify-content: flex-end; /* Align buttons to the far right */
-}
+  .header-buttons {
+    width: 100%;
+    justify-content: flex-end; /* Align buttons to the far right */
+  }
 
   .content {
     padding-top: 30px;
