@@ -217,17 +217,20 @@
           </v-card>
         </v-dialog>
 
-        <v-menu>
-          <template v-slot:activator="{ props }">
-            <v-btn icon="mdi-dots-vertical" variant="text" v-bind="props"></v-btn>
-          </template>
-          <v-list>
-            <v-list-item>
-              <RouterLink to="/weeklycalendar">Own Weekly Schedule</RouterLink>
-            </v-list-item>
-          </v-list>
-        </v-menu>
-      </v-row>
+    <v-menu>
+      <template v-slot:activator="{ props }">
+        <v-btn icon="mdi-dots-vertical" variant="text" v-bind="props"></v-btn>
+      </template>
+      <v-list>
+        <v-list-item>
+          <RouterLink to="/weeklycalendar">Own Weekly Schedule</RouterLink>
+        </v-list-item>
+        <v-list-item>
+          <RouterLink to="/requestslist">Lists of WFH Requests</RouterLink>
+        </v-list-item>
+      </v-list>
+    </v-menu>
+    </v-row>
     </v-col>
   </header>
 
