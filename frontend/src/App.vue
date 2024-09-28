@@ -138,6 +138,9 @@ const confirmApply = () => {
         <v-list-item>
           <RouterLink to="/weeklycalendar">Own Weekly Schedule</RouterLink>
         </v-list-item>
+        <v-list-item>
+          <RouterLink to="/requestslist">Lists of WFH Requests</RouterLink>
+        </v-list-item>
       </v-list>
     </v-menu>
     </v-row>
