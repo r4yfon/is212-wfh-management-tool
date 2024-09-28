@@ -1,53 +1,18 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from input_validation import string_length_valid, check_date_valid
+import input_validation
 from os import environ
 import requests
 from employee import db, Employee
+from flask_cors import CORS
+
 
 app = Flask(__name__)
 app.config.from_object('config.Config')
+
 # db = SQLAlchemy(app)
 db.init_app(app)
-
-
-# class Employee(db.Model):
-#     __tablename__ = "employee"
-
-#     staff_id = db.Column(db.Integer, primary_key=True)
-#     staff_fname = db.Column(db.String(50), nullable=False)
-#     staff_lname = db.Column(db.String(50), nullable=False)
-#     dept = db.Column(db.String(50), nullable=False)
-#     position = db.Column(db.String(50), nullable=False)
-#     country = db.Column(db.String(50), nullable=False)
-#     email = db.Column(db.String(50), nullable=False)
-#     reporting_manager = db.Column(
-#         db.Integer, db.ForeignKey('employee.staff_id'), nullable=True)
-#     role = db.Column(db.Integer, nullable=False)
-
-#     def __init__(self, staff_id, staff_fname, staff_lname, dept, position, country, email, role, reporting_manager=None):
-#         self.staff_id = staff_id
-#         self.staff_fname = staff_fname
-#         self.staff_lname = staff_lname
-#         self.dept = dept
-#         self.position = position
-#         self.country = country
-#         self.email = email
-#         self.reporting_manager = reporting_manager
-#         self.role = role
-
-#     def json(self):
-#         return {
-#             "staff_id": self.staff_id,
-#             "staff_fname": self.staff_fname,
-#             "staff_lname": self.staff_lname,
-#             "dept": self.dept,
-#             "position": self.position,
-#             "country": self.country,
-#             "email": self.email,
-#             "reporting_manager": self.reporting_manager,
-#             "role": self.role
-#         }
+CORS(app)
 
 
 class Request(db.Model):
@@ -67,7 +32,6 @@ class Request(db.Model):
         self.apply_reason = apply_reason
         self.reject_reason = reject_reason
 
-
     def json(self):
         return {
             "request_id": self.request_id,
@@ -80,6 +44,8 @@ class Request(db.Model):
 
 request_dates_URL = environ.get(
     'request_dates_URL') or "http://localhost:5002/request_dates"
+request_URL = environ.get(
+    'request_dates_URL') or "http://localhost:5001"
 
 # Create a new request
 
@@ -120,24 +86,22 @@ def create_request():
         apply_reason = data.get('apply_reason')
 
         # Check if length of apply_reason is at most 100 characters
-        if not string_length_valid(input_string=apply_reason, max_length=100):
+        if input_validation.string_length_valid(input_string=apply_reason, max_length=100) == False:
             return jsonify({
                 "code": 400,
                 "error": "Your request reason is too long. Please keep it under 100 characters."
-            })
+            }), 400
 
         # Check if length of all requested_shifts are at most 5 characters
         # Not sure if needed, assuming requested_shifts will be radio buttons for frontend
         # TODO: check with frontend
         requested_shifts_concat_str = ''.join(request_dates.values())
         number_of_requested_shifts = len(request_dates)
-        if not string_length_valid(input_string=requested_shifts_concat_str, max_length=(number_of_requested_shifts * 5)):
+        if input_validation.string_length_valid(input_string=requested_shifts_concat_str, max_length=(number_of_requested_shifts * 5)) == False:
             return jsonify({
                 "code": 400,
                 "error": "One of more of your requested shifts is too long. Please keep it under 5 characters."
-            })
-
-        # TODO: check if staff already has a request for the same date
+            }), 400
 
         # Check if dates that staff request for is within 2 months before and 3 months after current date
         earliest_requested_date = next(iter(request_dates))
@@ -148,11 +112,57 @@ def create_request():
             if date > latest_requested_date:
                 latest_requested_date = date
 
-        if not check_date_valid(earliest_requested_date, latest_requested_date):
+        if input_validation.check_date_valid(earliest_requested_date, latest_requested_date) == False:
             return jsonify({
                 "code": 400,
                 "error": "Your selected range of dates are not within 2 months before and 3 months after the current date."
             }), 400
+
+        # TODO: check if staff already has a request for the same date
+
+        # get all existing requests from staff_id
+        try:
+            response = requests.get(
+                f'{request_URL}/request/get_all_requests/{staff_id}')
+            if response.status_code == 200:
+                employee_requests = response.json()['data']
+            else:
+                employee_requests = []
+        except Exception as e:
+            return jsonify({
+                "code": 500,
+                "error": f"An error occurred while getting employee requests for staff_id {staff_id}: {e}"
+            }), 500
+
+        existing_request_ids = []
+        for request_details in employee_requests:
+            existing_request_ids.append(request_details["request_id"])
+
+        # get all dates that staff has requested for from request_ids
+        try:
+            payload = {
+                "request_ids": existing_request_ids
+            }
+            print(payload)
+            response = requests.post(
+                f'{request_dates_URL}/get_by_request_ids', json=payload)
+            if response.status_code == 200:
+                requested_dates = response.json()['data']
+            else:
+                requested_dates = []
+        except Exception as e:
+            return jsonify({
+                "code": 500,
+                "error": f"An error occurred while getting employee requests for staff_id {staff_id}: {e}"
+            }), 500
+        print(requested_dates)
+        print(request_dates)
+        for date in request_dates:
+            if input_validation.has_existing_request(requested_dates, date) == True:
+                return jsonify({
+                    "code": 400,
+                    "error": f"You already have a request for this date: {date}."
+                }), 400
 
         new_request = Request(
             staff_id=staff_id,

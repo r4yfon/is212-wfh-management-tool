@@ -257,7 +257,7 @@ def get_request_dates_in_batch():
                 "code": 200,
                 "data": [request_date.json() for request_date in request_dates]
             }
-        )
+        ), 200
     except Exception as e:
         return jsonify({
             "code": 404,

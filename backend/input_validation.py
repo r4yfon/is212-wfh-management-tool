@@ -21,7 +21,7 @@ def string_length_valid(input_string, min_length=0, max_length=None):
     else:
         return False
 
-def has_existing_request(employee_requests, employee_id, request_date):
+def has_existing_request(employee_requests, request_date):
     """
     Checks if the employee already has an existing request for the given date.
 
@@ -33,8 +33,9 @@ def has_existing_request(employee_requests, employee_id, request_date):
     Returns:
         bool: True if there is an existing request for the given date, False otherwise.
     """
+
     for request in employee_requests:
-        if request['employee_id'] == employee_id and request['request_date'] == request_date:
+        if request['request_date'] == request_date:
             return True
     return False
 

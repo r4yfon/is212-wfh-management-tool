@@ -14,6 +14,11 @@ const router = createRouter({
       name: "weeklycalendar",
       component: () => import("../views/FullCalendar.vue"),
     },
+    {
+      path: "/requestslist",
+      name: "requestslist",
+      component: () => import("../views/RequestsList.vue"),
+    },
   ],
 });
 
