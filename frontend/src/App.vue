@@ -135,7 +135,7 @@
 
         <v-dialog v-model="dialog" max-width="400px">
           <template v-slot:activator="{ props: activatorProps }">
-            <v-btn v-bind="activatorProps" color="primary" text="Apply" variant="flat"></v-btn>
+            <v-btn v-bind="activatorProps" color="black" text="Apply" variant="outlined"></v-btn>
           </template>
 
           <v-card title="Apply for Work From Home">
@@ -201,7 +201,7 @@
 
             <v-card-actions>
               <v-spacer></v-spacer>
-
+              <v-btn text @click="dialog = false"> Cancel </v-btn>
               <v-btn color="green darken-1" text @click="confirmApply">
                 <span v-if="loading">
                   <v-progress-circular
@@ -212,7 +212,6 @@
                 </span>
                 Apply
               </v-btn>
-              <v-btn color="red darken-1" text @click="dialog = false"> Cancel </v-btn>
             </v-card-actions>
           </v-card>
         </v-dialog>

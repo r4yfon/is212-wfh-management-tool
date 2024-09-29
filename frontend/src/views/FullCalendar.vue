@@ -1,7 +1,9 @@
 <template>
-  <div class="calendar-container">
-    <FullCalendar :options="calendarOptions" class="calendar" />
+  <div class= "calendar-container">
+    <FullCalendar :options="calendarOptions" class= "calendar" />
   </div>
+  
+   
 </template>
 
 <script>
@@ -37,12 +39,12 @@ export default {
         "WFH - PM": "purple",
         "WFH - Full": "purple",
         Office: "blue",
-        "Pending: WFH - AM": "grey",
-        "Pending: WFH - PM": "grey",
-        "Pending: WFH - Full": "grey",
-        "Pending Withdraw: WFH - AM": "orange",
-        "Pending Withdrawal: WFH - PM": "orange",
-        "Pending Withdrawal: WFH - Full": "orange",
+        "Pending: WFH - AM": "orange",
+        "Pending: WFH - PM": "orange",
+        "Pending: WFH - Full": "orange",
+        "Pending Withdrawal: WFH - AM": "pink",
+        "Pending Withdrawal: WFH - PM": "pink",
+        "Pending Withdrawal: WFH - Full": "pink",
       },
       scheduleData: {},
       currentDate: new Date(),
