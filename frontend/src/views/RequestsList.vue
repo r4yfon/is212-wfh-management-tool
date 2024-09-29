@@ -90,145 +90,52 @@ export default {
       search: "",
       withdrawDialog: false,
       withdrawReason: "",
-      selectedItem: null, // Track the selected item for withdrawal
-      items: this.formatData(),
+      selectedItem: null,
+      items: [],
     };
+  },
+  created() {
+    this.formatData();
   },
   methods: {
     // Format the data to the structure needed for the table
     formatData() {
-      const rawData = [
-        {
-          apply_reason: "Family event",
-          reject_reason: null,
-          request_date: "2024-09-15",
-          request_id: 1,
-          staff_id: 150488,
-          wfh_dates: [
-            {
-              code: 200,
-              data: [
-                {
-                  request_date: "2024-09-15",
-                  request_shift: "PM",
-                  request_status: "Approved",
-                  withdraw_reason: null
-                },
-                {
-                  request_date: "2024-09-22",
-                  request_shift: "Full",
-                  request_status: "Pending Approval",
-                  withdraw_reason: null
-                },
-                {
-                  request_date: "2024-09-29",
-                  request_shift: "AM",
-                  request_status: "Rejected",
-                  withdraw_reason: null
-                },
-                {
-                  request_date: "2024-09-15",
-                  request_shift: "PM",
-                  request_status: "Approved",
-                  withdraw_reason: null
-                },
-                {
-                  request_date: "2024-09-30",
-                  request_shift: "AM",
-                  request_status: "Pending Approval",
-                  withdraw_reason: null
-                },
-                {
-                  request_date: "2024-09-15",
-                  request_shift: "Full",
-                  request_status: "Approved",
-                  withdraw_reason: null
-                },
-                {
-                  request_date: "2024-09-25",
-                  request_shift: "PM",
-                  request_status: "Approved",
-                  withdraw_reason: null
-                },
-                {
-                  request_date: "2024-09-24",
-                  request_shift: "PM",
-                  request_status: "Rejected",
-                  withdraw_reason: null
-                },
-                {
-                  request_date: "2024-09-23",
-                  request_shift: "PM",
-                  request_status: "Approved",
-                  withdraw_reason: null
-                },
-                {
-                  request_date: "2024-09-15",
-                  request_shift: "PM",
-                  request_status: "Approved",
-                  withdraw_reason: null
-                },
-                {
-                  request_date: "2024-09-16",
-                  request_shift: "PM",
-                  request_status: "Approved",
-                  withdraw_reason: null
-                },
-                {
-                  request_date: "2024-09-17",
-                  request_shift: "AM",
-                  request_status: "Approved",
-                  withdraw_reason: null
-                },
-
-              ]
+    fetch(`http://localhost:5101/s_retrieve_requests`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
             }
-          ]
-        },
-        {
-          apply_reason: "Family event",
-          reject_reason: null,
-          request_date: "2024-10-15",
-          request_id: 11,
-          staff_id: 150488,
-          wfh_dates: [
-            {
-              code: 200,
-              data: [
-                {
-                  request_date: "2024-10-15",
-                  request_shift: "PM",
-                  request_status: "Approved",
-                  withdraw_reason: null
-                }
-              ]
-            }
-          ]
-        }
-      ];
+            return response.json();
+        })
+        .then(data => {
+            const rawData = data["data"];
 
-      return rawData.flatMap((item) =>
-        item.wfh_dates[0].data.map((wfh) => ({
-          dateRequested: item.request_date,
-          WFHRequestDate: wfh.request_date,
-          shift: wfh.request_shift,
-          status: wfh.request_status,
-          withdraw: wfh.withdraw_reason
-        }))
-      );
+            this.items = rawData.flatMap((item) =>
+                item.wfh_dates[0].data.map((wfh) => ({
+                    request_date: item.request_date,
+                    wfhRequestDate: wfh.request_date,
+                    shift: wfh.request_shift,
+                    status: wfh.request_status,
+                    withdraw: wfh.withdraw_reason,
+                }))
+            );
+        })
+        .catch(error => {
+            console.error('Error fetching requests:', error);
+        });
     },
-    
+
     // Determine if the Withdraw button should be shown (Approved or Pending statuses only)
     canWithdraw(status) {
       return status === "Approved" || status === "Pending Approval";
     },
-    
+
     // Get status color classes for each status
     getStatusColor(status) {
       if (status === "Approved") return "text-success";
       if (status === "Rejected") return "text-error";
       if (status === "Pending Withdrawal") return "text-pink";
-      return "text-warning"; // For Pending Approval
+      return "text-warning";
     },
 
     // Open the Withdraw dialog
@@ -240,13 +147,48 @@ export default {
 
     // Confirm withdrawal action
     confirmWithdraw(item) {
-      item.withdraw_reason = this.withdrawReason;
-      item.status = "Pending Withdrawal";
-      this.withdrawDialog = false;
+        item.withdraw_reason = this.withdrawReason;
+        let new_status;
+
+        if (item.status === "Approved") {
+            new_status = "Pending Withdrawal";
+        } else {
+            new_status = "Withdrawn";
+        }
+
+        const data = {
+            "request_id": "1",
+            "status": new_status,
+            "reason": item.withdraw_reason
+        };
+
+        fetch(`http://localhost:5002/request_dates/change_all_status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(responseData => {
+            console.log('Success:', responseData); // Handle success response
+        })
+        .catch(error => console.error('Error updating status:', error));
+        
+        this.withdrawDialog = false;
     }
+
   }
 };
+
 </script>
+
+
 
 
 

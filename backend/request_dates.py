@@ -1,12 +1,13 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from request import db, Request
+from flask_cors import CORS
 
 app = Flask(__name__)
 app.config.from_object('config.Config')
 # db = SQLAlchemy(app)
 db.init_app(app)
-
+CORS(app)
 
 # Defining the tables
 # class Request(db.Model):

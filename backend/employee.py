@@ -1,10 +1,11 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
 
 app = Flask(__name__)
 app.config.from_object('config.Config')
 db = SQLAlchemy(app)
-
+CORS(app)
 
 class Employee(db.Model):
     __tablename__ = "employee"

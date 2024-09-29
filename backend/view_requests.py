@@ -1,13 +1,14 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from invokes import invoke_http
+from flask_cors import CORS
 
 app = Flask(__name__)
 app.config.from_object('config.Config')
 db = SQLAlchemy(app)
-
+CORS(app)
 #######################################################
-staff_id = "150555"
+staff_id = "150488"
 
 # Staff view own requests
 @app.route("/s_retrieve_requests", methods=['GET'])
