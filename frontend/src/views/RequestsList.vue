@@ -1,189 +1,172 @@
 <template>
-  <div class="requests-container"> 
-      <v-card flat>
-          <v-card-title class="d-flex align-center pe-2">
-          Requests List
-          <v-spacer></v-spacer>
-          <v-text-field
-              v-model="search"
-              density="compact"
-              label="Search"
-              prepend-inner-icon="mdi-magnify"
-              variant="solo-filled"
-              flat
-              hide-details
-              single-line
-          ></v-text-field>
-          </v-card-title>
-  
-          <v-divider></v-divider>
-  
-          <!-- Define the Data Table with headers and items -->
-          <v-data-table v-model:search="search" :items="items">
-          
-              <!-- Date Requested Column -->
-              <template v-slot:item.request_date="{ item }">
-                  <div>{{ item.request_date }}</div>
-              </template>
-  
-              <!-- WFH Request Date Column -->
-              <template v-slot:item.wfhRequestDate="{ item }">
-                  <div>{{ item.wfhRequestDate }}</div>
-              </template>
+    <div class="requests-container">
+        <v-card flat>
+            <v-card-title class="d-flex align-center pe-2">
+                Requests List
+                <v-spacer></v-spacer>
+                <v-text-field v-model="search" density="compact" label="Search" prepend-inner-icon="mdi-magnify"
+                    variant="solo-filled" flat hide-details single-line></v-text-field>
+            </v-card-title>
 
-              <!-- Shift Column -->
-              <template v-slot:item.shift="{ item }">
-                  <div>{{ item.shift }}</div>
-              </template>
-  
-              <!-- Status Column with color coding -->
-              <template v-slot:item.status="{ item }">
-                  <div :class="getStatusColor(item.status)">
-                  {{ item.status }}
-                  </div>
-              </template>
-  
-              <!-- Withdraw Column -->
-              <template v-slot:item.withdraw="{ item }">
-                  <div class="text-end">
-                  <!-- Show Withdraw button only for Approved or Pending statuses -->
-                  <v-btn
-                      v-if="canWithdraw(item.status)"
-                      @click="openWithdrawDialog(item)"
-                      color="pink"
-                      variant="outlined"
-                      small
-                  >
-                      Withdraw
-                  </v-btn>
-                  </div>
-              </template>
-          </v-data-table>
-      </v-card>
+            <v-divider></v-divider>
 
-      <!-- Withdraw Dialog -->
-      <v-dialog v-model="withdrawDialog" max-width="600">
-          <v-card>
-          <v-card-title>Withdraw Request</v-card-title>
-          <v-card-text>
-              <v-text-field
-                  v-model="withdrawReason"
-                  label="Reason for withdrawal"
-                  outlined
-              ></v-text-field>
-          </v-card-text>
-          <v-card-actions>
-              <v-btn @click="withdrawDialog = false" text>Cancel</v-btn>
-              <v-btn @click="confirmWithdraw(selectedItem)" color="pink" text>Confirm</v-btn>
-          </v-card-actions>
-          </v-card>
-      </v-dialog>
+            <!-- Define the Data Table with headers and items -->
+            <v-data-table v-model:search="search" :items="items">
 
-  </div>
+                <!-- Date Requested Column -->
+                <template v-slot:item.request_date="{ item }">
+                    <div>{{ item.request_date }}</div>
+                </template>
+
+                <!-- WFH Request Date Column -->
+                <template v-slot:item.wfhRequestDate="{ item }">
+                    <div>{{ item.wfhRequestDate }}</div>
+                </template>
+
+                <!-- Shift Column -->
+                <template v-slot:item.shift="{ item }">
+                    <div>{{ item.shift }}</div>
+                </template>
+
+                <!-- Status Column with color coding -->
+                <template v-slot:item.status="{ item }">
+                    <div :class="getStatusColor(item.status)">
+                        {{ item.status }}
+                    </div>
+                </template>
+
+                <!-- Withdraw Column -->
+                <template v-slot:item.withdraw="{ item }">
+                    <div class="text-end">
+                        <!-- Show Withdraw button only for Approved or Pending statuses -->
+                        <v-btn v-if="canWithdraw(item.status)" @click="openWithdrawDialog(item)" color="pink"
+                            variant="outlined" small>
+                            Withdraw
+                        </v-btn>
+                    </div>
+                </template>
+            </v-data-table>
+        </v-card>
+
+        <!-- Withdraw Dialog -->
+        <v-dialog v-model="withdrawDialog" max-width="600">
+            <v-card>
+                <v-card-title>Withdraw Request</v-card-title>
+                <v-card-text>
+                    <v-text-field v-model="withdrawReason" label="Reason for withdrawal" outlined></v-text-field>
+                </v-card-text>
+                <v-card-actions>
+                    <v-btn @click="withdrawDialog = false" text>Cancel</v-btn>
+                    <v-btn @click="confirmWithdraw(selectedItem)" color="pink" text>Confirm</v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+
+    </div>
 </template>
 
 
 <script>
 export default {
-  data() {
-    return {
-      search: "",
-      withdrawDialog: false,
-      withdrawReason: "",
-      selectedItem: null,
-      items: [],
-    };
-  },
-  created() {
-    this.formatData();
-  },
-  methods: {
-    // Format the data to the structure needed for the table
-    formatData() {
-    fetch(`http://localhost:5101/s_retrieve_requests`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
+    data() {
+        return {
+            search: "",
+            withdrawDialog: false,
+            withdrawReason: "",
+            selectedItem: null,
+            items: [],
+        };
+    },
+    created() {
+        this.formatData();
+    },
+    methods: {
+        // Format the data to the structure needed for the table
+        formatData() {
+            fetch(`http://localhost:5101/s_retrieve_requests`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const rawData = data["data"];
+
+                    this.items = rawData.flatMap((item) =>
+                        item.wfh_dates[0].data.map((wfh) => ({
+                            request_date: item.request_date,
+                            wfhRequestDate: wfh.request_date,
+                            shift: wfh.request_shift,
+                            status: wfh.request_status,
+                            withdraw: wfh.withdraw_reason,
+                        }))
+                    );
+                })
+                .catch(error => {
+                    console.error('Error fetching requests:', error);
+                });
+        },
+
+        // Determine if the Withdraw button should be shown (Approved or Pending statuses only)
+        canWithdraw(status) {
+            return status === "Approved" || status === "Pending Approval";
+        },
+
+        // Get status color classes for each status
+        getStatusColor(status) {
+            if (status === "Approved") return "text-success";
+            if (status === "Rejected") return "text-error";
+            if (status === "Pending Withdrawal") return "text-pink";
+            return "text-warning";
+        },
+
+        // Open the Withdraw dialog
+        openWithdrawDialog(item) {
+            this.selectedItem = item;
+            this.withdrawReason = "";
+            this.withdrawDialog = true;
+        },
+
+        // Confirm withdrawal action
+        confirmWithdraw(item) {
+            item.withdraw_reason = this.withdrawReason;
+            let new_status;
+
+            if (item.status === "Approved") {
+                new_status = "Pending Withdrawal";
+            } else {
+                new_status = "Withdrawn";
             }
-            return response.json();
-        })
-        .then(data => {
-            const rawData = data["data"];
 
-            this.items = rawData.flatMap((item) =>
-                item.wfh_dates[0].data.map((wfh) => ({
-                    request_date: item.request_date,
-                    wfhRequestDate: wfh.request_date,
-                    shift: wfh.request_shift,
-                    status: wfh.request_status,
-                    withdraw: wfh.withdraw_reason,
-                }))
-            );
-        })
-        .catch(error => {
-            console.error('Error fetching requests:', error);
-        });
-    },
+            const data = {
+                "request_id": "1",
+                "status": new_status,
+                "reason": item.withdraw_reason
+            };
 
-    // Determine if the Withdraw button should be shown (Approved or Pending statuses only)
-    canWithdraw(status) {
-      return status === "Approved" || status === "Pending Approval";
-    },
+            fetch(`http://localhost:5002/request_dates/change_all_status`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(responseData => {
+                    console.log('Success:', responseData); // Handle success response
+                })
+                .catch(error => console.error('Error updating status:', error));
 
-    // Get status color classes for each status
-    getStatusColor(status) {
-      if (status === "Approved") return "text-success";
-      if (status === "Rejected") return "text-error";
-      if (status === "Pending Withdrawal") return "text-pink";
-      return "text-warning";
-    },
-
-    // Open the Withdraw dialog
-    openWithdrawDialog(item) {
-      this.selectedItem = item;
-      this.withdrawReason = "";
-      this.withdrawDialog = true;
-    },
-
-    // Confirm withdrawal action
-    confirmWithdraw(item) {
-        item.withdraw_reason = this.withdrawReason;
-        let new_status;
-
-        if (item.status === "Approved") {
-            new_status = "Pending Withdrawal";
-        } else {
-            new_status = "Withdrawn";
+            this.withdrawDialog = false;
         }
 
-        const data = {
-            "request_id": "1",
-            "status": new_status,
-            "reason": item.withdraw_reason
-        };
-
-        fetch(`http://localhost:5002/request_dates/change_all_status`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(responseData => {
-            console.log('Success:', responseData); // Handle success response
-        })
-        .catch(error => console.error('Error updating status:', error));
-        
-        this.withdrawDialog = false;
     }
-
-  }
 };
 
 </script>
@@ -194,40 +177,45 @@ export default {
 
 <style scoped>
 .requests-container {
-display: flex;
-justify-content: center;   
-align-items: flex-start;   
-box-sizing: border-box;   
-width: 95%;                    
-max-height: calc(100vh - 80px);      
-position: fixed;                 
-top: 80px;                       /* Position below the header */
-left: 50%;                       /* Center horizontally */
-transform: translateX(-50%);   /* Include padding in total height/width */
-overflow-y: auto;                /* Allow vertical scrolling for overflow */
-bottom: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    box-sizing: border-box;
+    width: 95%;
+    max-height: calc(100vh - 80px);
+    position: fixed;
+    top: 80px;
+    /* Position below the header */
+    left: 50%;
+    /* Center horizontally */
+    transform: translateX(-50%);
+    /* Include padding in total height/width */
+    overflow-y: auto;
+    /* Allow vertical scrolling for overflow */
+    bottom: 40px;
 }
 
 
 /* Hide scrollbars for Chrome and Safari */
 .requests::-webkit-scrollbar {
-display: none; /* Safari and Chrome */
+    display: none;
+    /* Safari and Chrome */
 }
 
 /* Hide scrollbars for Firefox */
 .requests {
-scrollbar-width: none; /* Firefox */
+    scrollbar-width: none;
+    /* Firefox */
 }
 
 /* Responsive styles for smaller screens */
 @media (max-width: 768px) {
-.requests {
-  width: 100%;                  
-  height: calc(100vh - 80px);     
-  top: 80px;                    
-  left: 0;                      
-  transform: none;              
+    .requests {
+        width: 100%;
+        height: calc(100vh - 80px);
+        top: 80px;
+        left: 0;
+        transform: none;
+    }
 }
-}
-
-</style> 
+</style>

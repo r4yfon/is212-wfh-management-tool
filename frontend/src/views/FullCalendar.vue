@@ -1,9 +1,7 @@
 <template>
-  <div class= "calendar-container">
-    <FullCalendar :options="calendarOptions" class= "calendar" />
+  <div class="calendar-container">
+    <FullCalendar :options="calendarOptions" class="calendar" />
   </div>
-  
-   
 </template>
 
 <script>
