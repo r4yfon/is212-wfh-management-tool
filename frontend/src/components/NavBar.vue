@@ -10,12 +10,13 @@ import {
   VSpacer,
   VProgressCircular,
 } from "vuetify/components";
+import { within_word_count, two_months_before, three_months_after } from "@/inputValidation";
 </script>
 
 <template>
   <header class="container-fluid position-sticky bg-info-subtle py-1 py-md-3 z-3">
     <!-- <div class="wrapper"> -->
-    <v-col cols="12" class="container">
+    <v-col cols="12">
       <v-row align="center" justify="end" class="header-buttons">
         <!-- hambuger menu for mobile -->
         <v-btn class="d-md-none" icon="mdi-menu" variant="plain" @click="toggleMenu"></v-btn>
@@ -48,21 +49,15 @@ import {
                 </v-btn-toggle>
 
                 <!-- One Day Request -->
-                <v-text-field v-if="requestType === 'one-time'" v-model="newEvent.date" label="Date of Request"
-                  type="date" required></v-text-field>
-
-                <!-- Recurring Request Fields -->
-                <div v-if="requestType === 'recurring'">
-                  <v-text-field v-model="newEvent.date" label="Start Date" type="date" @change="updateRecurrenceDay"
-                    required></v-text-field>
-                  <v-text-field v-model="newEvent.endDate" label="End Date" type="date" required></v-text-field>
-
-                  <p v-if="newEvent.date != '' && newEvent.endDate != ''">
-                    This event will repeat every {{ newEvent.dayOfWeek }} from
-                    {{ newEvent.date }} to
-                    {{ newEvent.endDate }}
-                  </p>
-                </div>
+                <v-text-field v-model="newEvent.date" label="Date of Request" type="date" :min="twoWeeksBefore"
+                  :max="threeMonthsAfter" required></v-text-field>
+                <v-text-field v-if="requestType == 'recurring'" v-model="newEvent.endDate" label="End Date" type="date"
+                  :min="newEvent.date" :max="threeMonthsAfter" required></v-text-field>
+                <p v-if="newEvent.date != '' && newEvent.endDate != ''">
+                  This event will repeat every {{ dayOfWeek }} from
+                  {{ newEvent.date }} to
+                  {{ newEvent.endDate }}
+                </p>
 
                 <v-radio-group v-model="newEvent.shift" label="Timing for Work From Home" row required>
                   <v-radio label="AM (09:00-13:00)" value="AM"></v-radio>
@@ -70,7 +65,8 @@ import {
                   <v-radio label="FULL (09:00-18:00)" value="Full"></v-radio>
                 </v-radio-group>
 
-                <v-text-field v-model="newEvent.reason" label="Reason for Request" required></v-text-field>
+                <v-text-field v-model="newEvent.reason" label="Reason for Request" :counter="100"
+                  :rules="[within_word_count]" required></v-text-field>
               </v-form>
             </v-card-text>
             <v-card-actions>
@@ -126,23 +122,31 @@ export default {
       loading: false,
       requestType: "one-time",
       isMenuOpen: false,
+      dayOfWeek: "",
+      twoWeeksBefore: "",
+      threeMonthsAfter: "",
       newEvent: {
         staffId: "",
         date: "",
         endDate: "",
-        dayOfWeek: "",
         shift: "",
         reason: "",
       },
     }
   },
+  mounted() {
+    this.twoWeeksBefore = two_months_before(new Date());
+    this.threeMonthsAfter = three_months_after(new Date());
+  },
+  watch: {
+    "newEvent.date"() {
+      const date = new Date(this.newEvent.date);
+      this.dayOfWeek = date.toLocaleString("en-US", { weekday: "long" });
+    },
+  },
   methods: {
     toggleMenu() {
       this.isMenuOpen = !this.isMenuOpen;
-    },
-    updateRecurrenceDay() {
-      const date = new Date(this.newEvent.date);
-      this.newEvent.dayOfWeek = date.toLocaleString("en-US", { weekday: "long" });
     },
     convertRecurringToObject(startDate, endDate, shift) {
       const dates = {};
@@ -239,3 +243,9 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+header {
+  box-shadow: 0 3px 12px #00000014;
+}
+</style>
