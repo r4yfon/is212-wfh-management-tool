@@ -44,6 +44,18 @@ CREATE TABLE Request_Dates (
 );
 
 
+-- Create Status_Log Table
+CREATE TABLE Status_Log (
+    log_id INT PRIMARY KEY AUTO_INCREMENT,
+    request_id INT,
+    log_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    action VARCHAR(100) NOT NULL,
+    reason VARCHAR(100),
+    CONSTRAINT FK_Request_Log FOREIGN KEY (request_id)
+    REFERENCES Request(Request_ID)
+);
+
+
 INSERT INTO Employee (Staff_ID, Staff_FName, Staff_LName, Dept, Position, Country, Email, Reporting_Manager, Role) 
 VALUES 
 (130002, 'Jack', 'Sim', 'CEO', 'MD', 'Singapore', 'jack.sim@allinone.com.sg', 130002, 1),

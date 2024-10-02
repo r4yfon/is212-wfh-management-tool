@@ -338,7 +338,7 @@ def change_partial_status():
         request_id = request.json.get('request_id')
         new_status = request.json.get('status')
         reason = request.json.get('reason')
-        dates = request.json.get('dates')  # List of dates to update
+        dates = request.json.get('dates')
 
         # Check if all necessary data is provided
         if not request_id or not new_status or not dates:
@@ -445,6 +445,36 @@ def get_staff_request(request_id):
             "code": 500,
             "error": "An error occurred while retrieving request dates. " + str(e)
         }), 500
+
+
+@app.route('/request_dates/auto_reject', methods=['PUT'])
+def auto_reject():
+    from datetime import datetime, timedelta
+    # Get today's date
+    today = datetime.today()
+    
+    # Calculate the date 2 months ago from today
+    two_months_ago = today - timedelta(days=60)
+    
+    # Query all records with status 'Pending'
+    pending_requests = RequestDates.query.filter_by(request_status='Pending Approval').all()
+    
+    updated_requests = []
+    
+    # Iterate through pending requests and check the request_date
+    for request in pending_requests:
+        if request.request_date < two_months_ago.date():
+            # Update the status to 'Rejected'
+            request.request_status = 'Rejected'
+            updated_requests.append(request)
+    
+    # Commit the changes to the database
+    db.session.commit()
+
+    return jsonify({
+        'message': f'{len(updated_requests)} requests have been updated to Rejected',
+        'updated_requests': [{'id': req.request_id, 'request_date': req.request_date, 'new_status': req.request_status} for req in updated_requests]
+    }), 200
 
 
 if __name__ == '__main__':

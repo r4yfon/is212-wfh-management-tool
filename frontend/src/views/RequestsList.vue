@@ -14,6 +14,11 @@
             <v-data-table v-model:search="search" :items="items">
 
                 <!-- Date Requested Column -->
+                <template v-slot:item.request_id="{ item }">
+                    <div>{{ item.request_id }}</div>
+                </template>
+
+                <!-- Date Requested Column -->
                 <template v-slot:item.request_date="{ item }">
                     <div>{{ item.request_date }}</div>
                 </template>
@@ -39,7 +44,7 @@
                 <template v-slot:item.withdraw="{ item }">
                     <div class="text-end">
                         <!-- Show Withdraw button only for Approved or Pending statuses -->
-                        <v-btn v-if="canWithdraw(item.status)" @click="openWithdrawDialog(item)" color="pink"
+                        <v-btn v-if="canWithdraw(item.status, item.wfhRequestDate)" @click="openWithdrawDialog(item)" color="pink"
                             variant="outlined" small>
                             Withdraw
                         </v-btn>
@@ -95,6 +100,7 @@ export default {
 
                     this.items = rawData.flatMap((item) =>
                         item.wfh_dates[0].data.map((wfh) => ({
+                            request_id: item.request_id,
                             request_date: item.request_date,
                             wfhRequestDate: wfh.request_date,
                             shift: wfh.request_shift,
@@ -109,9 +115,16 @@ export default {
         },
 
         // Determine if the Withdraw button should be shown (Approved or Pending statuses only)
-        canWithdraw(status) {
-            return status === "Approved" || status === "Pending Approval";
+        canWithdraw(status, wfhRequestDate) {
+            const TWO_WEEKS_IN_MS = 14 * 24 * 60 * 60 * 1000;  // 2 weeks in milliseconds
+            const currentDate = new Date();
+            const requestDate = new Date(wfhRequestDate);  // Convert wfhRequestDate to a Date object
+
+            const isWithinTwoWeeks = (requestDate - currentDate) <= TWO_WEEKS_IN_MS && (requestDate >= currentDate);
+
+            return (status === "Approved" && isWithinTwoWeeks) || status === "Pending Approval";
         },
+
 
         // Get status color classes for each status
         getStatusColor(status) {
@@ -140,12 +153,13 @@ export default {
             }
 
             const data = {
-                "request_id": "1",
+                "request_id": item.request_id,
                 "status": new_status,
-                "reason": item.withdraw_reason
+                "reason": item.withdraw_reason,
+                "dates": [item.wfhRequestDate]
             };
 
-            fetch(`http://localhost:5002/request_dates/change_all_status`, {
+            fetch(`http://localhost:5002/request_dates/change_partial_status`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
@@ -159,7 +173,8 @@ export default {
                     return response.json();
                 })
                 .then(responseData => {
-                    console.log('Success:', responseData); // Handle success response
+                    console.log('Success:', responseData);
+                    location.reload();
                 })
                 .catch(error => console.error('Error updating status:', error));
 

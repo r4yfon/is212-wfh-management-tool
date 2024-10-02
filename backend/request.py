@@ -47,9 +47,8 @@ request_dates_URL = environ.get(
 request_URL = environ.get(
     'request_dates_URL') or "http://localhost:5001"
 
+
 # Create a new request
-
-
 @app.route('/request/create', methods=['POST'])
 def create_request():
     """
