@@ -4,10 +4,8 @@
  * @param { number } max_length
  * @returns { boolean }
  */
-export function within_word_count(input_reason, max_length = 100) {
-  if (input_reason.length > max_length) {
-    return `Please enter a reason that is less than ${max_length} characters`;
-  }
+export function is_within_word_count(input_reason, max_length = 100) {
+  return input_reason.length <= max_length;
 }
 
 /** given a date, return the lower limit of the valid dates: 2 months before
