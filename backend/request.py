@@ -380,7 +380,6 @@ def update_reason():
     try:
         # Get request data from the request body
         request_id = request.json.get('request_id')
-        new_status = request.json.get('status')
 
         request_record = Request.query.filter_by(request_id=request_id).first()
 
@@ -390,8 +389,7 @@ def update_reason():
                 "message": f"No request found for request ID {request_id}."
             }), 404
 
-        if new_status == "Rejected":
-            request_record.reject_reason = request.json.get('reason')
+        request_record.reject_reason = request.json.get('reason')
 
         # Commit the changes to the database
         db.session.commit()
