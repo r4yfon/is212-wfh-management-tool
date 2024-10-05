@@ -8,7 +8,7 @@ app.config.from_object('config.Config')
 db = SQLAlchemy(app)
 CORS(app)
 #######################################################
-staff_id = "150488"
+staff_id = "190088"
 
 # Staff view own requests
 @app.route("/s_retrieve_requests", methods=['GET'])

@@ -5,6 +5,7 @@ from os import environ
 import requests
 from employee import db, Employee
 from flask_cors import CORS
+from invokes import invoke_http
 
 
 app = Flask(__name__)
@@ -188,6 +189,14 @@ def create_request():
             db.session.delete(new_request)
             db.session.commit()
             raise e
+
+        log_data = {
+            "request_id": request.request_id,
+            "action": "Request has been created by staff",
+            "reason": apply_reason
+        }
+
+        invoke_http("http://localhost:5003/status_log/add_event", json=log_data, method='POST')
 
         return jsonify({
             "code": 200,

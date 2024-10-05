@@ -49,6 +49,14 @@ def reject_request():
                 "message": change_status_response.get('message', 'Failed to update the status for the related request dates.')
             }), change_status_response.get('code', 500)
 
+        log_data = {
+            "request_id": request_id,
+            "action": "Request has been rejected by the manager/director",
+            "reason": reason
+        }
+
+        invoke_http("http://localhost:5003/status_log/add_event", json=log_data, method='POST')
+
         # If both requests are successful
         return jsonify({
             "code": 200,
