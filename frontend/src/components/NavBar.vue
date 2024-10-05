@@ -10,7 +10,7 @@ import {
   VSpacer,
   VProgressCircular,
 } from "vuetify/components";
-import { within_word_count, two_months_before, three_months_after } from "@/inputValidation";
+import { is_within_word_count, two_months_before, three_months_after } from "@/inputValidation";
 </script>
 
 <template>
@@ -48,29 +48,30 @@ import { within_word_count, two_months_before, three_months_after } from "@/inpu
                   <v-btn value="recurring" color="primary">Recurring</v-btn>
                 </v-btn-toggle>
 
-                <!-- One Day Request -->
+                <!-- Request -->
                 <v-text-field v-model="newEvent.date" label="Date of Request" type="date" :min="twoWeeksBefore"
-                  :max="threeMonthsAfter" required></v-text-field>
+                  :max="threeMonthsAfter" :error-messages="errors.date" required></v-text-field>
                 <v-text-field v-if="requestType == 'recurring'" v-model="newEvent.endDate" label="End Date" type="date"
-                  :min="newEvent.date" :max="threeMonthsAfter" required></v-text-field>
-                <p v-if="newEvent.date != '' && newEvent.endDate != ''">
+                  :min="newEvent.date" :max="threeMonthsAfter" :error-messages="errors.endDate" required></v-text-field>
+                <p v-if="newEvent.date != '' && newEvent.endDate != ''" :error-messages="errors.endDate">
                   This event will repeat every {{ dayOfWeek }} from
                   {{ newEvent.date }} to
                   {{ newEvent.endDate }}
                 </p>
 
-                <v-radio-group v-model="newEvent.shift" label="Timing for Work From Home" row required>
+                <v-radio-group v-model="newEvent.shift" label="Timing for Work From Home" row required
+                  :error-messages="errors.shift">
                   <v-radio label="AM (09:00-13:00)" value="AM"></v-radio>
                   <v-radio label="PM (14:00-18:00)" value="PM"></v-radio>
                   <v-radio label="FULL (09:00-18:00)" value="Full"></v-radio>
                 </v-radio-group>
 
                 <v-text-field v-model="newEvent.reason" label="Reason for Request" :counter="100"
-                  :rules="[within_word_count]" required></v-text-field>
+                  :rules="[is_within_word_count]" :error-messages="errors.reason" required></v-text-field>
               </v-form>
             </v-card-text>
             <v-card-actions>
-              <v-btn color="green-darken-1" @click="confirmApply">
+              <v-btn color="green-darken-1" @click="validateAndConfirmApply">
                 <span v-if="loading">
                   <v-progress-circular indeterminate :size="15" :width="2" color="primary"
                     class="me-1"></v-progress-circular>
@@ -132,6 +133,12 @@ export default {
         shift: "",
         reason: "",
       },
+      errors: {
+        date: "",
+        endDate: "",
+        shift: "",
+        reason: "",
+      }
     }
   },
   mounted() {
@@ -142,6 +149,27 @@ export default {
     "newEvent.date"() {
       const date = new Date(this.newEvent.date);
       this.dayOfWeek = date.toLocaleString("en-US", { weekday: "long" });
+      if (this.newEvent.date !== "") {
+        this.errors.date = null;
+      }
+    },
+    "newEvent.endDate"() {
+      if (this.newEvent.endDate !== "") {
+        this.errors.endDate = null;
+      }
+    },
+    "newEvent.shift"() {
+      if (this.newEvent.shift !== "") {
+        this.errors.shift = null;
+      }
+    },
+    "newEvent.reason"() {
+      if (this.newEvent.reason !== "") {
+        this.errors.reason = null;
+      };
+      if (this.newEvent.reason.length > 100) {
+        this.errors.reason = "Reason needs to be below 100 characters";
+      }
     },
   },
   methods: {
@@ -159,86 +187,113 @@ export default {
       }
       return dates;
     },
-    confirmApply() {
-      this.loading = true;
-      console.log("newEvent", this.newEvent);
-      if (
-        this.requestType === "one-time" &&
-        this.newEvent.staffId &&
-        this.newEvent.date &&
-        this.newEvent.shift &&
-        this.newEvent.reason
-      ) {
-        fetch("http://localhost:5001/request/create", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            staff_id: this.newEvent.staffId,
-            request_date: new Date().toISOString().split("T")[0],
-            request_dates: {
-              [this.newEvent.date]: this.newEvent.shift,
-            },
-            apply_reason: this.newEvent.reason,
-          }),
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            console.log("Success:", data);
-          })
-          .catch((error) => {
-            console.error("Error:", error);
-          })
-          .finally(() => {
-            this.loading = false;
-            setTimeout(200);
-            this.dialog = false;
-          });
-      } else if (
-        this.requestType === "recurring" &&
-        this.newEvent.staffId &&
-        this.newEvent.date &&
-        this.newEvent.endDate &&
-        this.newEvent.shift &&
-        this.newEvent.reason
-      ) {
-        const recurringDates = this.convertRecurringToObject(
-          this.newEvent.date,
-          this.newEvent.endDate,
-          this.newEvent.shift,
-        );
-        fetch("http://localhost:5001/request/create", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            staff_id: this.newEvent.staffId,
-            request_date: new Date().toISOString().split("T")[0],
-            request_dates: recurringDates,
-            apply_reason: this.newEvent.reason,
-          }),
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            console.log("Success:", data);
-          })
-          .catch((error) => {
-            console.error("Error:", error);
-          })
-          .finally(() => {
-            this.loading = false;
-            setTimeout(200);
-            this.dialog = false;
-          });
+    validateInputs() {
+      let isValid = true;
+
+      if (!this.newEvent.date) {
+        this.errors.date = "Please select a date";
+        isValid = false;
       } else {
-        alert("Please fill in all required fields and try again.");
-        this.loading = false;
+        this.errors.date = null;
       }
-      this.newEvent.staffId = "";
-      this.newEvent.date = "";
-      this.newEvent.endDate = "";
-      this.newEvent.shift = "";
-      this.newEvent.reason = "";
-      this.newEvent.requestType = "one-time";
-      this.newEvent.recurrence = "";
+      if (this.requestType === "recurring") {
+        if (!this.newEvent.endDate) {
+          this.errors.endDate = "Please select an end date";
+          isValid = false;
+        } else {
+          this.errors.endDate = null;
+        }
+      }
+      if (!this.newEvent.shift) {
+        this.errors.shift = "Please select a shift";
+        isValid = false;
+      } else {
+        this.errors.shift = null;
+      }
+      if (!this.newEvent.reason) {
+        this.errors.reason = "Please enter a reason";
+        isValid = false;
+      } else if (this.newEvent.reason.length > 100) {
+        this.errors.reason = "Reason needs to be below 100 characters";
+        isValid = false;
+      } else {
+        this.errors.reason = null;
+      }
+      return isValid
+    },
+    validateAndConfirmApply() {
+      if (this.validateInputs()) {
+        this.loading = true;
+        console.log("newEvent", this.newEvent);
+        if (
+          this.requestType === "one-time"
+        ) {
+          fetch("http://localhost:5001/request/create", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              staff_id: this.newEvent.staffId,
+              request_date: new Date().toISOString().split("T")[0],
+              request_dates: {
+                [this.newEvent.date]: this.newEvent.shift,
+              },
+              apply_reason: this.newEvent.reason,
+            }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              console.log("Success:", data);
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+            })
+            .finally(() => {
+              this.loading = false;
+              setTimeout(200);
+              this.dialog = false;
+            });
+        } else if (
+          this.requestType === "recurring"
+        ) {
+          const recurringDates = this.convertRecurringToObject(
+            this.newEvent.date,
+            this.newEvent.endDate,
+            this.newEvent.shift,
+          );
+          fetch("http://localhost:5001/request/create", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              staff_id: this.newEvent.staffId,
+              request_date: new Date().toISOString().split("T")[0],
+              request_dates: recurringDates,
+              apply_reason: this.newEvent.reason,
+            }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              console.log("Success:", data);
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+            })
+            .finally(() => {
+              this.loading = false;
+              setTimeout(200);
+              this.dialog = false;
+            });
+        } else {
+          // alert("Please fill in all required fields and try again.");
+          this.loading = false;
+        }
+        this.newEvent.staffId = "";
+        this.newEvent.date = "";
+        this.newEvent.endDate = "";
+        this.newEvent.shift = "";
+        this.newEvent.reason = "";
+        this.newEvent.requestType = "one-time";
+        this.newEvent.recurrence = "";
+      }
     }
   }
 }
