@@ -22,14 +22,14 @@ class Request(db.Model):
     request_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     staff_id = db.Column(db.Integer, db.ForeignKey(
         'employee.staff_id'), nullable=False)
-    request_date = db.Column(db.Date, nullable=False)
+    creation_date = db.Column(db.Date, nullable=False)
     apply_reason = db.Column(db.String(100), nullable=False)
     reject_reason = db.Column(db.String(100), nullable=True)
 
-    def __init__(self, staff_id, request_date, apply_reason, reject_reason=None, request_id=None):
+    def __init__(self, staff_id, creation_date, apply_reason, reject_reason=None, request_id=None):
         self.request_id = request_id
         self.staff_id = staff_id
-        self.request_date = request_date
+        self.creation_date = creation_date
         self.apply_reason = apply_reason
         self.reject_reason = reject_reason
 
@@ -37,7 +37,7 @@ class Request(db.Model):
         return {
             "request_id": self.request_id,
             "staff_id": self.staff_id,
-            "request_date": self.request_date.isoformat(),
+            "creation_date": self.creation_date.isoformat(),
             "apply_reason": self.apply_reason,
             "reject_reason": self.reject_reason,
         }
@@ -72,7 +72,7 @@ def create_request():
             "data": {
                 "request_id": 1,
                 "staff_id": 1,
-                "request_date": "2023-10-01",
+                "creation_date": "2023-10-01",
                 "request_dates": ["2023-10-01", "2023-10-02"],
                 "apply_reason": "Reason for request"
             }
@@ -81,7 +81,7 @@ def create_request():
     try:
         data = request.get_json()
         staff_id = data.get('staff_id')
-        request_date = data.get('request_date')
+        creation_date = data.get('creation_date')
         request_dates = data.get('request_dates')
         apply_reason = data.get('apply_reason')
 
@@ -93,24 +93,17 @@ def create_request():
             }), 400
 
         # Check if length of all requested_shifts are at most 5 characters
-        # Not sure if needed, assuming requested_shifts will be radio buttons for frontend
-        # TODO: check with frontend
         requested_shifts_concat_str = ''.join(request_dates.values())
         number_of_requested_shifts = len(request_dates)
         if input_validation.string_length_valid(input_string=requested_shifts_concat_str, max_length=(number_of_requested_shifts * 5)) == False:
             return jsonify({
                 "code": 400,
-                "error": "One of more of your requested shifts is too long. Please keep it under 5 characters."
+                "error": "One or more of your requested shifts is too long. Please keep it under 5 characters."
             }), 400
 
-        # Check if dates that staff request for is within 2 months before and 3 months after current date
-        earliest_requested_date = next(iter(request_dates))
-        latest_requested_date = earliest_requested_date
-        for date in request_dates:
-            if date < earliest_requested_date:
-                earliest_requested_date = date
-            if date > latest_requested_date:
-                latest_requested_date = date
+        # Check if dates that staff requested for are within 2 months before and 3 months after current date
+        earliest_requested_date = min(request_dates.keys())
+        latest_requested_date = max(request_dates.keys())
 
         if input_validation.check_date_valid(earliest_requested_date, latest_requested_date) == False:
             return jsonify({
@@ -119,11 +112,8 @@ def create_request():
             }), 400
 
         # TODO: check if staff already has a request for the same date
-
-        # get all existing requests from staff_id
         try:
-            response = requests.get(
-                f'{request_URL}/request/get_all_requests/{staff_id}')
+            response = requests.get(f'{request_URL}/request/get_all_requests/{staff_id}')
             if response.status_code == 200:
                 employee_requests = response.json()['data']
             else:
@@ -134,18 +124,12 @@ def create_request():
                 "error": f"An error occurred while getting employee requests for staff_id {staff_id}: {e}"
             }), 500
 
-        existing_request_ids = []
-        for request_details in employee_requests:
-            existing_request_ids.append(request_details["request_id"])
+        existing_request_ids = [request_details["request_id"] for request_details in employee_requests]
 
         # get all dates that staff has requested for from request_ids
         try:
-            payload = {
-                "request_ids": existing_request_ids
-            }
-            print(payload)
-            response = requests.post(
-                f'{request_dates_URL}/get_by_request_ids', json=payload)
+            payload = {"request_ids": existing_request_ids}
+            response = requests.post(f'{request_dates_URL}/get_by_request_ids', json=payload)
             if response.status_code == 200:
                 requested_dates = response.json()['data']
             else:
@@ -155,8 +139,7 @@ def create_request():
                 "code": 500,
                 "error": f"An error occurred while getting employee requests for staff_id {staff_id}: {e}"
             }), 500
-        print(requested_dates)
-        print(request_dates)
+
         for date in request_dates:
             if input_validation.has_existing_request(requested_dates, date) == True:
                 return jsonify({
@@ -164,23 +147,21 @@ def create_request():
                     "error": f"You already have a request for this date: {date}."
                 }), 400
 
+        # Create and commit the new request to get the request_id
         new_request = Request(
             staff_id=staff_id,
-            request_date=request_date,
+            creation_date=creation_date,
             apply_reason=apply_reason
         )
-
         db.session.add(new_request)
         db.session.commit()
 
         try:
-            # Make the API call to add request_dates
             add_request_dates = requests.post(f'{request_dates_URL}/create', json={
                 "request_id": new_request.request_id,
                 "request_dates": request_dates
             })
 
-            # Check if the API call was successful
             if add_request_dates.status_code != 200:
                 raise Exception("Failed to add request dates.")
 
@@ -190,8 +171,9 @@ def create_request():
             db.session.commit()
             raise e
 
+        # Log the action
         log_data = {
-            "request_id": request.request_id,
+            "request_id": new_request.request_id,
             "action": "Request has been created by staff",
             "reason": apply_reason
         }
@@ -224,7 +206,7 @@ def get_all_requests():
                 {
                     "request_id": 1,
                     "staff_id": 140894,
-                    "request_date": "2023-09-26",
+                    "creation_date": "2023-09-26",
                     "apply_reason": "Personal matters",
                     "reject_reason": null,
                 },
@@ -241,7 +223,7 @@ def get_all_requests():
             request_list = [{
                 "request_id": request.request_id,
                 "staff_id": request.staff_id,
-                "request_date": request.request_date.isoformat(),
+                "creation_date": request.creation_date.isoformat(),
                 "apply_reason": request.apply_reason,
                 "reject_reason": request.reject_reason
             } for request in requests]
@@ -280,14 +262,14 @@ def get_requests_by_staff_id(staff_id):
                 {
                     "request_id": 1,
                     "staff_id": 1,
-                    "request_date": "2023-10-01",
+                    "creation_date": "2023-10-01",
                     "request_status": "Approved",
                     "manager_approval_date": "2023-10-01"
                 },
                 {
                     "request_id": 2,
                     "staff_id": 1,
-                    "request_date": "2023-10-02",
+                    "creation_date": "2023-10-02",
                     "request_status": "Approved",
                     "manager_approval_date": "2023-10-02"
                 }
