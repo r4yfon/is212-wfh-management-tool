@@ -100,6 +100,8 @@ export default {
       console.log(`Prev button clicked`);
     },
     handleTodayClick() {
+      this.currentDate = new Date();
+      this.getWeeklySchedule();
       console.log(`Today button clicked`);
     },
     getWeeklySchedule() {
