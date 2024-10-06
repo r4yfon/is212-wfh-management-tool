@@ -9,6 +9,7 @@ import FullCalendar from "@fullcalendar/vue3";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import timeGridPlugin from "@fullcalendar/timegrid";
+import { useMainStore } from '@/store.js';
 
 export default {
   components: {
@@ -16,6 +17,7 @@ export default {
   },
   data() {
     return {
+      selected_user: null,
       calendarOptions: {
         plugins: [timeGridPlugin, dayGridPlugin, interactionPlugin],
         initialView: "timeGridWeek",
@@ -49,6 +51,8 @@ export default {
     };
   },
   mounted() {
+    const userStore = useMainStore();
+    this.selected_user = userStore.user.staff_id;
     const nextButton = document.querySelector(".fc-next-button");
     nextButton.addEventListener("click", this.handleNextClick);
     const prevButton = document.querySelector(".fc-prev-button");
@@ -58,6 +62,21 @@ export default {
 
     this.currentDate = new Date();
     this.getWeeklySchedule();
+  },
+  watch: {
+    'userStore.user': {
+      handler(newUser) {
+        console.log(newUser);
+        this.selected_user = newUser.staff_id;
+      },
+      deep: true,
+      immediate: true
+    }
+  },
+  computed: {
+    userStore() {
+      return useMainStore();
+    }
   },
   methods: {
     handleDateClick(arg) {
@@ -88,7 +107,7 @@ export default {
         this.currentDate = new Date();
       }
       fetch(
-        `http://localhost:5100/view_schedule/weekly/150488/${new Date(this.currentDate).toISOString().split("T")[0]}`,
+        `http://localhost:5100/view_schedule/weekly/${this.selected_user}/${new Date(this.currentDate).toISOString().split("T")[0]}`,
       )
         .then((response) => response.json())
         .then((data) => {
