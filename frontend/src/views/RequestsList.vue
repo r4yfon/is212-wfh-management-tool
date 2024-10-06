@@ -19,8 +19,8 @@
                 </template>
 
                 <!-- Date Requested Column -->
-                <template v-slot:item.request_date="{ item }">
-                    <div>{{ item.request_date }}</div>
+                <template v-slot:item.creationdate="{ item }">
+                    <div>{{ item.creationdate }}</div>
                 </template>
 
                 <!-- WFH Request Date Column -->
@@ -101,7 +101,7 @@ export default {
                     this.items = rawData.flatMap((item) =>
                         item.wfh_dates[0].data.map((wfh) => ({
                             request_id: item.request_id,
-                            request_date: item.request_date,
+                            creationdate: item.creationdate,
                             wfhRequestDate: wfh.request_date,
                             shift: wfh.request_shift,
                             status: wfh.request_status,
