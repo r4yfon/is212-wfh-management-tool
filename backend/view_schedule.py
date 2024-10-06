@@ -91,7 +91,7 @@ def view_weekly_schedule(staff_id, date_entered):
             requests_in_request_id.append({
                 "request_id": req.request_id,
                 "staff_id": req.staff_id,
-                "request_submission_date": req.request_date,
+                "request_submission_date": req.creation_date,
                 "request_date": req_date.request_date.isoformat(),
                 "request_shift": req_date.request_shift,
                 "request_status": req_date.request_status

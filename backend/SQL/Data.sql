@@ -22,7 +22,7 @@ CREATE TABLE Employee (
 CREATE TABLE Request (
     Request_ID INT PRIMARY KEY AUTO_INCREMENT,
     Staff_ID INT,
-    Request_Date DATE NOT NULL,
+    Creation_Date DATE NOT NULL,
     Apply_Reason VARCHAR(100) NOT NULL,
     Reject_Reason VARCHAR(100),
     CONSTRAINT FK_Staff_ID FOREIGN KEY (Staff_ID)
@@ -615,7 +615,7 @@ VALUES
                 
 
 -- Insert into Request Table
-INSERT INTO Request (Staff_ID, Request_Date, Apply_Reason, Reject_Reason)
+INSERT INTO Request (Staff_ID, Creation_Date, Apply_Reason, Reject_Reason)
 VALUES
 (150488, '2024-09-15', 'Family event', NULL),
 (150445, '2024-09-10', 'Medical appointment', NULL),

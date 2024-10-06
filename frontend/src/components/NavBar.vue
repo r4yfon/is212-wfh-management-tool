@@ -261,7 +261,7 @@ export default {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               staff_id: this.newEvent.staffId,
-              request_date: new Date().toISOString().split("T")[0],
+              creation_date: new Date().toISOString().split("T")[0],
               request_dates: {
                 [this.newEvent.date]: this.newEvent.shift,
               },

@@ -37,12 +37,36 @@ def s_retrieve_requests():
 # manager view requests from requestors
 @app.route("/m_retrieve_requests", methods=['GET'])
 def m_retrieve_requests():
+    """
+    Success response:
+    [
+        {
+            "reason": "Family event",
+            "request_dates": [
+                "2024-05-29"
+            ],
+            "request_id": 1,
+            "request_status": "Pending Approval",
+            "staff_id": 150488,
+            "staff_name": "Jacob Tan"
+        },
+        {
+            "reason": "Medical appointment",
+            "request_dates": [
+                "2024-09-12"
+            ],
+            "request_id": 2,
+            "request_status": "Pending Withdrawal",
+            "staff_id": 150488,
+            "staff_name": "Jacob Tan"
+        }
+    ]
+    """
     response = invoke_http("http://localhost:5000/employee/get_staff/" + staff_id, method='GET')
 
     staff_list = []
     staff_name_dict = {}
     for staff in response["data"]:
-        print(staff)
         staff_list.append((staff["staff_id"]))
         staff_name_dict[staff["staff_id"]] = staff["staff_fname"] + " " + staff["staff_lname"]
 
