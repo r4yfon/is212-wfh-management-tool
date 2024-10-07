@@ -20,32 +20,48 @@ export default {
       selected_user: null,
       calendarOptions: {
         plugins: [timeGridPlugin, dayGridPlugin, interactionPlugin],
-        initialView: "timeGridWeek",
-        slotMinTime: "09:00:00",
-        slotMaxTime: "18:00:00",
-        slotDuration: "01:00:00",
+        initialView: "dayGridWeek",
         headerToolbar: {
           left: "prev,next today",
           center: "title",
-          right: "timeGridWeek,timeGridDay", // Options for week and day views
+          right: "dayGridWeek,dayGridDay", // Options for week and day views
         },
+        eventTimeFormat: { 
+          hour: 'numeric',
+          meridiem: true,
+        }, 
+        displayEventEnd: true, 
+        // eventDisplay: "block", 
+        eventDidMount: this.eventDidMount,
         events: [],
         dateClick: this.handleDateClick,
         eventClick: this.handleEventClick,
       },
       events: [],
       colors: {
-        "WFH - AM": "purple",
-        "WFH - PM": "purple",
-        "WFH - Full": "purple",
-        Office: "blue",
-        "Pending: WFH - AM": "orange",
-        "Pending: WFH - PM": "orange",
-        "Pending: WFH - Full": "orange",
+        "WFH - AM": "#BA55D3",
+        "WFH - PM": "#BA55D3",
+        "WFH - Full": "#BA55D3",
+        Office: "#4169E1", 
+        "Pending: WFH - AM": "#FF7F50",
+        "Pending: WFH - PM": "#FF7F50",
+        "Pending: WFH - Full": "#FF7F50",
         "Pending Withdrawal: WFH - AM": "pink",
         "Pending Withdrawal: WFH - PM": "pink",
         "Pending Withdrawal: WFH - Full": "pink",
-      },
+      }, 
+      getTextColors: {
+        "WFH - AM": "#BA55D3",
+        "WFH - PM": "#BA55D3",
+        "WFH - Full": "#BA55D3",
+        Office: "#4169E1", 
+        "Pending: WFH - AM": "#FF7F50",
+        "Pending: WFH - PM": "#FF7F50",
+        "Pending: WFH - Full": "#FF7F50",
+        "Pending Withdrawal: WFH - AM": "pink",
+        "Pending Withdrawal: WFH - PM": "pink",
+        "Pending Withdrawal: WFH - Full": "pink",
+      }, 
       scheduleData: {},
       currentDate: new Date(),
     };
@@ -104,6 +120,9 @@ export default {
       this.getWeeklySchedule();
       console.log(`Today button clicked`);
     },
+    eventDidMount(info) {
+      info.el.style.color = info.event.textColor; // Set text color directly
+    },
     getWeeklySchedule() {
       if ((!this.currentDate) instanceof Date) {
         this.currentDate = new Date();
@@ -118,8 +137,14 @@ export default {
           const timeMapping = {
             "WFH - AM": { start: 9, end: 13 },
             "WFH - PM": { start: 14, end: 18 },
+            "WFH - Full": { start: 9, end: 18 },
             "Pending: WFH - AM": { start: 9, end: 13 },
             "Pending: WFH - PM": { start: 14, end: 18 },
+            "Pending: WFH - Full": { start: 9, end: 18 }, 
+            "Office" : { start: 9, end: 18 },
+            "Pending Withdrawal: WFH - AM": { start: 9, end: 13 },
+            "Pending Withdrawal: WFH - PM": { start: 14, end: 18 },
+            "Pending Withdrawal: WFH - Full": { start: 9, end: 18 },
           };
 
           this.events = [];
@@ -127,23 +152,11 @@ export default {
           for (let day in this.scheduleData) {
             const dateString = day;
             const eventTitles = this.scheduleData[dateString]; // Get Home or Office from schedule data
-
             eventTitles.forEach((eventTitle) => {
               let event;
               const times = timeMapping[eventTitle];
-
-              if (
-                eventTitle.includes("WFH - Full") ||
-                eventTitle.includes("Office") ||
-                eventTitle.includes("Pending: WFH - Full")
-              ) {
-                event = {
-                  title: eventTitle,
-                  start: dateString,
-                  allDay: true,
-                  color: this.colors[eventTitle],
-                };
-              } else if (times) {
+            
+              if (times) {
                 const eventYear = Number(day.slice(0, 4));
                 const eventMonthIndex = Number(day.slice(5, 7)) - 1;
                 const eventDate = Number(day.slice(8, 10));
@@ -152,13 +165,7 @@ export default {
                   start: new Date(eventYear, eventMonthIndex, eventDate, times.start, 0),
                   end: new Date(eventYear, eventMonthIndex, eventDate, times.end, 0),
                   color: this.colors[eventTitle],
-                };
-              } else if (eventTitle.includes("Pending Withdrawal")) {
-                event = {
-                  title: eventTitle,
-                  start: dateString,
-                  allDay: true,
-                  color: this.colors[eventTitle],
+                  textColor: this.getTextColors[eventTitle],
                 };
               }
 
