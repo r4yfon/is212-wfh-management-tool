@@ -113,7 +113,7 @@ def create_request():
 
         # TODO: check if staff already has a request for the same date
         try:
-            response = requests.get(f'{request_URL}/request/get_all_requests/{staff_id}')
+            response = requests.get(f'{request_URL}/request/get_requests_by_staff_id/{staff_id}')
             if response.status_code == 200:
                 employee_requests = response.json()['data']
             else:
@@ -247,7 +247,7 @@ def get_all_requests():
 
 
 # Get all requests made by a staff_id
-@app.route('/request/get_all_requests/<int:staff_id>')
+@app.route('/request/get_requests_by_staff_id/<int:staff_id>')
 def get_requests_by_staff_id(staff_id):
     """
     Get all requests by staff id

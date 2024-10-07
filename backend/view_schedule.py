@@ -7,6 +7,7 @@ from request import Request
 from request_dates import RequestDates
 from input_validation import check_date_valid
 from flask_cors import CORS
+from invokes import invoke_http
 
 app = Flask(__name__)
 app.config.from_object('config.Config')
@@ -118,6 +119,89 @@ def view_weekly_schedule(staff_id, date_entered):
 
     except Exception as e:
         return jsonify({"error": f"Failed to fetch requests: {str(e)}"}), 500
+
+
+# Get organisation schedule
+@app.route("/get_org_schedule", methods=['GET'])
+def get_org_schedule():
+    # Get all requests made by the staff_id
+    request_response = invoke_http("http://localhost:5001/request/get_all_requests", method='GET')
+    
+    if request_response["code"] == 200:
+        request_list = []
+        for request in request_response["data"]:
+            request_dict = {"staff_id": request["staff_id"], "staff_name": request["staff_id"], "request_id": request["request_id"], "request_dates": []}
+            
+            staff_request_dates = invoke_http("http://localhost:5002/request_dates/get_by_request_id/" + str(request["request_id"]), method='GET')
+            for request_dates in staff_request_dates[0]["data"]:
+                if request_dates["request_status"] == "Pending Approval" or request_dates["request_status"] == "Approved":
+                    request_dict["request_dates"].append({request_dates["request_date"]: request_dates["request_shift"]})
+                    request_dict["request_status"] = request_dates["request_status"]
+            if len(request_dict["request_dates"]) > 0:
+                request_list.append(request_dict)
+    
+    # Return the modified response including the request_dates
+    return jsonify(request_list)
+
+
+# Get team schedule
+@app.route("/get_team_schedule/<int:staff_id>", methods=['GET'])
+def get_team_schedule(staff_id):
+    # Get all requests made by the staff_id
+    response = invoke_http("http://localhost:5000/employee/get_all_employees", method='GET')
+
+    def get_team_members(staff_id, visited=None, staff_details=None):
+        # Initialize visited set to track processed staff_ids
+        if visited is None:
+            visited = set()
+        if staff_details is None:
+            staff_details = {}
+
+        # Prevent recursion if the staff_id has already been processed
+        if staff_id in visited:
+            return staff_details
+
+        # Mark this staff_id as visited
+        visited.add(staff_id)
+
+        # Iterate through each member in the response data
+        for member in response["data"]:
+            if member["reporting_manager"] == staff_id:
+                # Add the current member's details to the staff_details dictionary
+                staff_details[member["staff_id"]] = {
+                    "staff_name": member["staff_name"],
+                    "dept": member["dept"],
+                    "position": member["position"]
+                }
+
+                # Recursively find team members under the current member
+                staff_details.update(get_team_members(member["staff_id"], visited, staff_details))
+
+        return staff_details
+
+    # Get the full list of team members under the given staff_id
+    all_team_members = get_team_members(staff_id)
+
+    request_response = invoke_http("http://localhost:5001/request/get_all_requests", method='GET')
+    
+    if request_response["code"] == 200:
+        request_list = []
+        for request in request_response["data"]:
+            if request["staff_id"] in all_team_members.keys():
+                request_dict = {"staff_id": request["staff_id"], "staff_name": all_team_members[request["staff_id"]]["staff_name"], "request_id": request["request_id"], "request_dates": []}
+                
+                staff_request_dates = invoke_http("http://localhost:5002/request_dates/get_by_request_id/" + str(request["request_id"]), method='GET')
+                for request_dates in staff_request_dates[0]["data"]:
+                    if request_dates["request_status"] == "Pending Approval" or request_dates["request_status"] == "Approved":
+                        request_dict["request_dates"].append({request_dates["request_date"]: request_dates["request_shift"]})
+                        request_dict["request_status"] = request_dates["request_status"]
+                if len(request_dict["request_dates"]) > 0:
+                    request_list.append(request_dict)
+
+    return jsonify({
+        "code": 200,
+        "data": request_list
+    })
 
 
 if __name__ == '__main__':

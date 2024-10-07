@@ -142,5 +142,61 @@ def get_staff_by_manager(staff_id):
         }), 500
 
 
+@app.route("/employee/get_all_employees", methods=["GET"])
+def get_all_employees():
+    """
+    Get all staff IDs and their reporting managers.
+    
+    Success response:
+    {
+        "code": 200,
+        "data": [
+            {
+                "staff_id": 150001,
+                "reporting_manager": 150111,
+                "staff_name": "Tan Wei Ming",
+                "dept": "Finance",
+                "position": "Associate"
+            },
+            {
+                "staff_id": 150002,
+                "reporting_manager": 150111,
+                "staff_name": "Lim Hong Wei",
+                "dept": "Sales",
+                "position": "Associate"
+            },
+            ...
+        ]
+    }
+    """
+
+    try:
+        # Fetch all employees
+        employees = Employee.query.all()
+
+        # Prepare the data
+        reporting_structure = [
+            {
+                "staff_id": employee.staff_id,
+                "reporting_manager": employee.reporting_manager,
+                "staff_name": employee.staff_fname + " " + employee.staff_lname,
+                "dept": employee.dept,
+                "position": employee.position
+            }
+            for employee in employees
+        ]
+
+        return jsonify({
+            "code": 200,
+            "data": reporting_structure
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "code": 500,
+            "error": "An error occurred while fetching reporting structure. " + str(e)
+        }), 500
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

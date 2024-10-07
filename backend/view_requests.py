@@ -15,7 +15,7 @@ CORS(app)
 def s_retrieve_requests():
     s_staff_id = "150488"
     # Get all requests made by the staff_id
-    response = invoke_http("http://localhost:5001/request/get_all_requests/" + s_staff_id, method='GET')
+    response = invoke_http("http://localhost:5001/request/get_requests_by_staff_id/" + s_staff_id, method='GET')
 
     # Ensure the response contains a 'data' field before processing
     if "data" in response and isinstance(response["data"], list):
@@ -38,7 +38,7 @@ def s_retrieve_requests():
 # manager view requests from requestors
 @app.route("/m_retrieve_requests", methods=['GET'])
 def m_retrieve_requests():
-    m_staff_id = "130002"
+    m_staff_id = "150555"
     """
     Success response:
     [
@@ -83,7 +83,7 @@ def m_retrieve_requests():
                 staff_request_dates = invoke_http("http://localhost:5002/request_dates/get_by_request_id/" + str(request["request_id"]), method='GET')
                 for request_dates in staff_request_dates[0]["data"]:
                     if request_dates["request_status"] == "Pending Approval" or request_dates["request_status"] == "Pending Withdrawal":
-                        request_dict["request_dates"].append(request_dates["request_date"])
+                        request_dict["request_dates"].append({request_dates["request_date"]: request_dates["request_shift"]})
                         request_dict["request_status"] = request_dates["request_status"]
                 if len(request_dict["request_dates"]) > 0:
                     request_list.append(request_dict)
