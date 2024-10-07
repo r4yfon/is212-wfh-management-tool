@@ -101,7 +101,7 @@ export default {
                     this.items = rawData.flatMap((item) =>
                         item.wfh_dates[0].data.map((wfh) => ({
                             request_id: item.request_id,
-                            creationdate: item.creationdate,
+                            creationdate: item.creation_date,
                             wfhRequestDate: wfh.request_date,
                             shift: wfh.request_shift,
                             status: wfh.request_status,
