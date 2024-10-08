@@ -6,6 +6,7 @@ import requests
 from employee import db, Employee
 from flask_cors import CORS
 from invokes import invoke_http
+from datetime import datetime
 
 
 app = Flask(__name__)
@@ -43,10 +44,12 @@ class Request(db.Model):
         }
 
 
+request_URL = environ.get(
+    'request_URL') or "http://localhost:5001/request"
 request_dates_URL = environ.get(
     'request_dates_URL') or "http://localhost:5002/request_dates"
-request_URL = environ.get(
-    'request_dates_URL') or "http://localhost:5001"
+status_log_URL = environ.get(
+    'status_log_URL') or "http://localhost:5003/status_log"
 
 
 # Create a new request
@@ -81,7 +84,6 @@ def create_request():
     try:
         data = request.get_json()
         staff_id = data.get('staff_id')
-        creation_date = data.get('creation_date')
         request_dates = data.get('request_dates')
         apply_reason = data.get('apply_reason')
 
@@ -113,7 +115,7 @@ def create_request():
 
         # TODO: check if staff already has a request for the same date
         try:
-            response = requests.get(f'{request_URL}/request/get_all_requests/{staff_id}')
+            response = requests.get(f'{request_URL}/get_requests_by_staff_id/{staff_id}')
             if response.status_code == 200:
                 employee_requests = response.json()['data']
             else:
@@ -140,17 +142,17 @@ def create_request():
                 "error": f"An error occurred while getting employee requests for staff_id {staff_id}: {e}"
             }), 500
 
-        for date in request_dates:
-            if input_validation.has_existing_request(requested_dates, date) == True:
-                return jsonify({
-                    "code": 400,
-                    "error": f"You already have a request for this date: {date}."
-                }), 400
+        check_date = input_validation.has_existing_request(requested_dates, request_dates)
+        if check_date != False:
+            return jsonify({
+                "code": 400,
+                "error": f"You have a duplicate request on {check_date}. Please check"
+            }), 400
 
         # Create and commit the new request to get the request_id
         new_request = Request(
             staff_id=staff_id,
-            creation_date=creation_date,
+            creation_date=datetime.utcnow().strftime('%Y-%m-%d'),
             apply_reason=apply_reason
         )
         db.session.add(new_request)
@@ -178,7 +180,7 @@ def create_request():
             "reason": apply_reason
         }
 
-        invoke_http("http://localhost:5003/status_log/add_event", json=log_data, method='POST')
+        invoke_http(status_log_URL + "/add_event", json=log_data, method='POST')
 
         return jsonify({
             "code": 200,
@@ -247,7 +249,7 @@ def get_all_requests():
 
 
 # Get all requests made by a staff_id
-@app.route('/request/get_all_requests/<int:staff_id>')
+@app.route('/request/get_requests_by_staff_id/<int:staff_id>')
 def get_requests_by_staff_id(staff_id):
     """
     Get all requests by staff id

@@ -50,6 +50,11 @@
                         </v-btn>
                     </div>
                 </template>
+
+                <!-- Status Column with color coding -->
+                <template v-slot:item.reject_reason="{ item }">
+                    <div>{{ item.reject_reason }}</div>
+                </template>
             </v-data-table>
         </v-card>
 
@@ -88,7 +93,8 @@ export default {
     methods: {
         // Format the data to the structure needed for the table
         formatData() {
-            fetch(`http://localhost:5101/s_retrieve_requests`)
+            // #####################################################################################
+            fetch(`http://localhost:5101/s_retrieve_requests/150488`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
@@ -101,11 +107,12 @@ export default {
                     this.items = rawData.flatMap((item) =>
                         item.wfh_dates[0].data.map((wfh) => ({
                             request_id: item.request_id,
-                            creationdate: item.creationdate,
+                            creationdate: item.creation_date,
                             wfhRequestDate: wfh.request_date,
                             shift: wfh.request_shift,
                             status: wfh.request_status,
                             withdraw: wfh.withdraw_reason,
+                            Remarks: item.reject_reason
                         }))
                     );
                 })
@@ -156,7 +163,8 @@ export default {
                 "request_id": item.request_id,
                 "status": new_status,
                 "reason": item.withdraw_reason,
-                "dates": [item.wfhRequestDate]
+                "dates": [item.wfhRequestDate],
+                "shift": item.shift
             };
 
             fetch(`http://localhost:5002/request_dates/change_partial_status`, {

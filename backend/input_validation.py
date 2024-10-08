@@ -21,7 +21,7 @@ def string_length_valid(input_string, min_length=0, max_length=None):
     else:
         return False
 
-def has_existing_request(employee_requests, request_date):
+def has_existing_request(employee_requests, apply_date):
     """
     Checks if the employee already has an existing request for the given date.
 
@@ -33,10 +33,13 @@ def has_existing_request(employee_requests, request_date):
     Returns:
         bool: True if there is an existing request for the given date, False otherwise.
     """
-
-    for request in employee_requests:
-        if request['request_date'] == request_date:
-            return True
+    for date, shift in apply_date.items():
+        for request in employee_requests:
+            if request['request_date'] == date and request["request_status"] in ["Pending Approval", "Approved", "Pending Withdrawal"]:
+                if request["request_shift"] == "Full" or shift == "Full":
+                    return date
+            if request['request_date'] == date and request["request_shift"] == shift and request["request_status"] in ["Pending Approval", "Approved", "Pending Withdrawal"]:
+                return date
     return False
 
 def check_date_valid(request_start_date, request_end_date):
