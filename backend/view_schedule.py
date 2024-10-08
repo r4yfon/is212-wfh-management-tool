@@ -55,7 +55,8 @@ def view_weekly_schedule(staff_id, date_entered):
             Weekly schedule for the given staff. The week is calculated based on the date_entered. It will be in a dictionary, where the keys are the dates and the values are the location and shift (if applicable).
 
             Example:
-            {
+            "code": 200,
+            "data": {
                 "2023-10-01": ["WFH - PM"],
                 "2023-10-02": ["Office", "Pending: WFH - PM"],
                 "2023-10-03": ["Office", "Pending: WFH - Full"],
@@ -130,12 +131,12 @@ def view_weekly_schedule(staff_id, date_entered):
 def get_org_schedule():
     # Get all requests made by the staff_id
     request_response = invoke_http(request_URL + "/get_all_requests", method='GET')
-    
+
     if request_response["code"] == 200:
         request_list = []
         for request in request_response["data"]:
             request_dict = {"staff_id": request["staff_id"], "staff_name": request["staff_id"], "request_id": request["request_id"], "request_dates": []}
-            
+
             staff_request_dates = invoke_http(request_dates_URL + "/get_by_request_id/" + str(request["request_id"]), method='GET')
             for request_dates in staff_request_dates[0]["data"]:
                 if request_dates["request_status"] == "Pending Approval" or request_dates["request_status"] == "Approved":
@@ -143,7 +144,7 @@ def get_org_schedule():
                     request_dict["request_status"] = request_dates["request_status"]
             if len(request_dict["request_dates"]) > 0:
                 request_list.append(request_dict)
-    
+
     # Return the modified response including the request_dates
     return jsonify(request_list)
 
@@ -187,13 +188,13 @@ def get_team_schedule(staff_id):
     all_team_members = get_team_members(staff_id)
 
     request_response = invoke_http(request_URL + "/get_all_requests", method='GET')
-    
+
     if request_response["code"] == 200:
         request_list = []
         for request in request_response["data"]:
             if request["staff_id"] in all_team_members.keys():
                 request_dict = {"staff_id": request["staff_id"], "staff_name": all_team_members[request["staff_id"]]["staff_name"], "request_id": request["request_id"], "request_dates": []}
-                
+
                 staff_request_dates = invoke_http(request_dates_URL + "/get_by_request_id/" + str(request["request_id"]), method='GET')
                 for request_dates in staff_request_dates[0]["data"]:
                     if request_dates["request_status"] == "Pending Approval" or request_dates["request_status"] == "Approved":
