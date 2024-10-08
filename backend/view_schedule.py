@@ -14,8 +14,12 @@ app.config.from_object('config.Config')
 db = SQLAlchemy(app)
 CORS(app, resources={r"/view_schedule/weekly/*": {"origins": "*"}})
 
-request_URL = environ.get('request_URL') or "http://localhost:5001/request"
-
+employee_URL = environ.get(
+    'employee_URL') or "http://localhost:5000/employee"
+request_URL = environ.get(
+    'request_URL') or "http://localhost:5001/request"
+request_dates_URL = environ.get(
+    'request_dates_URL') or "http://localhost:5002/request_dates"
 
 def get_week_from_date(date_entered):
     """
@@ -125,14 +129,14 @@ def view_weekly_schedule(staff_id, date_entered):
 @app.route("/get_org_schedule", methods=['GET'])
 def get_org_schedule():
     # Get all requests made by the staff_id
-    request_response = invoke_http("http://localhost:5001/request/get_all_requests", method='GET')
+    request_response = invoke_http(request_URL + "/get_all_requests", method='GET')
     
     if request_response["code"] == 200:
         request_list = []
         for request in request_response["data"]:
             request_dict = {"staff_id": request["staff_id"], "staff_name": request["staff_id"], "request_id": request["request_id"], "request_dates": []}
             
-            staff_request_dates = invoke_http("http://localhost:5002/request_dates/get_by_request_id/" + str(request["request_id"]), method='GET')
+            staff_request_dates = invoke_http(request_dates_URL + "/get_by_request_id/" + str(request["request_id"]), method='GET')
             for request_dates in staff_request_dates[0]["data"]:
                 if request_dates["request_status"] == "Pending Approval" or request_dates["request_status"] == "Approved":
                     request_dict["request_dates"].append({request_dates["request_date"]: request_dates["request_shift"]})
@@ -148,7 +152,7 @@ def get_org_schedule():
 @app.route("/get_team_schedule/<int:staff_id>", methods=['GET'])
 def get_team_schedule(staff_id):
     # Get all requests made by the staff_id
-    response = invoke_http("http://localhost:5000/employee/get_all_employees", method='GET')
+    response = invoke_http(employee_URL + "/get_all_employees", method='GET')
 
     def get_team_members(staff_id, visited=None, staff_details=None):
         # Initialize visited set to track processed staff_ids
@@ -182,7 +186,7 @@ def get_team_schedule(staff_id):
     # Get the full list of team members under the given staff_id
     all_team_members = get_team_members(staff_id)
 
-    request_response = invoke_http("http://localhost:5001/request/get_all_requests", method='GET')
+    request_response = invoke_http(request_URL + "/get_all_requests", method='GET')
     
     if request_response["code"] == 200:
         request_list = []
@@ -190,7 +194,7 @@ def get_team_schedule(staff_id):
             if request["staff_id"] in all_team_members.keys():
                 request_dict = {"staff_id": request["staff_id"], "staff_name": all_team_members[request["staff_id"]]["staff_name"], "request_id": request["request_id"], "request_dates": []}
                 
-                staff_request_dates = invoke_http("http://localhost:5002/request_dates/get_by_request_id/" + str(request["request_id"]), method='GET')
+                staff_request_dates = invoke_http(request_dates_URL + "/get_by_request_id/" + str(request["request_id"]), method='GET')
                 for request_dates in staff_request_dates[0]["data"]:
                     if request_dates["request_status"] == "Pending Approval" or request_dates["request_status"] == "Approved":
                         request_dict["request_dates"].append({request_dates["request_date"]: request_dates["request_shift"]})

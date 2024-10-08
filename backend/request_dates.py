@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from request import db, Request
 from flask_cors import CORS
 from invokes import invoke_http
+from os import environ
 
 app = Flask(__name__)
 app.config.from_object('config.Config')
@@ -43,6 +44,9 @@ class RequestDates(db.Model):
             "withdraw_reason": self.withdraw_reason,
             "rescind_reason": self.rescind_reason,
         }
+
+status_log_URL = environ.get(
+    'status_log_URL') or "http://localhost:5003/status_log"
 
 
 # Create
@@ -98,7 +102,7 @@ def create_request_dates():
                     new_request_date = RequestDates(
                         request_id=request_id,
                         request_date=request_date,
-                        request_shift=request_shift
+                        request_shift=request_shift,
                     )
                     db.session.add(new_request_date)
                     new_request_dates.append(new_request_date)
@@ -255,11 +259,11 @@ def change_all_status():
 
         log_data = {
             "request_id": request_id,
-            "action": "Request has been " + new_status.lower() + " by staff",
+            "action": "Request has been " + new_status.lower(),
             "reason": reason
         }
 
-        invoke_http("http://localhost:5003/status_log/add_event", json=log_data, method='POST')
+        invoke_http(status_log_URL + "/add_event", json=log_data, method='POST')
 
         return jsonify({
             "code": 200,
@@ -337,7 +341,7 @@ def change_partial_status():
             "reason": reason
         }
 
-        invoke_http("http://localhost:5003/status_log/add_event", json=log_data, method='POST')
+        invoke_http(status_log_URL + "/add_event", json=log_data, method='POST')
 
         return jsonify({
             "code": 200,
@@ -429,7 +433,7 @@ def auto_reject():
                 "reason": "Auto rejected"
             }
 
-            invoke_http("http://localhost:5003/status_log/add_event", json=log_data, method='POST')
+            invoke_http(status_log_URL + "/add_event", json=log_data, method='POST')
 
 
     # Commit the changes to the database

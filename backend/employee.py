@@ -46,6 +46,7 @@ class Employee(db.Model):
         }
 
 
+# Retrieve details of an employee
 @app.route("/employee/get_details/<int:staff_id>")
 def get_employee_details(staff_id):
     """
@@ -89,6 +90,7 @@ def get_employee_details(staff_id):
         }), 404
 
 
+# Retrieve details of employees under an employee/user
 @app.route("/employee/get_staff/<int:staff_id>")
 def get_staff_by_manager(staff_id):
     """
@@ -142,6 +144,7 @@ def get_staff_by_manager(staff_id):
         }), 500
 
 
+# Retrieve all employees
 @app.route("/employee/get_all_employees", methods=["GET"])
 def get_all_employees():
     """

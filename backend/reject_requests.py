@@ -2,16 +2,22 @@ from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from invokes import invoke_http
 from flask_cors import CORS
+from os import environ
 
 app = Flask(__name__)
 app.config.from_object('config.Config')
 db = SQLAlchemy(app)
 CORS(app)
 
-#######################################################
-staff_id = "150488"
+request_URL = environ.get(
+    'request_URL') or "http://localhost:5001/request"
+request_dates_URL = environ.get(
+    'request_dates_URL') or "http://localhost:5002/request_dates"
+status_log_URL = environ.get(
+    'request_dates_URL') or "http://localhost:5003/status_log"
 
-# Staff view own requests
+
+# Rejects request
 @app.route("/reject_request", methods=['PUT'])
 def reject_request():
     try:
@@ -32,7 +38,7 @@ def reject_request():
         }
 
         # Invoke the API to update the reason for rejection
-        update_reason_response = invoke_http("http://localhost:5001/request/update_reason", json=data, method='PUT')
+        update_reason_response = invoke_http(request_URL + "/update_reason", json=data, method='PUT')
 
         if update_reason_response.get('code') != 200:
             return jsonify({
@@ -41,7 +47,7 @@ def reject_request():
             }), update_reason_response.get('code', 500)
 
         # Invoke the API to change the status of all records with the same request_id
-        change_status_response = invoke_http("http://localhost:5002/request_dates/change_all_status", json=data, method='PUT')
+        change_status_response = invoke_http(request_dates_URL + "/change_all_status", json=data, method='PUT')
 
         if change_status_response.get('code') != 200:
             return jsonify({
@@ -55,7 +61,7 @@ def reject_request():
             "reason": reason
         }
 
-        invoke_http("http://localhost:5003/status_log/add_event", json=log_data, method='POST')
+        invoke_http(status_log_URL + "/add_event", json=log_data, method='POST')
 
         # If both requests are successful
         return jsonify({

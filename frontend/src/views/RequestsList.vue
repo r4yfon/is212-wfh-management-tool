@@ -50,6 +50,11 @@
                         </v-btn>
                     </div>
                 </template>
+
+                <!-- Status Column with color coding -->
+                <template v-slot:item.reject_reason="{ item }">
+                    <div>{{ item.reject_reason }}</div>
+                </template>
             </v-data-table>
         </v-card>
 
@@ -88,7 +93,8 @@ export default {
     methods: {
         // Format the data to the structure needed for the table
         formatData() {
-            fetch(`http://localhost:5101/s_retrieve_requests`)
+            // #####################################################################################
+            fetch(`http://localhost:5101/s_retrieve_requests/150488`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
@@ -106,6 +112,7 @@ export default {
                             shift: wfh.request_shift,
                             status: wfh.request_status,
                             withdraw: wfh.withdraw_reason,
+                            Remarks: item.reject_reason
                         }))
                     );
                 })
