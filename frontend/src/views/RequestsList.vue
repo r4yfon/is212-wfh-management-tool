@@ -1,5 +1,5 @@
 <template>
-    <div class="requests-container">
+    <div class="container mt-5">
         <v-card flat>
             <v-card-title class="d-flex align-center pe-2">
                 Requests List
@@ -42,12 +42,13 @@
 
                 <!-- Withdraw Column -->
                 <template v-slot:item.withdraw="{ item }">
-                    <div class="text-end">
+                    <div>
                         <!-- Show Withdraw button only for Approved or Pending statuses -->
-                        <v-btn v-if="canWithdraw(item.status, item.wfhRequestDate)" @click="openWithdrawDialog(item)" color="pink"
-                            variant="outlined" small>
+                        <v-btn v-if="canWithdraw(item.status, item.wfhRequestDate)" @click="openWithdrawDialog(item)"
+                            color="pink" variant="outlined" small>
                             Withdraw
                         </v-btn>
+                        <ManagerActions :item="item" />
                     </div>
                 </template>
 
@@ -77,7 +78,12 @@
 
 
 <script>
+import ManagerActions from '@/components/ManagerActions.vue';
+
 export default {
+    components: {
+        ManagerActions
+    },
     data() {
         return {
             search: "",
@@ -191,11 +197,7 @@ export default {
 
     }
 };
-
 </script>
-
-
-
 
 
 <style scoped>
