@@ -21,6 +21,11 @@ export default {
       calendarOptions: {
         plugins: [timeGridPlugin, dayGridPlugin, interactionPlugin],
         initialView: "timeGridWeek",
+        validRange: {
+          start: new Date(new Date().getFullYear(), new Date().getMonth() - 2, new Date().getDate()).toISOString().split("T")[0],
+          end: new Date(new Date().getFullYear(), new Date().getMonth() + 3, new Date().getDate()).toISOString().split("T")[0],
+        },
+        height: "373px",
         slotMinTime: "09:00:00",
         slotMaxTime: "18:00:00",
         slotDuration: "01:00:00",

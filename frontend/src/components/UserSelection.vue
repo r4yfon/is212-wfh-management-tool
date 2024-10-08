@@ -1,7 +1,14 @@
+<script setup>
+import { useMainStore } from '@/store.js';
+const userStore = useMainStore();
+</script>
+
 <template>
   <v-menu>
     <template v-slot:activator="{ props }">
-      <v-btn flat variant="outlined" color="grey" text v-bind="props" density="comfortable" icon="mdi-account"></v-btn>
+      <v-btn flat variant="outlined" color="grey" text v-bind="props" prepend-icon="mdi-account">
+        {{ userStore.user.staff_fname }} {{ userStore.user.staff_lname }}
+      </v-btn>
     </template>
     <v-list>
       <v-list-item v-for="user in users" :key="user.staff_id" @click="selectUser(user)">
@@ -15,12 +22,9 @@
 </template>
 
 <script>
-import { useMainStore } from '@/store.js';
-
 export default {
   data() {
     return {
-      selectedUser: null,
       users: [
         {
           staff_id: 150488,
@@ -57,6 +61,9 @@ export default {
         }
       ],
     }
+  },
+  mounted() {
+    // this.selected_user = userStore.user;
   },
   methods: {
     selectUser(user) {
