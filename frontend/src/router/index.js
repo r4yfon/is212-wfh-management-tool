@@ -19,6 +19,11 @@ const router = createRouter({
       name: "requestslist",
       component: () => import("../views/RequestsList.vue"),
     },
+    {
+      path: "/viewstaffrequests",
+      name: "viewstaffrequests",
+      component: () => import("../views/ViewStaffRequests.vue"),
+    },
   ],
 });
 
