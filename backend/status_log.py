@@ -72,15 +72,7 @@ def add_event():
 
     request_id = data['request_id']
     action = data['action']
-    reason = data.get('reason')  # Optional
-
-    # Check if the request_id exists
-    request_entry = Request.query.filter_by(request_id=request_id).first()
-    if not request_entry:
-        return jsonify({
-            "code": 404,
-            "error": f"Request with ID {request_id} not found."
-        }), 404
+    reason = data.get('reason')
 
     try:
         # Create a new StatusLog entry

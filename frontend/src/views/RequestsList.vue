@@ -109,9 +109,9 @@ export default {
                 })
                 .then(data => {
                     const rawData = data["data"];
-
+                    console.log(data)
                     this.items = rawData.flatMap((item) =>
-                        item.wfh_dates[0].data.map((wfh) => ({
+                        item.wfh_dates.map((wfh) => ({
                             request_id: item.request_id,
                             creationdate: item.creation_date,
                             wfhRequestDate: wfh.request_date,

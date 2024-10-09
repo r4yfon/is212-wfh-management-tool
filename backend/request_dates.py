@@ -226,6 +226,33 @@ def get_request_dates_in_batch():
 # Change status to all the records that belongs to the same request_id
 @app.route('/request_dates/change_all_status', methods=['PUT'])
 def change_all_status():
+    """
+    Parameters:
+    request_id(int)
+    status(varchar(20))
+
+    Success Response
+    {
+        "code": 200,
+        "message": "Request status for request ID 1 updated to Approved.",
+        "data": [
+            {
+                "request_date_id": 1,
+                "request_id": 123,
+                "request_date": "2023-10-01",
+                "request_shift": "PM",
+                "request_status": "Approved"
+            },
+            {
+                "request_date_id": 2,
+                "request_id": 123,
+                "request_date": "2023-10-02",
+                "request_shift": "Full",
+                "request_status": "Approved"
+            }
+        ]
+    }
+    """
     try:
         # Get request data
         request_id = request.json.get('request_id')
@@ -281,6 +308,35 @@ def change_all_status():
 # Withdraw or rescind some of the dates in a request
 @app.route('/request_dates/change_partial_status', methods=['PUT'])
 def change_partial_status():
+    """
+    Parameters:
+    request_id(int)
+    new_status(varchar(20))
+    reason(varchar(100))
+    dates(list)
+    shift(varchar(5))
+
+    Success Response
+    {
+        "code": 200,
+        "data": [
+            {
+                "request_date_id": 1,
+                "request_id": 1,
+                "request_date": "2023-10-01",
+                "request_shift": "PM",
+                "request_status": "Approved"
+            },
+            {
+                "request_date_id": 2,
+                "request_id": 1,
+                "request_date": "2023-10-02",
+                "request_shift": "Full",
+                "request_status": "Pending Approval"
+            }
+        ]
+    }
+    """
     try:
         # Get request data from JSON body
         request_id = request.json.get('request_id')
@@ -408,6 +464,26 @@ def get_staff_request(request_id):
 # Auto reject requests that are more than 2 months ago
 @app.route('/request_dates/auto_reject', methods=['PUT'])
 def auto_reject():
+    """
+    No parameters needed
+
+    Success Response
+        {
+        "message": "2 requests have been updated to Rejected",
+        "updated_requests": [
+            {
+                "id": 101,
+                "request_date": "2024-07-01",
+                "new_status": "Rejected"
+            },
+            {
+                "id": 102,
+                "request_date": "2024-06-28",
+                "new_status": "Rejected"
+            }
+        ]
+    }
+    """
     from datetime import datetime, timedelta
     # Get today's date
     today = datetime.today()
