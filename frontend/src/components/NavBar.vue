@@ -34,7 +34,9 @@ const userStore = useMainStore();
           <v-btn variant="plain" href="/weeklycalendar" class="d-none d-md-block align-content-center">View
             Schedule</v-btn>
           <v-btn variant="plain" href="/requestslist" class="d-none d-md-block align-content-center">View
-            Requests</v-btn>
+            Own Requests</v-btn>
+          <v-btn variant="plain" href="/viewstaffrequests" class="d-none d-md-block align-content-center">View
+            Staff Requests</v-btn>
           <v-btn @click="dialog = true" variant="plain">Apply to WFH</v-btn>
         </div>
 
@@ -96,10 +98,12 @@ const userStore = useMainStore();
         <!-- dropdown menu for mobile -->
         <div class="d-md-none w-100" id="mobile-menu" v-show="isMenuOpen">
           <div class="d-flex flex-column">
-            <v-btn class="justify-content-start" href="/requestslist" @click="toggleMenu" variant="plain">View
-              Requests</v-btn>
             <v-btn class="justify-content-start" href="/weeklycalendar" @click="toggleMenu" variant="plain">View
               Schedule</v-btn>
+            <v-btn class="justify-content-start" href="/requestslist" @click="toggleMenu" variant="plain">View
+              Own Requests</v-btn>
+            <v-btn class="justify-content-start" href="/viewstaffrequests" @click="toggleMenu" variant="plain">View
+              Staff Requests</v-btn>
             <v-btn class="justify-content-start" @click="dialog = true" variant="plain">Apply to WFH</v-btn>
           </div>
         </div>
