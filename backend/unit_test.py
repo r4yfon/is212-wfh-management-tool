@@ -122,7 +122,7 @@ class TestMRetrieveRequests(unittest.TestCase):
         ]
 
         # Make a GET request to the endpoint
-        response = self.client.get('/m_retrieve_requests')
+        response = self.client.get('/m_retrieve_requests/151408')
 
         # Assert that the response was successful
         self.assertEqual(response.status_code, 200)
@@ -160,7 +160,7 @@ class TestMRetrieveRequests(unittest.TestCase):
         ]
 
         # Make a GET request to the endpoint
-        response = self.client.get('/m_retrieve_requests')
+        response = self.client.get('/m_retrieve_requests/150488')
 
         # Assert that the response was successful with an empty data list
         self.assertEqual(response.status_code, 200)
@@ -185,7 +185,7 @@ class TestMRetrieveRequests(unittest.TestCase):
         ]
 
         # Make a GET request to the endpoint
-        response = self.client.get('/m_retrieve_requests')
+        response = self.client.get('/m_retrieve_requests/140944')
 
         # Assert that the response was successful with an empty data list
         self.assertEqual(response.status_code, 200)
@@ -201,12 +201,12 @@ class TestMRetrieveRequests(unittest.TestCase):
         mock_invoke_http.side_effect = Exception("Database error")
 
         # Make a GET request to the endpoint
-        response = self.client.get('/m_retrieve_requests')
+        response = self.client.get('/m_retrieve_requests/999999')
 
         # Define the expected response for an error
         expected_response = {
             "code": 500,
-            "error": "An error occurred while getting employee requests for manager staff_id 130002: Database error"
+            "error": "An error occurred while getting employee requests for manager staff_id 999999: Database error"
         }
 
         # Assert the response indicates an error

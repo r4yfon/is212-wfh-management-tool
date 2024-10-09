@@ -41,7 +41,7 @@ def s_retrieve_requests(s_staff_id):
 
 
 # manager view requests from requestors
-@app.route("/m_retrieve_requests/m_staff_id", methods=['GET'])
+@app.route("/m_retrieve_requests/<int:m_staff_id>", methods=['GET'])
 def m_retrieve_requests(m_staff_id):
     """
     Success response:
