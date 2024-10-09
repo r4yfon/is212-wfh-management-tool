@@ -62,7 +62,7 @@
 
                             <!-- Approve Column -->
                             <template v-slot:item.approve="{ item }">
-                                <v-btn color="green" variant="outlined" small>
+                                <v-btn color="green" @click="approveRequest(item)" variant="outlined" small>
                                     Approve
                                 </v-btn>
                             </template>
@@ -147,6 +147,10 @@
                                 <div :class="getStatusColor(item.status)">
                                     {{ item.status }}
                                 </div>
+                            </template>
+
+                            <template v-slot:item.remarks="{ item }">
+                                <div>{{ item.reject || item.rescind }}</div>
                             </template>
                             </v-data-table>
                         </v-window-item>
@@ -276,6 +280,34 @@ export default {
             if (status === "Rescinded") return "text-error";
             if (status === "Pending Withdrawal") return "text-pink";
             return "text-warning";
+        },
+
+        approveRequest(item) {
+            let new_status;
+
+            if (item.status === "Pending Approval" || item.status === "Pending Withdrawal") {
+                new_status = "Approved";
+            }
+
+            const data = {
+                "request_id": item.request_id,
+                "status": new_status,
+                "dates": [item.wfhRequestDate]
+            };
+
+            fetch(`http://localhost:5002/request_dates/change_partial_status`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(responseData => {
+                console.log('Success:', responseData);
+                item.status = new_status;
+            })
+            .catch(error => console.error('Error updating status:', error));
         },
 
         // Open the Reject dialog
