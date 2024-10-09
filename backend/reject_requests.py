@@ -19,6 +19,28 @@ status_log_URL = environ.get("request_dates_URL") or "http://localhost:5003/stat
 # Rejects request
 @app.route("/reject_request", methods=["PUT"])
 def reject_request():
+    """
+    Manager rejects a request
+    ---
+    Parameters (in JSON body):
+        {
+            "request_id": 1,
+            "reason": "Insufficient justification for the leave"
+        }
+
+    Success response:
+        {
+            "code": 200,
+            "message": "Request created successfully.",
+            "data": {
+                "request_id": 1,
+                "staff_id": 1,
+                "creation_date": "2023-10-01",
+                "request_dates": ["2023-10-01", "2023-10-02"],
+                "apply_reason": "Reason for request"
+            }
+        }
+    """
     try:
         # Retrieve data from the request body
         request_id = request.json.get("request_id")
