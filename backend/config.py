@@ -15,3 +15,5 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {'pool_recycle': 299}
     CORS_ORIGINS = "*"
+    DEBUG = True
+    TESTING = True

@@ -207,7 +207,7 @@ class TestMRetrieveRequests(unittest.TestCase):
 
         # Make a GET request to the endpoint
         response = self.client.get('/m_retrieve_requests/151408')
-
+        print(response.data)
         # Assert that the response was successful
         self.assertEqual(response.status_code, 200)
 
