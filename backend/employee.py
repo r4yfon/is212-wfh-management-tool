@@ -46,6 +46,7 @@ class Employee(db.Model):
         }
 
 
+# Retrieve details of an employee
 @app.route("/employee/get_details/<int:staff_id>")
 def get_employee_details(staff_id):
     """
@@ -89,6 +90,7 @@ def get_employee_details(staff_id):
         }), 404
 
 
+# Retrieve details of employees under an employee/user
 @app.route("/employee/get_staff/<int:staff_id>")
 def get_staff_by_manager(staff_id):
     """
@@ -139,6 +141,63 @@ def get_staff_by_manager(staff_id):
         return jsonify({
             "code": 500,
             "error": "An error occurred while fetching staff data. " + str(e)
+        }), 500
+
+
+# Retrieve all employees
+@app.route("/employee/get_all_employees", methods=["GET"])
+def get_all_employees():
+    """
+    Get all staff IDs and their reporting managers.
+    
+    Success response:
+    {
+        "code": 200,
+        "data": [
+            {
+                "staff_id": 150001,
+                "reporting_manager": 150111,
+                "staff_name": "Tan Wei Ming",
+                "dept": "Finance",
+                "position": "Associate"
+            },
+            {
+                "staff_id": 150002,
+                "reporting_manager": 150111,
+                "staff_name": "Lim Hong Wei",
+                "dept": "Sales",
+                "position": "Associate"
+            },
+            ...
+        ]
+    }
+    """
+
+    try:
+        # Fetch all employees
+        employees = Employee.query.all()
+
+        # Prepare the data
+        reporting_structure = [
+            {
+                "staff_id": employee.staff_id,
+                "reporting_manager": employee.reporting_manager,
+                "staff_name": employee.staff_fname + " " + employee.staff_lname,
+                "dept": employee.dept,
+                "position": employee.position
+            }
+            for employee in employees
+        ]
+
+        return jsonify({
+            "code": 200,
+            "data": reporting_structure
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "code": 500,
+            "error": "An error occurred while fetching reporting structure. " + str(e)
         }), 500
 
 

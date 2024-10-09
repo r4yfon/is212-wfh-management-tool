@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from request import db, Request
 from flask_cors import CORS
 from invokes import invoke_http
+from os import environ
 
 app = Flask(__name__)
 app.config.from_object('config.Config')
@@ -43,6 +44,9 @@ class RequestDates(db.Model):
             "withdraw_reason": self.withdraw_reason,
             "rescind_reason": self.rescind_reason,
         }
+
+status_log_URL = environ.get(
+    'status_log_URL') or "http://localhost:5003/status_log"
 
 
 # Create
@@ -98,7 +102,7 @@ def create_request_dates():
                     new_request_date = RequestDates(
                         request_id=request_id,
                         request_date=request_date,
-                        request_shift=request_shift
+                        request_shift=request_shift,
                     )
                     db.session.add(new_request_date)
                     new_request_dates.append(new_request_date)
@@ -117,27 +121,6 @@ def create_request_dates():
                 "code": 404,
                 "message": f"No request found for request ID {request_id}: {e}"
             }), 404
-
-        # new_request_dates = []
-
-        # # Create new request dates
-        # with db.session.begin_nested():
-        #     for request_date, request_shift in request_dates.items():
-        #         new_request_date = RequestDates(
-        #             request_id=request_id,
-        #             request_date=request_date,
-        #             request_shift=request_shift
-        #         )
-        #         db.session.add(new_request_date)
-        #         new_request_dates.append(new_request_date)
-
-        # db.session.commit()
-
-        # return jsonify({
-        #     "code": 200,
-        #     "message": "Request dates created successfully.",
-        #     "data": [request_date.json() for request_date in new_request_dates]
-        # }), 200
 
     except Exception as e:
         return jsonify({
@@ -265,42 +248,22 @@ def change_all_status():
                 "code": 404,
                 "message": f"No request dates found for request ID {request_id}."
             }), 404
-
+        
         # Update the Request_Status for each record
         for request_date in request_dates:
             if request_date.request_status != "Withdrawn" and request_date.request_status != "Pending Withdrawal":
                 request_date.request_status = new_status
-
-                # If the new status is 'pending_rescind', update the Rescind_Reason
-                if new_status == "Rescinded":
-                    if not request.json.get('reason'):
-                        return jsonify({
-                            "code": 400,
-                            "message": "Rescind reason must be provided."
-                        }), 400
-                    reason = request.json.get('reason')
-                    request_date.rescind_reason = reason
-
-                # If the new status is 'withdraw', update the Withdraw_Reason
-                if new_status == "Withdrawn" or new_status == "Pending Withdrawal":
-                    if not request.json.get('reason'):
-                        return jsonify({
-                            "code": 400,
-                            "message": "Withdraw reason must be provided."
-                        }), 400
-                    reason = request.json.get('reason')
-                    request_date.withdraw_reason = reason
 
         # Commit the changes to the database
         db.session.commit()
 
         log_data = {
             "request_id": request_id,
-            "action": "Request has been " + new_status.lower() + " by staff",
+            "action": "Request has been " + new_status.lower(),
             "reason": reason
         }
 
-        invoke_http("http://localhost:5003/status_log/add_event", json=log_data, method='POST')
+        invoke_http(status_log_URL + "/add_event", json=log_data, method='POST')
 
         return jsonify({
             "code": 200,
@@ -324,6 +287,7 @@ def change_partial_status():
         new_status = request.json.get('status')
         reason = request.json.get('reason')
         dates = request.json.get('dates')
+        shift = request.json.get('shift')
 
         # Check if all necessary data is provided
         if not request_id or not new_status or not dates:
@@ -335,7 +299,8 @@ def change_partial_status():
         # Query the request dates that match the request_id and are in the provided dates list
         request_dates = RequestDates.query.filter(
             RequestDates.request_id == request_id,
-            RequestDates.request_date.in_(dates)
+            RequestDates.request_date.in_(dates),
+            RequestDates.request_shift == shift
         ).all()
 
         if not request_dates:
@@ -372,11 +337,11 @@ def change_partial_status():
 
         log_data = {
             "request_id": request_id,
-            "action": dates[0] + " has been " + new_status.lower() + " by staff",
+            "action": dates[0] + " : " + new_status,
             "reason": reason
         }
 
-        invoke_http("http://localhost:5003/status_log/add_event", json=log_data, method='POST')
+        invoke_http(status_log_URL + "/add_event", json=log_data, method='POST')
 
         return jsonify({
             "code": 200,
@@ -468,7 +433,7 @@ def auto_reject():
                 "reason": "Auto rejected"
             }
 
-            invoke_http("http://localhost:5003/status_log/add_event", json=log_data, method='POST')
+            invoke_http(status_log_URL + "/add_event", json=log_data, method='POST')
 
 
     # Commit the changes to the database

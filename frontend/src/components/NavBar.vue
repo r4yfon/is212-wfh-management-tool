@@ -10,7 +10,11 @@ import {
   VSpacer,
   VProgressCircular,
 } from "vuetify/components";
+import UserSelection from "./UserSelection.vue";
 import { is_within_word_count, two_months_before, three_months_after } from "@/inputValidation";
+import { useMainStore } from '@/store.js';
+
+const userStore = useMainStore();
 </script>
 
 <template>
@@ -89,17 +93,7 @@ import { is_within_word_count, two_months_before, three_months_after } from "@/i
 
 
         <!--  for switching users -->
-        <v-menu>
-          <template v-slot:activator="{ props }">
-            <v-btn flat variant="outlined" color="grey" text v-bind="props" density="comfortable"
-              icon="mdi-account"></v-btn>
-          </template>
-          <v-list>
-            <v-list-item v-for="user in users" :key="user" @click="selectUser(user)">
-              <v-list-item-title>{{ user }}</v-list-item-title>
-            </v-list-item>
-          </v-list>
-        </v-menu>
+        <UserSelection />
 
         <!-- dropdown menu for mobile -->
         <div class="d-md-none w-100" id="mobile-menu" v-show="isMenuOpen">
@@ -122,7 +116,6 @@ import { is_within_word_count, two_months_before, three_months_after } from "@/i
 export default {
   data() {
     return {
-      users: ["HR", "Manager", "Employee"],
       dialog: false,
       loading: false,
       requestType: "one-time",
@@ -237,7 +230,6 @@ export default {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               staff_id: this.newEvent.staffId,
-              request_date: new Date().toISOString().split("T")[0],
               request_dates: {
                 [this.newEvent.date]: this.newEvent.shift,
               },

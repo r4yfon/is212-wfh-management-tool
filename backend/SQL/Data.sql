@@ -22,7 +22,7 @@ CREATE TABLE Employee (
 CREATE TABLE Request (
     Request_ID INT PRIMARY KEY AUTO_INCREMENT,
     Staff_ID INT,
-    Request_Date DATE NOT NULL,
+    Creation_Date DATE NOT NULL,
     Apply_Reason VARCHAR(100) NOT NULL,
     Reject_Reason VARCHAR(100),
     CONSTRAINT FK_Staff_ID FOREIGN KEY (Staff_ID)
@@ -56,8 +56,8 @@ CREATE TABLE Status_Log (
 );
 
 
-INSERT INTO Employee (Staff_ID, Staff_FName, Staff_LName, Dept, Position, Country, Email, Reporting_Manager, Role) 
-VALUES 
+INSERT INTO Employee (Staff_ID, Staff_FName, Staff_LName, Dept, Position, Country, Email, Reporting_Manager, Role)
+VALUES
 (130002, 'Jack', 'Sim', 'CEO', 'MD', 'Singapore', 'jack.sim@allinone.com.sg', 130002, 1),
 (140001, 'Derek', 'Tan', 'Sales', 'Director', 'Singapore', 'Derek.Tan@allinone.com.sg', 130002, 1),
 (140002, 'Susan', 'Goh', 'Sales', 'Account Manager', 'Singapore', 'Susan.Goh@allinone.com.sg', 140894, 2),
@@ -612,10 +612,10 @@ VALUES
 (210042, 'Naron', 'Savoeun', 'IT', 'IT Team', 'Singapore', 'Naron.Savoeun@allinone.com.sg', 210001, 2),
 (210043, 'Phuc', 'Luon', 'IT', 'IT Team', 'Singapore', 'Phuc.Luon@allinone.com.sg', 210001, 2),
 (210044, 'Chandara', 'Tithe', 'IT', 'IT Team', 'Singapore', 'tithe.chandra@allinone.com.sg', 210001, 2);
-                
+
 
 -- Insert into Request Table
-INSERT INTO Request (Staff_ID, Request_Date, Apply_Reason, Reject_Reason)
+INSERT INTO Request (Staff_ID, Creation_Date, Apply_Reason, Reject_Reason)
 VALUES
 (150488, '2024-09-15', 'Family event', NULL),
 (150445, '2024-09-10', 'Medical appointment', NULL),
@@ -633,8 +633,8 @@ VALUES
 INSERT INTO Request_Dates (Request_ID, Request_Date, Request_Shift, Request_Status, Withdraw_Reason, Rescind_Reason)
 VALUES
 (1, '2024-09-15', 'PM', 'Approved', NULL , NULL),
-(1, '2024-09-22', 'Full', 'Approved', NULL , NULL),
-(1, '2024-09-29', 'AM', 'Approved', NULL , NULL),
+(1, '2024-09-22', 'PM', 'Approved', NULL , NULL),
+(1, '2024-09-29', 'PM', 'Approved', NULL , NULL),
 (2, '2024-09-10', 'Full', 'Pending Approval', NULL , NULL),
 (2, '2024-09-17', 'Full', 'Pending Approval', NULL , NULL),
 (3, '2024-09-12', 'AM', 'Rejected', NULL , NULL),

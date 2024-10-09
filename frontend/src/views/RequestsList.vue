@@ -1,5 +1,5 @@
 <template>
-    <div class="requests-container">
+    <div class="container mt-5">
         <v-card flat>
             <v-card-title class="d-flex align-center pe-2">
                 Requests List
@@ -19,8 +19,8 @@
                 </template>
 
                 <!-- Date Requested Column -->
-                <template v-slot:item.request_date="{ item }">
-                    <div>{{ item.request_date }}</div>
+                <template v-slot:item.creationdate="{ item }">
+                    <div>{{ item.creationdate }}</div>
                 </template>
 
                 <!-- WFH Request Date Column -->
@@ -42,13 +42,19 @@
 
                 <!-- Withdraw Column -->
                 <template v-slot:item.withdraw="{ item }">
-                    <div class="text-end">
+                    <div>
                         <!-- Show Withdraw button only for Approved or Pending statuses -->
-                        <v-btn v-if="canWithdraw(item.status, item.wfhRequestDate)" @click="openWithdrawDialog(item)" color="pink"
-                            variant="outlined" small>
+                        <v-btn v-if="canWithdraw(item.status, item.wfhRequestDate)" @click="openWithdrawDialog(item)"
+                            color="pink" variant="outlined" small>
                             Withdraw
                         </v-btn>
+                        <ManagerActions :item="item" />
                     </div>
+                </template>
+
+                <!-- Status Column with color coding -->
+                <template v-slot:item.reject_reason="{ item }">
+                    <div>{{ item.reject_reason }}</div>
                 </template>
             </v-data-table>
         </v-card>
@@ -72,7 +78,12 @@
 
 
 <script>
+import ManagerActions from '@/components/ManagerActions.vue';
+
 export default {
+    components: {
+        ManagerActions
+    },
     data() {
         return {
             search: "",
@@ -88,7 +99,8 @@ export default {
     methods: {
         // Format the data to the structure needed for the table
         formatData() {
-            fetch(`http://localhost:5101/s_retrieve_requests`)
+            // #####################################################################################
+            fetch(`http://localhost:5101/s_retrieve_requests/150488`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
@@ -101,11 +113,12 @@ export default {
                     this.items = rawData.flatMap((item) =>
                         item.wfh_dates[0].data.map((wfh) => ({
                             request_id: item.request_id,
-                            request_date: item.request_date,
+                            creationdate: item.creation_date,
                             wfhRequestDate: wfh.request_date,
                             shift: wfh.request_shift,
                             status: wfh.request_status,
                             withdraw: wfh.withdraw_reason,
+                            Remarks: item.reject_reason
                         }))
                     );
                 })
@@ -156,7 +169,8 @@ export default {
                 "request_id": item.request_id,
                 "status": new_status,
                 "reason": item.withdraw_reason,
-                "dates": [item.wfhRequestDate]
+                "dates": [item.wfhRequestDate],
+                "shift": item.shift
             };
 
             fetch(`http://localhost:5002/request_dates/change_partial_status`, {
@@ -183,11 +197,7 @@ export default {
 
     }
 };
-
 </script>
-
-
-
 
 
 <style scoped>
