@@ -21,26 +21,26 @@
                 <v-tab :value="3">Rejected/Rescinded Requests</v-tab>
             </v-tabs>
 
-            <v-tabs-window v-model="tab" color="red-lighten-2">
-                <v-tabs-window-item
+            <v-window v-model="tab" color="red-lighten-2">
+                <v-window-item
                     v-for="n in 3"
                     :key="n"
                     :value="n"
-                ></v-tabs-window-item>
+                ></v-window-item>
 
                 <v-card-text>
-                    <v-tabs-window v-model="tab">
-                        <v-tabs-window-item value="1">
-                            <v-data-table v-model:search="search" :items="items">
+                    <v-window v-model="tab">
+                        <v-window-item value="1">
+                            <v-data-table v-model:search="search" :items="filteredItemsForTab1">
 
-                            <!-- Date Requested Column -->
+                            <!-- ID Requested Column -->
                             <template v-slot:item.request_id="{ item }">
                                 <div>{{ item.request_id }}</div>
                             </template>
 
-                            <!-- Date Requested Column -->
-                            <template v-slot:item.request_date="{ item }">
-                                <div>{{ item.request_date }}</div>
+                            <!-- Date Created Column -->
+                            <template v-slot:item.creationdate="{ item }">
+                                <div>{{ item.creationdate }}</div>
                             </template>
 
                             <!-- WFH Request Date Column -->
@@ -75,19 +75,19 @@
                             </template>
                             </v-data-table>
 
-                        </v-tabs-window-item>
+                        </v-window-item>
 
-                        <v-tabs-window-item value="2">
-                            <v-data-table v-model:search="search" :items="items">
+                        <v-window-item value="2">
+                            <v-data-table v-model:search="search" :items="filteredItemsForTab2">
 
-                            <!-- Date Requested Column -->
+                            <!-- ID Requested Column -->
                             <template v-slot:item.request_id="{ item }">
                                 <div>{{ item.request_id }}</div>
                             </template>
 
-                            <!-- Date Requested Column -->
-                            <template v-slot:item.request_date="{ item }">
-                                <div>{{ item.request_date }}</div>
+                            <!-- Date Created Column -->
+                            <template v-slot:item.creationdate="{ item }">
+                                <div>{{ item.creationdate }}</div>
                             </template>
 
                             <!-- WFH Request Date Column -->
@@ -117,17 +117,17 @@
                                 </div>
                             </template>
                             </v-data-table>
-                        </v-tabs-window-item>
+                        </v-window-item>
 
-                        <v-tabs-window-item value="3">
-                            <v-data-table v-model:search="search" :items="items">
+                        <v-window-item value="3">
+                            <v-data-table v-model:search="search" :items="filteredItemsForTab3">
 
-                            <!-- Date Requested Column -->
+                            <!-- ID Requested Column -->
                             <template v-slot:item.request_id="{ item }">
                                 <div>{{ item.request_id }}</div>
                             </template>
 
-                            <!-- Date Requested Column -->
+                            <!-- Date Created Column -->
                             <template v-slot:item.request_date="{ item }">
                                 <div>{{ item.request_date }}</div>
                             </template>
@@ -149,15 +149,15 @@
                                 </div>
                             </template>
                             </v-data-table>
-                        </v-tabs-window-item>
-                    </v-tabs-window>
+                        </v-window-item>
+                    </v-window>
                 </v-card-text>
-            </v-tabs-window>
+            </v-window>
             </v-card>
     </v-card>
 
         <!-- Reject Dialog -->
-        <v-dialog v-model="RejectDialog" max-width="600">
+        <v-dialog v-model="rejectDialog" max-width="600">
             <v-card>
                 <v-card-title>Reject Request</v-card-title>
                 <v-card-text>
@@ -171,7 +171,7 @@
         </v-dialog>
 
         <!-- Rescind Dialog -->
-        <v-dialog v-model="RescindDialog" max-width="600">
+        <v-dialog v-model="rescindDialog" max-width="600">
             <v-card>
                 <v-card-title>Rescind Approved Request</v-card-title>
                 <v-card-text>
@@ -192,6 +192,7 @@
 export default {
     data() {
         return {
+            tab: 1,
             search: "",
             rejectDialog: false,
             rejectReason: "",
@@ -201,13 +202,30 @@ export default {
             items: [],
         };
     },
+    computed: {
+        filteredItemsForTab1() {
+            return this.items.filter(item => 
+                item.status === "Pending Approval" || item.status === "Pending Withdrawal"
+            );
+        },
+        filteredItemsForTab2() {
+            return this.items.filter(item => 
+                item.status === "Approved"
+            );
+        },
+        filteredItemsForTab3() {
+            return this.items.filter(item => 
+                item.status === "Rejected" || item.status === "Rescinded"
+            );
+        }
+    },
     created() {
         this.formatData();
     },
     methods: {
         // Format the data to the structure needed for the table
         formatData() {
-            fetch(`http://localhost:5101/s_retrieve_requests`)
+            fetch(`http://localhost:5101/s_retrieve_requests/150488`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
@@ -218,9 +236,9 @@ export default {
                     const rawData = data["data"];
 
                     this.items = rawData.flatMap((item) =>
-                        item.wfh_dates[0].data.map((wfh) => ({
+                        item.wfh_dates.map((wfh) => ({
                             request_id: item.request_id,
-                            request_date: item.request_date,
+                            creationDate: item.creation_date,
                             wfhRequestDate: wfh.request_date,
                             shift: wfh.request_shift,
                             status: wfh.request_status,
@@ -228,6 +246,7 @@ export default {
                             rescind: wfh.rescind_reason,
                         }))
                     );
+                    console.log(this.items);
                 })
                 .catch(error => {
                     console.error('Error fetching requests:', error);
@@ -236,15 +255,17 @@ export default {
 
         // Determine if the Rescind button should be shown
         canRescind(status, wfhRequestDate) {
-            // const TWO_MTH_IN_MS = 14 * 24 * 60 * 60 * 1000;  // 2 weeks in milliseconds
             const currentDate = new Date();
-            const currentDateStr = currentDate.toString()
+            const requestDate = new Date(wfhRequestDate);
 
-            const mthOfRequestMade = Number(wfhRequestDate.slice(5,6))
+            // Calculate the time difference in milliseconds
+            const timeDiff = currentDate.getTime() - requestDate.getTime();
 
-            const isWithinTwoMonths = (mthOfRequestMade + 3 > currentDateStr.slice(5,7));
+            // Convert time difference to months
+            const diffInMonths = timeDiff / (1000 * 60 * 60 * 24 * 30);
 
-            return (status === "Approved" && isWithinTwoMonths);
+            // Check if it's within 3 months and status is 'Approved'
+            return (status === "Approved" && diffInMonths <= 3);
         },
 
 
@@ -267,13 +288,7 @@ export default {
         // Confirm reject action
         confirmReject(item) {
             item.reject_reason = this.rejectReason;
-            let new_status;
-
-            if (item.status === "Pending Approval") {
-                new_status = "Rejected";
-            } else if (item.status === "Pending Withdrawal") {
-                new_status = "Rejected";
-            }
+            let new_status = (item.status === "Pending Approval" || item.status === "Pending Withdrawal") ? "Rejected" : item.status;
 
             const data = {
                 "request_id": item.request_id,
@@ -289,17 +304,12 @@ export default {
                 },
                 body: JSON.stringify(data)
             })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
-                .then(responseData => {
-                    console.log('Success:', responseData);
-                    location.reload();
-                })
-                .catch(error => console.error('Error updating status:', error));
+            .then(response => response.json())
+            .then(responseData => {
+                console.log('Success:', responseData);
+                item.status = new_status;
+            })
+            .catch(error => console.error('Error updating status:', error));
 
             this.rejectDialog = false;
         },
