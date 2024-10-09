@@ -106,23 +106,19 @@ class TestMRetrieveRequests(unittest.TestCase):
         mock_invoke_http.side_effect = [
             {
                 "data": [
-                    {"staff_id": 150488, "staff_fname": "Jacob", "staff_lname": "Tan"}
+                    {"staff_id": 151408, "staff_fname": "Philip", "staff_lname": "Lee"}
                 ]
             },  # Staff list response
             {
                 "data": [
-                    {"request_id": 1, "staff_id": 150488, "apply_reason": "Family event"},
-                    {"request_id": 2, "staff_id": 150488, "apply_reason": "Medical appointment"}
+                    {"request_id": 12, "staff_id": 151408, "apply_reason": "Medical appointment"},
                 ]
             },  # Staff requests response
-            [
-                {"data": [{"request_date": "2024-05-29", "request_status": "Pending Approval"}]},  # Request dates response for request_id 1
-                {"data": [{"request_date": "2024-09-12", "request_status": "Pending Withdrawal"}]}  # Request dates response for request_id 2
-            ]
+            {"data": [{"request_date": "2024-09-10","request_date_id": 15,"request_id": 12,"request_shift": "PM","request_status": "Pending Approval","rescind_reason": None,"withdraw_reason": None}]}
         ]
 
         # Make a GET request to the endpoint
-        response = self.client.get('/m_retrieve_requests/151408')
+        response = self.client.get('/m_retrieve_requests/130002')
 
         # Assert that the response was successful
         self.assertEqual(response.status_code, 200)
@@ -132,20 +128,16 @@ class TestMRetrieveRequests(unittest.TestCase):
             "code": 200,
             "data": [
                 {
-                    "reason": "Family event",
-                    "request_dates": ["2024-05-29"],
-                    "request_id": 1,
-                    "request_status": "Pending Approval",
-                    "staff_id": 150488,
-                    "staff_name": "Jacob Tan"
-                },
-                {
                     "reason": "Medical appointment",
-                    "request_dates": ["2024-09-12"],
-                    "request_id": 2,
-                    "request_status": "Pending Withdrawal",
-                    "staff_id": 150488,
-                    "staff_name": "Jacob Tan"
+                    "request_dates": [
+                        {
+                            "2024-09-10": "PM"
+                        }
+                    ],
+                    "request_id": 12,
+                    "request_status": "Pending Approval",
+                    "staff_id": 151408,
+                    "staff_name": "Philip Lee"
                 }
             ]
         }
