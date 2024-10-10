@@ -11,6 +11,7 @@ import * as directives from "vuetify/directives";
 import { VCalendar } from "vuetify/labs/VCalendar";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
+import "./assets/base.css";
 
 // Create Vuetify instance
 const vuetify = createVuetify({

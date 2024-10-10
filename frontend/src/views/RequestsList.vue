@@ -48,7 +48,6 @@
                             color="pink" variant="outlined" small>
                             Withdraw
                         </v-btn>
-                        <ManagerActions :item="item" />
                     </div>
                 </template>
 

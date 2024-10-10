@@ -16,9 +16,13 @@ body {
     "Fira Sans",
     "Droid Sans",
     "Helvetica Neue",
-    sans-serif !important;
-  font-size: 15px;
+    sans-serif;
+  font-size: 16px;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+hr {
+  margin: 0;
 }

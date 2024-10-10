@@ -30,14 +30,15 @@ const userStore = useMainStore();
         </RouterLink>
 
         <!-- buttons for desktop -->
-        <div class="d-none d-md-flex">
-          <v-btn variant="plain" href="/weeklycalendar" class="d-none d-md-block align-content-center">View
-            Schedule</v-btn>
-          <v-btn variant="plain" href="/requestslist" class="d-none d-md-block align-content-center">View
-            Own Requests</v-btn>
-          <v-btn variant="plain" href="/viewstaffrequests" class="d-none d-md-block align-content-center">View
-            Staff Requests</v-btn>
-          <v-btn @click="dialog = true" variant="plain">Apply to WFH</v-btn>
+        <div class="d-none d-md-flex ms-md-3">
+          <RouterLink to="/weeklycalendar" class="btn d-none d-md-block align-content-center">View
+            Schedule</RouterLink>
+          <RouterLink to="/requestslist" class="btn d-none d-md-block align-content-center">View
+            Own Requests</RouterLink>
+          <RouterLink to="/viewstaffrequests" class="btn d-none d-md-block align-content-center">
+            Requests List
+          </RouterLink>
+          <v-btn @click="dialog = true" variant="outlined" text="Apply to WFH" class="btn"></v-btn>
         </div>
 
         <v-dialog v-model="dialog" max-width="500px">
@@ -298,5 +299,13 @@ export default {
 <style scoped>
 header {
   box-shadow: 0 3px 12px #00000014;
+}
+
+.btn {
+  text-transform: unset;
+
+  &:hover {
+    background-color: #00000014;
+  }
 }
 </style>
