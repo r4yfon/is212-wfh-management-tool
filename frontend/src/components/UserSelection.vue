@@ -6,7 +6,7 @@ const userStore = useMainStore();
 <template>
   <v-menu>
     <template v-slot:activator="{ props }">
-      <v-btn flat variant="outlined" color="grey" text v-bind="props" prepend-icon="mdi-account">
+      <v-btn flat variant="outlined" color="black" text v-bind="props" prepend-icon="mdi-account">
         {{ userStore.user.staff_fname }} {{ userStore.user.staff_lname }}
       </v-btn>
     </template>
