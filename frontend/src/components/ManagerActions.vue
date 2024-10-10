@@ -11,13 +11,11 @@
     Reject
   </v-btn>
 
-  <!-- button to rescind pending request; TODO: check how the statuses are stored -->
   <v-btn v-if="item.status === 'Approved'" @click="toggleDialog('Rescinded')" color="red" :item="item"
     variant="outlined" small>
     Rescind
   </v-btn>
 
-  <!-- button to approve pending withdrawal; TODO: withdrawal is for entire requests or individual request_dates? -->
   <v-btn v-if="item.status === 'Pending Withdrawl'" @click="toggleDialog('Withdrawn')" color="green" :item="item"
     variant="outlined" small>
     Approve Withdrawal

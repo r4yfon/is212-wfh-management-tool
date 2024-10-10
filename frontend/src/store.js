@@ -14,9 +14,11 @@ export const useMainStore = defineStore("main", {
       role: 2,
     },
   }),
+  persist: true,
   actions: {
     updateUser(user) {
       this.user = user;
+      location.reload();
     },
-  }
+  },
 });

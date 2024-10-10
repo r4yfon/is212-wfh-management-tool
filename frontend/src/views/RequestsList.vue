@@ -77,12 +77,10 @@
 
 
 <script>
-import ManagerActions from '@/components/ManagerActions.vue';
+import { useMainStore } from '@/store';
+const userStore = useMainStore();
 
 export default {
-    components: {
-        ManagerActions
-    },
     data() {
         return {
             search: "",
@@ -99,7 +97,7 @@ export default {
         // Format the data to the structure needed for the table
         formatData() {
             // #####################################################################################
-            fetch(`http://localhost:5101/s_retrieve_requests/150488`)
+            fetch(`http://localhost:5101/s_retrieve_requests/${userStore.user.staff_id}`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
