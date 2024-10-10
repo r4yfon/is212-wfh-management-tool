@@ -20,7 +20,8 @@
             <v-tabs-window v-model="tab">
                 <v-tabs-window-item v-for="n in 5" :key="n" :value="n">
                     <v-card-text>
-                        <v-data-table v-model:search="search" :headers="headers" :items="filteredItems">
+                        <v-data-table v-model:search="search" :headers="headers" :items="filteredItems"
+                            item-key="request_id">
                             <template v-slot:item="{ item }">
                                 <tr>
                                     <td>{{ item.request_id }}</td>
@@ -91,12 +92,12 @@ export default {
             selectedItem: null,
             items: [],
             headers: [
-                { title: 'Request ID', value: 'request_id' },
-                { title: 'Creation Date', value: 'creationDate' },
-                { title: 'Request Date', value: 'wfhRequestDate' },
-                { title: 'Shift', value: 'shift' },
-                { title: 'Status', value: 'status' },
-                { title: 'Actions', value: 'actions' },
+                { title: 'Request ID', value: 'request_id', key: 'request_id' },
+                { title: 'Creation Date', value: 'creationDate', key: 'creationDate' },
+                { title: 'Request Date', value: 'wfhRequestDate', key: 'wfhRequestDate' },
+                { title: 'Shift', value: 'shift', key: 'shift' },
+                { title: 'Status', value: 'status', key: 'status' },
+                { title: 'Actions', value: 'actions', key: 'actions' },
             ]
         };
     },

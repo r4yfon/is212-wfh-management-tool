@@ -8,52 +8,26 @@
                     variant="solo-filled" flat hide-details single-line></v-text-field>
             </v-card-title>
 
-            <v-divider></v-divider>
-
             <!-- Define the Data Table with headers and items -->
-            <v-data-table v-model:search="search" :items="items">
-
-                <!-- Date Requested Column -->
-                <template v-slot:item.request_id="{ item }">
-                    <div>{{ item.request_id }}</div>
-                </template>
-
-                <!-- Date Requested Column -->
-                <template v-slot:item.creationdate="{ item }">
-                    <div>{{ item.creationdate }}</div>
-                </template>
-
-                <!-- WFH Request Date Column -->
-                <template v-slot:item.wfhRequestDate="{ item }">
-                    <div>{{ item.wfhRequestDate }}</div>
-                </template>
-
-                <!-- Shift Column -->
-                <template v-slot:item.shift="{ item }">
-                    <div>{{ item.shift }}</div>
-                </template>
-
-                <!-- Status Column with color coding -->
-                <template v-slot:item.status="{ item }">
-                    <div :class="getStatusColor(item.status)">
-                        {{ item.status }}
-                    </div>
-                </template>
-
-                <!-- Withdraw Column -->
-                <template v-slot:item.withdraw="{ item }">
-                    <div>
-                        <!-- Show Withdraw button only for Approved or Pending statuses -->
-                        <v-btn v-if="canWithdraw(item.status, item.wfhRequestDate)" @click="openWithdrawDialog(item)"
-                            color="pink" variant="outlined" small>
-                            Withdraw
-                        </v-btn>
-                    </div>
-                </template>
-
-                <!-- Status Column with color coding -->
-                <template v-slot:item.reject_reason="{ item }">
-                    <div>{{ item.reject_reason }}</div>
+            <v-data-table v-model:search="search" :headers="headers" :items="items" item-key="request_id">
+                <template v-slot:item="{ item }">
+                    <tr>
+                        <td>{{ item.request_id }}</td>
+                        <td>{{ item.creationdate }}</td>
+                        <td>{{ item.wfhRequestDate }}</td>
+                        <td>{{ item.shift }}</td>
+                        <td :class="getStatusColor(item.status)">
+                            {{ item.status }}</td>
+                        <td>
+                            <v-btn v-if="canWithdraw(item.status, item.wfhRequestDate)"
+                                @click="openWithdrawDialog(item)" color="pink" variant="outlined" small>
+                                Withdraw
+                            </v-btn>
+                        </td>
+                        <td>
+                            <div>{{ item.remarks }}</div>
+                        </td>
+                    </tr>
                 </template>
             </v-data-table>
         </v-card>
@@ -88,6 +62,15 @@ export default {
             withdrawReason: "",
             selectedItem: null,
             items: [],
+            headers: [
+                { title: 'Request ID', value: 'request_id', key: "request_id" },
+                { title: 'Creation Date', value: 'creationdate', key: "creationdate" },
+                { title: 'Request Date', value: 'wfhRequestDate', key: "wfhRequestDate" },
+                { title: 'Shift', value: 'shift', key: "shift" },
+                { title: 'Status', value: 'status', key: "status" },
+                { title: 'Actions', value: 'actions', key: "actions" },
+                { title: 'Remarks', value: 'remarks', key: "remarks" }
+            ]
         };
     },
     created() {
