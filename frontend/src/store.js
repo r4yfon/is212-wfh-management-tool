@@ -14,7 +14,9 @@ export const useMainStore = defineStore("main", {
       role: 2,
     },
   }),
-  persist: true,
+  persist: {
+    storage: sessionStorage,
+  },
   actions: {
     updateUser(user) {
       this.user = user;
