@@ -11,16 +11,16 @@ from flask_cors import CORS
 from invokes import invoke_http
 
 app = Flask(__name__)
-app.config.from_object('config.Config')
+app.config.from_object("config.Config")
 db = SQLAlchemy(app)
-CORS(app, resources={r"/view_schedule/weekly/*": {"origins": "*"}})
+CORS(app, resources={r"/*": {"origins": "*"}})
 
-employee_URL = environ.get(
-    'employee_URL') or "http://localhost:5000/employee"
-request_URL = environ.get(
-    'request_URL') or "http://localhost:5001/request"
-request_dates_URL = environ.get(
-    'request_dates_URL') or "http://localhost:5002/request_dates"
+employee_URL = environ.get("employee_URL") or "http://localhost:5000/employee"
+request_URL = environ.get("request_URL") or "http://localhost:5001/request"
+request_dates_URL = (
+    environ.get("request_dates_URL") or "http://localhost:5002/request_dates"
+)
+
 
 def get_week_from_date(date_entered):
     """
@@ -35,9 +35,8 @@ def get_week_from_date(date_entered):
             end_date (date): End date of the week
         )
     """
-    date_entered = datetime.strptime(date_entered, '%Y-%m-%d').date()
-    start_date = date_entered - \
-        timedelta(days=(date_entered.weekday() + 1) % 7)
+    date_entered = datetime.strptime(date_entered, "%Y-%m-%d").date()
+    start_date = date_entered - timedelta(days=(date_entered.weekday() + 1) % 7)
     end_date = start_date + timedelta(days=6)
 
     return start_date, end_date
@@ -70,10 +69,15 @@ def view_weekly_schedule(staff_id, date_entered):
 
     # check if date_entered is within 2 months back, 3 month forward (OVS06)
     if not check_date_valid(date_entered, date_entered):
-        return jsonify({
-            "code": 400,
-            "message": "Date entered is not within 2 months back and 3 months forward."
-        }), 400
+        return (
+            jsonify(
+                {
+                    "code": 400,
+                    "message": "Date entered is not within 2 months back and 3 months forward.",
+                }
+            ),
+            400,
+        )
 
     week_start, week_end = get_week_from_date(date_entered)
     weekly_arrangement = {}
@@ -84,64 +88,92 @@ def view_weekly_schedule(staff_id, date_entered):
     try:
         # This will get all the WFH requests made by the staff_id; check documentation in parent file for details
         all_request_ids = requests.get(
-            f'{request_URL}/get_request_ids/{int(staff_id)}').json()['data']
+            f"{request_URL}/get_request_ids/{int(staff_id)}"
+        ).json()["data"]
 
-        results = db.session.query(Request, RequestDates).join(
-            RequestDates, Request.request_id == RequestDates.request_id
-        ).filter(
-            Request.request_id.in_(all_request_ids)
-        ).all()
+        results = (
+            db.session.query(Request, RequestDates)
+            .join(RequestDates, Request.request_id == RequestDates.request_id)
+            .filter(Request.request_id.in_(all_request_ids))
+            .all()
+        )
 
         # Create a response structure
         requests_in_request_id = []
         for req, req_date in results:
-            requests_in_request_id.append({
-                "request_id": req.request_id,
-                "staff_id": req.staff_id,
-                "request_submission_date": req.creation_date,
-                "request_date": req_date.request_date.isoformat(),
-                "request_shift": req_date.request_shift,
-                "request_status": req_date.request_status
-            })
+            requests_in_request_id.append(
+                {
+                    "request_id": req.request_id,
+                    "staff_id": req.staff_id,
+                    "request_submission_date": req.creation_date,
+                    "request_date": req_date.request_date.isoformat(),
+                    "request_shift": req_date.request_shift,
+                    "request_status": req_date.request_status,
+                }
+            )
 
         for request_info in requests_in_request_id:
             request_date = datetime.strptime(
-                request_info['request_date'], '%Y-%m-%d').date()
+                request_info["request_date"], "%Y-%m-%d"
+            ).date()
             if week_start <= request_date <= week_end:
-                if request_info['request_status'] == 'Approved':
-                    weekly_arrangement[str(
-                        request_date)] = [f'WFH - {request_info["request_shift"]}']
-                elif request_info['request_status'] == 'Pending Withdrawal':
-                    weekly_arrangement[str(
-                        request_date)] = [f'Home - {request_info["request_shift"]}', "Pending: Office"]
-                elif request_info['request_status'] == 'Pending Approval':
-                    weekly_arrangement[str(
-                        request_date)] = ["Office", f'Pending: WFH - {request_info["request_shift"]}']
+                if request_info["request_status"] == "Approved":
+                    weekly_arrangement[str(request_date)] = [
+                        f'WFH - {request_info["request_shift"]}'
+                    ]
+                elif request_info["request_status"] == "Pending Withdrawal":
+                    weekly_arrangement[str(request_date)] = [
+                        f'Home - {request_info["request_shift"]}',
+                        "Pending: Office",
+                    ]
+                elif request_info["request_status"] == "Pending Approval":
+                    weekly_arrangement[str(request_date)] = [
+                        "Office",
+                        f'Pending: WFH - {request_info["request_shift"]}',
+                    ]
 
-        return jsonify({
-            "code": 200,
-            "data": weekly_arrangement,
-        }), 200
+        return (
+            jsonify(
+                {
+                    "code": 200,
+                    "data": weekly_arrangement,
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         return jsonify({"error": f"Failed to fetch requests: {str(e)}"}), 500
 
 
 # Get organisation schedule
-@app.route("/get_org_schedule", methods=['GET'])
+@app.route("/get_org_schedule", methods=["GET"])
 def get_org_schedule():
     # Get all requests made by the staff_id
-    request_response = invoke_http(request_URL + "/get_all_requests", method='GET')
+    request_response = invoke_http(request_URL + "/get_all_requests", method="GET")
 
     if request_response["code"] == 200:
         request_list = []
         for request in request_response["data"]:
-            request_dict = {"staff_id": request["staff_id"], "staff_name": request["staff_id"], "request_id": request["request_id"], "request_dates": []}
+            request_dict = {
+                "staff_id": request["staff_id"],
+                "staff_name": request["staff_id"],
+                "request_id": request["request_id"],
+                "request_dates": [],
+            }
 
-            staff_request_dates = invoke_http(request_dates_URL + "/get_by_request_id/" + str(request["request_id"]), method='GET')
+            staff_request_dates = invoke_http(
+                request_dates_URL + "/get_by_request_id/" + str(request["request_id"]),
+                method="GET",
+            )
             for request_dates in staff_request_dates[0]["data"]:
-                if request_dates["request_status"] == "Pending Approval" or request_dates["request_status"] == "Approved":
-                    request_dict["request_dates"].append({request_dates["request_date"]: request_dates["request_shift"]})
+                if (
+                    request_dates["request_status"] == "Pending Approval"
+                    or request_dates["request_status"] == "Approved"
+                ):
+                    request_dict["request_dates"].append(
+                        {request_dates["request_date"]: request_dates["request_shift"]}
+                    )
                     request_dict["request_status"] = request_dates["request_status"]
             if len(request_dict["request_dates"]) > 0:
                 request_list.append(request_dict)
@@ -151,10 +183,10 @@ def get_org_schedule():
 
 
 # Get team schedule
-@app.route("/get_team_schedule/<int:staff_id>", methods=['GET'])
+@app.route("/get_team_schedule/<int:staff_id>", methods=["GET"])
 def get_team_schedule(staff_id):
     # Get all requests made by the staff_id
-    response = invoke_http(employee_URL + "/get_all_employees", method='GET')
+    response = invoke_http(employee_URL + "/get_all_employees", method="GET")
 
     def get_team_members(staff_id, visited=None, staff_details=None):
         # Initialize visited set to track processed staff_ids
@@ -177,37 +209,55 @@ def get_team_schedule(staff_id):
                 staff_details[member["staff_id"]] = {
                     "staff_name": member["staff_name"],
                     "dept": member["dept"],
-                    "position": member["position"]
+                    "position": member["position"],
                 }
 
                 # Recursively find team members under the current member
-                staff_details.update(get_team_members(member["staff_id"], visited, staff_details))
+                staff_details.update(
+                    get_team_members(member["staff_id"], visited, staff_details)
+                )
 
         return staff_details
 
     # Get the full list of team members under the given staff_id
     all_team_members = get_team_members(staff_id)
 
-    request_response = invoke_http(request_URL + "/get_all_requests", method='GET')
+    request_response = invoke_http(request_URL + "/get_all_requests", method="GET")
 
     if request_response["code"] == 200:
         request_list = []
         for request in request_response["data"]:
             if request["staff_id"] in all_team_members.keys():
-                request_dict = {"staff_id": request["staff_id"], "staff_name": all_team_members[request["staff_id"]]["staff_name"], "request_id": request["request_id"], "request_dates": []}
+                request_dict = {
+                    "staff_id": request["staff_id"],
+                    "staff_name": all_team_members[request["staff_id"]]["staff_name"],
+                    "request_id": request["request_id"],
+                    "request_dates": [],
+                }
 
-                staff_request_dates = invoke_http(request_dates_URL + "/get_by_request_id/" + str(request["request_id"]), method='GET')
+                staff_request_dates = invoke_http(
+                    request_dates_URL
+                    + "/get_by_request_id/"
+                    + str(request["request_id"]),
+                    method="GET",
+                )
                 for request_dates in staff_request_dates[0]["data"]:
-                    if request_dates["request_status"] == "Pending Approval" or request_dates["request_status"] == "Approved":
-                        request_dict["request_dates"].append({request_dates["request_date"]: request_dates["request_shift"]})
+                    if (
+                        request_dates["request_status"] == "Pending Approval"
+                        or request_dates["request_status"] == "Approved"
+                    ):
+                        request_dict["request_dates"].append(
+                            {
+                                request_dates["request_date"]: request_dates[
+                                    "request_shift"
+                                ]
+                            }
+                        )
                         request_dict["request_status"] = request_dates["request_status"]
                 if len(request_dict["request_dates"]) > 0:
                     request_list.append(request_dict)
 
-    return jsonify({
-        "code": 200,
-        "data": request_list
-    })
+    return jsonify({"code": 200, "data": request_list})
 
 
 # # Retrieve wfh numbers by department
@@ -246,14 +296,14 @@ def get_team_schedule(staff_id):
 
 
 # Retrieve wfh count and total by department
-@app.route("/get_wfh_status", methods=['GET'])
+@app.route("/get_wfh_status", methods=["GET"])
 def get_wfh_status():
-    results = db.session.query(
-        Employee.staff_id,
-        RequestDates.request_date
-    ).join(Request, Request.request_id == RequestDates.request_id) \
-    .join(Employee, Employee.staff_id == Request.staff_id) \
-    .all()
+    results = (
+        db.session.query(Employee.staff_id, RequestDates.request_date)
+        .join(Request, Request.request_id == RequestDates.request_id)
+        .join(Employee, Employee.staff_id == Request.staff_id)
+        .all()
+    )
 
     num_employee_in_dept = db.session.query(
         Employee.staff_id
@@ -268,14 +318,16 @@ def get_wfh_status():
         if date_str not in status:
             status[date_str] = [staff_id]  # Initialize the list with the first staff_id
         elif staff_id not in status[date_str]:
-            status[date_str].append(staff_id)  # Add staff_id to the existing list for this date
+            status[date_str].append(
+                staff_id
+            )  # Add staff_id to the existing list for this date
 
     from datetime import datetime, timedelta
     from dateutil.relativedelta import relativedelta
 
     def get_date_ranges():
         today = datetime.today().date()  # Get today's date as a date object
-        
+
         # Calculate the start date for 2 months ago
         start_date_past = today - relativedelta(months=2)
         # Calculate the end date for 3 months in the future
@@ -285,13 +337,15 @@ def get_wfh_status():
         date_list = []
         for i in range(60):  # Approximately 60 days in 2 months
             past_date = start_date_past + timedelta(days=i)
-            date_list.append(past_date.strftime('%Y-%m-%d'))  # Format to YYYY-MM-DD
+            date_list.append(past_date.strftime("%Y-%m-%d"))  # Format to YYYY-MM-DD
 
         # Generate list of next 3 months dates
         for i in range(90):  # Approximately 90 days in 3 months
             future_date = today + timedelta(days=i)
             if future_date > today:  # Only include future dates
-                date_list.append(future_date.strftime('%Y-%m-%d'))  # Format to YYYY-MM-DD
+                date_list.append(
+                    future_date.strftime("%Y-%m-%d")
+                )  # Format to YYYY-MM-DD
 
         return date_list
 
@@ -301,28 +355,29 @@ def get_wfh_status():
             status[date] = []
 
     # Return the result as JSON with employee count included
-    return jsonify({
-        "code": 200,
-        "data": status,
-        "num_employee_in_dept": num_employee_in_dept  # Include the count of employees in the response
-    })
+    return jsonify(
+        {
+            "code": 200,
+            "data": status,
+            "num_employee_in_dept": num_employee_in_dept,  # Include the count of employees in the response
+        }
+    )
 
 
 # Retrieve wfh count and total by department
-@app.route("/get_wfh_status/<string:department>", methods=['GET'])
+@app.route("/get_wfh_status/<string:department>", methods=["GET"])
 def get_wfh_status_by_dept(department):
-    results = db.session.query(
-        Employee.staff_id,
-        RequestDates.request_date
-    ).join(Request, Request.request_id == RequestDates.request_id) \
-    .join(Employee, Employee.staff_id == Request.staff_id) \
-    .filter(Employee.dept == department) \
-    .all()
+    results = (
+        db.session.query(Employee.staff_id, RequestDates.request_date)
+        .join(Request, Request.request_id == RequestDates.request_id)
+        .join(Employee, Employee.staff_id == Request.staff_id)
+        .filter(Employee.dept == department)
+        .all()
+    )
 
-    num_employee_in_dept = db.session.query(
-        Employee.staff_id
-    ).filter(Employee.dept == department) \
-    .count()  # Count the number of employees in the department
+    num_employee_in_dept = (
+        db.session.query(Employee.staff_id).filter(Employee.dept == department).count()
+    )  # Count the number of employees in the department
 
     status = {}
 
@@ -333,14 +388,16 @@ def get_wfh_status_by_dept(department):
         if date_str not in status:
             status[date_str] = [staff_id]  # Initialize the list with the first staff_id
         elif staff_id not in status[date_str]:
-            status[date_str].append(staff_id)  # Add staff_id to the existing list for this date
+            status[date_str].append(
+                staff_id
+            )  # Add staff_id to the existing list for this date
 
     from datetime import datetime, timedelta
     from dateutil.relativedelta import relativedelta
 
     def get_date_ranges():
         today = datetime.today().date()  # Get today's date as a date object
-        
+
         # Calculate the start date for 2 months ago
         start_date_past = today - relativedelta(months=2)
         # Calculate the end date for 3 months in the future
@@ -350,13 +407,15 @@ def get_wfh_status_by_dept(department):
         date_list = []
         for i in range(60):  # Approximately 60 days in 2 months
             past_date = start_date_past + timedelta(days=i)
-            date_list.append(past_date.strftime('%Y-%m-%d'))  # Format to YYYY-MM-DD
+            date_list.append(past_date.strftime("%Y-%m-%d"))  # Format to YYYY-MM-DD
 
         # Generate list of next 3 months dates
         for i in range(90):  # Approximately 90 days in 3 months
             future_date = today + timedelta(days=i)
             if future_date > today:  # Only include future dates
-                date_list.append(future_date.strftime('%Y-%m-%d'))  # Format to YYYY-MM-DD
+                date_list.append(
+                    future_date.strftime("%Y-%m-%d")
+                )  # Format to YYYY-MM-DD
 
         return date_list
 
@@ -366,12 +425,14 @@ def get_wfh_status_by_dept(department):
             status[date] = []
 
     # Return the result as JSON with employee count included
-    return jsonify({
-        "code": 200,
-        "data": status,
-        "num_employee_in_dept": num_employee_in_dept  # Include the count of employees in the response
-    })
+    return jsonify(
+        {
+            "code": 200,
+            "data": status,
+            "num_employee_in_dept": num_employee_in_dept,  # Include the count of employees in the response
+        }
+    )
 
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5100, debug=True)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5100, debug=True)
