@@ -25,6 +25,9 @@ const vuetify = createVuetify({
     global: {
       ripple: false,
     },
+    VLabel: {
+      style: "color: black;",
+    },
   },
 });
 
