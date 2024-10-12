@@ -42,14 +42,33 @@
         Select requested dates to rescind
       </v-card-title>
 
-      <!-- choose dates to rescind request for -->
-      <v-card-text v-if="this.newStatus === 'Rescinded' && this.isLoading" class="align-self-center">
+      <!-- loading indicator -->
+      <v-card-text v-if="this.isLoading" class="align-self-center">
         <v-progress-circular indeterminate :size="40" :width="2" color="primary" class="me-1"></v-progress-circular>
       </v-card-text>
+
+      <!-- display attendance rate if manager is about to approve request -->
+      <v-card-text v-else-if="this.newStatus === 'Approved' && !this.isLoading">
+        <p>Requested date(s): {{ this.request_dates.join(", ") }}</p>
+        <p>By approving this request,</p>
+        <div v-for="request_date in this.request_dates" :key="request_date" class="mb-3">
+          <p>
+            {{ request_date }}: {{ dept_wfh_schedule[request_date]?.length || 0 }}/{{ this.num_employees_in_dept }}
+            employees in the department will be WFH.
+          </p>
+          <p
+            :class="{ 'text-danger': attendance_in_office(request_date) < 50, 'text-success': attendance_in_office(request_date) >= 50 }">
+            Attendance rate in office: {{ attendance_in_office(request_date) }}%
+          </p>
+        </div>
+      </v-card-text>
+
+      <!-- choose dates to rescind request for -->
       <v-card-text v-else-if="this.newStatus === 'Rescinded' && !this.isLoading">
-        <v-checkbox v-for="request in rescindableRequests" v-bind:key="request.request_date_id"
-          :label="request.request_date" :value="request.request_date" v-model="selectedRequestsToRescind"
-          hide-details></v-checkbox>
+        <v-checkbox v-for="request in alreadyRescinded" disabled value="1" :key="request.request_date_id"
+          :label="request.request_date" model-value="1" hide-details></v-checkbox>
+        <v-checkbox v-for="request in rescindableRequests" :key="request.request_date_id" :label="request.request_date"
+          :input-value="request" :model-value="rescindableRequests" hide-details></v-checkbox>
         <v-text-field v-model="reason" outlined label="Reason for rescinding"></v-text-field>
       </v-card-text>
 
@@ -66,7 +85,10 @@
 </template>
 
 <script>
-// import { VProgressCircular } from 'vuetify/lib/components/index.mjs';
+import { useMainStore } from "@/store";
+const userStore = useMainStore();
+const url_paths = userStore.paths;
+
 export default {
   name: "ManagerActions",
   data() {
@@ -75,8 +97,11 @@ export default {
       reason: "",
       newStatus: "",
       isLoading: false,
-      rescindableRequests: [],
-      selectedRequestsToRescind: [],
+      num_employees_in_dept: 0,
+      dept_wfh_schedule: {},
+      request_dates: [],
+      alreadyRescinded: [],
+      rescindableRequests: []
     }
   },
   props: {
@@ -89,17 +114,58 @@ export default {
         this.newStatus = newStatus
       }
 
+      if (newStatus === "Approved") {
+        const item_request_id = this.item.request_id;
+        this.isLoading = true;
+        fetch(`${url_paths.view_schedule}/get_wfh_status/${userStore.user.department}`)
+          .then(response => response.json())
+          .then(data => {
+            console.log(data);
+            this.num_employees_in_dept = data.num_employee_in_dept;
+            this.dept_wfh_schedule = data.data;
+          })
+        fetch(`${url_paths.request_dates}/get_by_request_id/${item_request_id}`)
+          .then(response => response.json())
+          .then(data => {
+            // console.log(data[0].data);
+            this.request_dates = data[0].data.map(item => item.request_date);
+            console.log(this.request_dates)
+            this.isLoading = false;
+          });
+      }
+
       if (newStatus === "Rescinded") {
         this.isLoading = true;
         const item_request_id = this.item.request_id;
         fetch(`http://localhost:5002/request_dates/get_by_request_id/${item_request_id}`)
           .then((response) => response.json())
           .then((data) => {
-            this.rescindableRequests = data[0].data;
+            console.log(data)
+            this.rescindableRequests = data[0].data.filter(request => request.request_status !== "Rescinded");
+            this.alreadyRescinded = data[0].data.filter(request => request.request_status === "Rescinded");
+            // this.selectedRequestsToRescind = data[0].data.filter(request => request.request_status === "Approved");
             this.isLoading = false;
+            console.log("alreadyRescinded", this.alreadyRescinded)
+            // console.log("selectedRequestsToRescind", this.selectedRequestsToRescind)
+            console.log("rescindableRequests", this.rescindableRequests)
           })
       }
     },
+    compareItems(a, b) {
+      console.log("a", a);
+      console.log("b", b);
+      console.log("selectedRequests", this.selectedRequestsToRescind)
+      console.log("rescindable", this.rescindableRequests)
+      return a.request_date === b;
+    },
+    isAlreadyRescinded(request_date) {
+      return this.alreadyRescinded.some(item => item.request_date === request_date);
+    },
+
+    attendance_in_office(request_date) {
+      return (100 - (this.dept_wfh_schedule[request_date]?.length / this.num_employees_in_dept * 100)).toFixed(2);
+    },
+
     closeDialog() {
       this.reason = "";
       this.toggleDialog();
@@ -112,7 +178,6 @@ export default {
       }
     },
     approveRejectWithdraw(item) {
-      console.log("hello!", item);
       fetch('http://localhost:5002/request_dates/change_all_status', {
         method: 'PUT',
         headers: {
@@ -161,3 +226,9 @@ export default {
 }
 
 </script>
+
+<style scoped>
+div.mb-3>p {
+  margin-bottom: 0.25rem;
+}
+</style>
