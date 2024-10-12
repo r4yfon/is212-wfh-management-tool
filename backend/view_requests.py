@@ -217,26 +217,41 @@ def m_retrieve_requests(m_staff_id):
          .filter(Employee.reporting_manager == m_staff_id, 
                  RequestDates.request_status.in_(["Pending Approval", "Pending Withdrawal"])) \
          .all()
-
+        
+        print("DAWDAW", results)
         # Organizing the results
         request_dicts = {}
         for row in results:
-            request_id = row.request_id
+            print(row)
+            staff_id = row[0]
+            staff_fname = row[1]
+            staff_lname = row[2]
+            request_id = row[3]
+            apply_reason = row[4]
+            request_date = row[5]
+            request_shift = row[6]
+            request_status = row[7]
+
+            # Convert request_date to string
+            request_date_str = request_date.isoformat()  # or use str(request_date) if the format is acceptable
+
             if request_id not in request_dicts:
                 request_dicts[request_id] = {
-                    "request_id": row.request_id,
-                    "staff_id": row.staff_id,
-                    "staff_name": f"{row.staff_fname} {row.staff_lname}",
-                    "reason": row.apply_reason,
-                    "request_status": row.request_status,
+                    "request_id": request_id,
+                    "staff_id": staff_id,
+                    "staff_name": f"{staff_fname} {staff_lname}",
+                    "reason": apply_reason,
+                    "request_status": request_status,
                     "request_dates": []
                 }
             request_dicts[request_id]["request_dates"].append({
-                row.request_date.isoformat(): row.request_shift
+                request_date_str: request_shift
             })
 
         # Convert dictionary to list for the response
         request_list = list(request_dicts.values())
+
+
 
         # Return the modified response including the request_dates
         return jsonify({"code": 200, "data": request_list}), 200
