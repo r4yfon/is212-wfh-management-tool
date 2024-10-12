@@ -649,4 +649,4 @@ VALUES
 (10, '2024-09-16', 'Full', 'Rejected', NULL , NULL),
 (11, '2024-10-15', 'PM', 'Approved', NULL , NULL),
 (12, '2024-10-13', 'PM', 'Rejected', NULL , NULL),
-(13, '2024-07-11', 'PM', 'Pending', NULL , NULL);
+(13, '2024-07-11', 'PM', 'Pending Approval', NULL , NULL);
