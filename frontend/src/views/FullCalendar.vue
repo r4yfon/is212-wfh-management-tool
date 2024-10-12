@@ -11,7 +11,7 @@ fetch(`http://localhost:5002/request_dates/auto_reject`, {
     }
     return response.json();
   })
-  .then(responseData => {
+  .then(() => {
     console.log('Success');
   })
   .catch(error => console.error('Error updating status:', error));

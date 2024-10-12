@@ -3,6 +3,7 @@
         <v-card flat>
             <v-card-title class="d-flex flex-column flex-md-row align-center mb-3 row-gap-1 row-gap-md-0">
                 Staff Requests List
+                <v-icon icon="mdi-refresh" size="x-small" class="ms-2" @click="formatData"></v-icon>
                 <v-spacer></v-spacer>
                 <v-text-field v-model="search" density="compact" label="Search" prepend-inner-icon="mdi-magnify"
                     variant="solo-filled" flat hide-details single-line class="w-100 w-md-initial"></v-text-field>
@@ -34,10 +35,13 @@
                                     <td v-if="n === 4">{{ item.rescind_reason }}</td>
                                     <td v-if="n === 5">{{ item.reject_reason }}</td>
                                     <td v-if="n !== 4 || n !== 5">
-                                        <ManagerActions :item="item"></ManagerActions>
+                                        <ManagerActions :item="item" @refresh-data="formatData"></ManagerActions>
                                     </td>
-                                    <td v-else>
-                                        {{ item.reject || item.rescind }}
+                                    <td v-else-if="item.status === 'Rejected'">
+                                        {{ item.reject_reason }}
+                                    </td>
+                                    <td v-else-if="item.rescind_reason">
+                                        {{ item.rescind_reason }}
                                     </td>
                                 </tr>
                             </template>

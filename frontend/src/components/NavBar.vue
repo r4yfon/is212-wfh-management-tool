@@ -1,20 +1,9 @@
 <script setup>
 import { RouterLink } from "vue-router";
-import {
-  VTextField,
-  VBtn,
-  VDialog,
-  VCard,
-  VCardText,
-  VCardActions,
-  VSpacer,
-  VProgressCircular,
-} from "vuetify/components";
+
 import UserSelection from "./UserSelection.vue";
 import { is_within_word_count, two_months_before, three_months_after } from "@/inputValidation";
-import { useMainStore } from '@/store.js';
 
-const userStore = useMainStore();
 </script>
 
 <template>

@@ -53,7 +53,7 @@
         <p>By approving this request,</p>
         <div v-for="request_date in this.request_dates" :key="request_date" class="mb-3">
           <p>
-            {{ request_date }}: {{ dept_wfh_schedule[request_date]?.length || 0 }}/{{ this.num_employees_in_dept }}
+            {{ request_date }}: {{ dept_wfh_schedule[request_date]?.length || 1 }}/{{ this.num_employees_in_dept }}
             employees in the department will be WFH.
           </p>
           <p
@@ -68,7 +68,7 @@
         <v-checkbox v-for="request in alreadyRescinded" disabled value="1" :key="request.request_date_id"
           :label="request.request_date" model-value="1" hide-details></v-checkbox>
         <v-checkbox v-for="request in rescindableRequests" :key="request.request_date_id" :label="request.request_date"
-          :input-value="request" :model-value="rescindableRequests" hide-details></v-checkbox>
+          :value="request.request_date" v-model="datesToRescind" hide-details></v-checkbox>
         <v-text-field v-model="reason" outlined label="Reason for rescinding"></v-text-field>
       </v-card-text>
 
@@ -78,7 +78,11 @@
       </v-card-text>
       <v-card-actions>
         <v-btn @click="closeDialog" text>Cancel</v-btn>
-        <v-btn @click="confirmAction(item)" color="pink" text>Confirm</v-btn>
+        <v-btn @click="confirmAction(item)" color="pink" text>
+          <span v-if="buttonIsLoading">
+            <v-progress-circular indeterminate :size="15" :width="2" color="primary" class="me-1"></v-progress-circular>
+          </span>
+          Confirm</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -97,16 +101,19 @@ export default {
       reason: "",
       newStatus: "",
       isLoading: false,
+      buttonIsLoading: false,
       num_employees_in_dept: 0,
       dept_wfh_schedule: {},
       request_dates: [],
       alreadyRescinded: [],
-      rescindableRequests: []
+      rescindableRequests: [],
+      datesToRescind: [],
     }
   },
   props: {
     item: Object,
   },
+  emits: ['refresh-data'],
   methods: {
     toggleDialog(newStatus) {
       this.dialogOpened = !this.dialogOpened;
@@ -178,6 +185,7 @@ export default {
       }
     },
     approveRejectWithdraw(item) {
+      this.buttonIsLoading = true;
       fetch('http://localhost:5002/request_dates/change_all_status', {
         method: 'PUT',
         headers: {
@@ -197,12 +205,14 @@ export default {
         })
         .then(responseData => {
           console.log('Success:', responseData);
+          this.buttonIsLoading = false;
           location.reload();
           this.newStatus = '';
         })
         .catch(error => console.error('Error updating status:', error));
     },
     rescind(item) {
+      this.buttonIsLoading = true;
       fetch('http://localhost:5002/request_dates/change_partial_status', {
         method: 'PUT',
         headers: {
@@ -211,7 +221,7 @@ export default {
         body: JSON.stringify({
           "request_id": item.request_id,
           "status": "Rescinded",
-          "dates": this.selectedRequestsToRescind,
+          "dates": this.datesToRescind,
           "shift": item.shift,
           "reason": this.reason,
         })
@@ -219,7 +229,8 @@ export default {
         .then(response => response.json())
         .then(data => {
           console.log('Success:', data);
-          location.reload();
+          this.buttonIsLoading = false;
+          this.$emit('refresh-data');
         })
     },
   },
