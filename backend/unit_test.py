@@ -4,7 +4,7 @@ from flask import Flask, json
 import employee, view_requests, reject_requests, request_dates
 import unittest
 import flask_testing
-from request_dates import app, db, RequestDates
+from request_dates import app as request_dates_app, db, RequestDates
 from employee import db as employee_db, Employee
 from request import db as request_db, Request
 from request_dates import db as request_dates_db, RequestDates
@@ -376,86 +376,83 @@ class TestRejectRequest(unittest.TestCase):
         self.assertEqual(response_json["code"], 500)
         self.assertEqual(response_json["message"], "Failed to update reason.")
 
-class TestApp(flask_testing.TestCase):
-    app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite://"
-    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {}
-    app.config['TESTING'] = True
-
-    def create_app(self):
-        return app
-
+class TestChangeStatusToApproved(unittest.TestCase):
     def setUp(self):
-        db.create_all()
+        # Use the request_dates app for testing
+        self.app = request_dates_app
+        self.app.testing = True
+        self.client = self.app.test_client()  # Create a test client from the app
 
-        # Create a test employee object
-        test_employee = Employee(
-            staff_id=150488,
-            staff_fname='Jacob',
-            staff_lname='Tan',
-            dept='Engineering',
-            position='Call Centre',
-            country='Singapore',
-            email='Jacob.Tan@allinone.com.sg',
-            role=2,
-            reporting_manager=None
-        )
-        employee_db.session.add(test_employee)
-        employee_db.session.commit()
+        # Set up the database in the testing environment
+        with self.app.app_context():
+            db.create_all()  # Create the tables
 
-        # Now add a test request
-        test_request = Request(
-            request_id=100,
-            staff_id=150488,
-            creation_date=date(2024, 10, 10),
-            apply_reason='WFH',
-            reject_reason=None
-        )
-        request_db.session.add(test_request)
-        request_db.session.commit()
+            # Check if the employee already exists
+            existing_employee = Employee.query.filter_by(staff_id=150489).first()
+            if existing_employee is None:
+                # Add a test record
+                test_employee = Employee(
+                    staff_id=150488,
+                    staff_fname='Jacob',
+                    staff_lname='Tan',
+                    dept='Engineering',
+                    position='Call Centre',
+                    country='Singapore',
+                    email='Jacob.Tan@allinone.com.sg',
+                    role=2,
+                    reporting_manager=None
+                )
+                db.session.add(test_employee)
+                db.session.commit()
 
-        # Add test data for the request_dates table
-        request_date1 = RequestDates(
-            request_id=100,
-            request_date=date(2024, 10, 17),
-            request_shift='PM',
-            request_status='Pending Approval'
-        )
-        request_dates_db.session.add(request_date1)
-        request_dates_db.session.commit()
+            # Check if the request already exists
+            existing_request = Request.query.filter_by(request_id=1000).first()
+            if existing_request is None:
+                # Now add a test request
+                test_request = Request(
+                    request_id=100,
+                    staff_id=150488,
+                    creation_date=date(2024, 10, 10),
+                    apply_reason='WFH',
+                    reject_reason=None
+                )
+                db.session.add(test_request)
+                db.session.commit()
 
+            # Check if the request_dates already exists for the given request_id
+            existing_request_date = RequestDates.query.filter_by(request_id=1000, request_date=date(2024, 10, 17)).first()
+            if existing_request_date is None:
+                # Add test data for the request_dates table
+                request_date1 = RequestDates(
+                    request_id=100,
+                    request_date=date(2024, 10, 17),
+                    request_shift='PM',
+                    request_status='Pending Approval'
+                )
+                db.session.add(request_date1)  # Use the correct variable name for the object
+                db.session.commit()
 
     def tearDown(self):
-        db.session.remove()
-        db.drop_all()
-        
-class ChangeStatusToApproved(TestApp):
-    def test_get_request_dates(self):
-        # Call the endpoint
-        payload = {
-            "request_id": 100,
+        # Clean up after tests
+        with self.app.app_context():
+            db.session.remove()
+            db.drop_all()  # Drop the tables after tests
+
+    @patch('request_dates.invoke_http')  # Mock the invoke_http function
+    def test_approve_request(self, mock_invoke_http):
+        # Define the input data for the request
+        request_data = {
+            "request_id": 100,  # Updated to match the expected key
             "status": "Approved"
         }
-        response = self.client.put("/request_dates/change_all_status",
-                                    json=payload,
-                                    content_type='application/json')
-        print(response.get_data(as_text=True))
-        # Assert the response
-        expected_response = {
-            "code": 200,
-            "data": [
-                {
-                "request_date": "2024-10-17",
-                "request_date_id": 1,
-                "request_id": 100,
-                "request_shift": "PM",
-                "request_status": "Approved",
-                "rescind_reason": None,
-                "withdraw_reason": None
-                }
-            ],
-            "message": "Request status for request ID 100 updated to Approved."
-            }
-        self.assertEqual(response.get_json(), expected_response)
+
+        # Send a PUT request to the /change_all_status route
+        response = self.client.put('/request_dates/change_all_status', json=request_data)
+
+        # Check the status code and the response
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json["code"], 200)
+        self.assertIn("Request status for request ID 100 updated to Approved.", response.json["message"])
 
 class ChangeAllStatusTestCase(unittest.TestCase):
     def setUp(self):

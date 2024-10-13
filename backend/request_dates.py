@@ -45,6 +45,7 @@ class RequestDates(db.Model):
             "rescind_reason": self.rescind_reason,
         }
 
+request_URL = environ.get("request_URL") or "http://localhost:5001/request"
 status_log_URL = environ.get(
     'status_log_URL') or "http://localhost:5003/status_log"
 
@@ -502,6 +503,21 @@ def auto_reject():
             # Update the status to 'Rejected'
             request.request_status = 'Rejected'
             updated_requests.append(request)
+
+            data = {"request_id": request.request_id, "reason": "1 or more date(s) have been auto-rejected by the system", "status": "Rejected"}
+            update_reason_response = invoke_http(
+                request_URL + "/update_reason", json=data, method="PUT"
+            )
+
+            if update_reason_response.get("code") != 200:
+                return jsonify(
+                    {
+                        "code": update_reason_response.get("code", 500),
+                        "message": update_reason_response.get(
+                            "message", "Failed to update reason for request."
+                        ),
+                    }
+                ), update_reason_response.get("code", 500)
 
             log_data = {
                 "request_id": request.request_id,
