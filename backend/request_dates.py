@@ -463,48 +463,121 @@ def get_staff_request(request_id):
 
 
 # Auto reject requests that are more than 2 months ago
+# @app.route('/request_dates/auto_reject', methods=['PUT'])
+# def auto_reject():
+#     """
+#     No parameters needed
+
+#     Success Response
+#         {
+#         "message": "2 requests have been updated to Rejected",
+#         "updated_requests": [
+#             {
+#                 "id": 101,
+#                 "request_date": "2024-07-01",
+#                 "new_status": "Rejected"
+#             },
+#             {
+#                 "id": 102,
+#                 "request_date": "2024-06-28",
+#                 "new_status": "Rejected"
+#             }
+#         ]
+#     }
+#     """
+#     from datetime import datetime, timedelta
+#     # Get today's date
+#     today = datetime.today()
+    
+#     # Calculate the date 2 months ago from today
+#     two_months_ago = today - timedelta(days=60)
+    
+#     # Query all records with status 'Pending'
+#     pending_requests = RequestDates.query.filter_by(request_status='Pending Approval').all()
+    
+#     updated_requests = []
+    
+#     # Iterate through pending requests and check the request_date
+#     for request in pending_requests:
+#         if request.request_date < two_months_ago.date():
+#             # Update the status to 'Rejected'
+#             request.request_status = 'Rejected'
+#             updated_requests.append(request)
+
+#             data = {"request_id": request.request_id, "reason": "1 or more date(s) have been auto-rejected by the system", "status": "Rejected"}
+#             update_reason_response = invoke_http(
+#                 request_URL + "/update_reason", json=data, method="PUT"
+#             )
+
+#             if update_reason_response.get("code") != 200:
+#                 return jsonify(
+#                     {
+#                         "code": update_reason_response.get("code", 500),
+#                         "message": update_reason_response.get(
+#                             "message", "Failed to update reason for request."
+#                         ),
+#                     }
+#                 ), update_reason_response.get("code", 500)
+
+#             log_data = {
+#                 "request_id": request.request_id,
+#                 "action": str(request.request_date) + " has been auto rejected by system",
+#                 "reason": "Auto rejected"
+#             }
+
+#             invoke_http(status_log_URL + "/add_event", json=log_data, method='POST')
+
+
+#     # Commit the changes to the database
+#     db.session.commit()
+
+#     return jsonify({
+#         'message': f'{len(updated_requests)} requests have been updated to Rejected',
+#         'updated_requests': [{'id': req.request_id, 'request_date': req.request_date, 'new_status': req.request_status} for req in updated_requests]
+#     }), 200
+
+
 @app.route('/request_dates/auto_reject', methods=['PUT'])
 def auto_reject():
     """
-    No parameters needed
-
-    Success Response
-        {
-        "message": "2 requests have been updated to Rejected",
-        "updated_requests": [
-            {
-                "id": 101,
-                "request_date": "2024-07-01",
-                "new_status": "Rejected"
-            },
-            {
-                "id": 102,
-                "request_date": "2024-06-28",
-                "new_status": "Rejected"
-            }
-        ]
-    }
+    Automatically reject requests if any of their request_dates are more than 2 months old.
     """
     from datetime import datetime, timedelta
-    # Get today's date
     today = datetime.today()
-    
-    # Calculate the date 2 months ago from today
     two_months_ago = today - timedelta(days=60)
-    
-    # Query all records with status 'Pending'
-    pending_requests = RequestDates.query.filter_by(request_status='Pending Approval').all()
-    
-    updated_requests = []
-    
-    # Iterate through pending requests and check the request_date
-    for request in pending_requests:
-        if request.request_date < two_months_ago.date():
-            # Update the status to 'Rejected'
-            request.request_status = 'Rejected'
-            updated_requests.append(request)
 
-            data = {"request_id": request.request_id, "reason": "1 or more date(s) have been auto-rejected by the system", "status": "Rejected"}
+    # Step 1: Query all pending request dates older than 2 months
+    pending_old_requests = RequestDates.query.filter(
+        RequestDates.request_status == 'Pending Approval',
+        RequestDates.request_date < two_months_ago.date()
+    ).all()
+
+    # Collect the unique request IDs to reject
+    request_ids_to_reject = {req.request_id for req in pending_old_requests}
+
+    # Step 2: Query all request_dates with the identified request_ids
+    if request_ids_to_reject:
+        related_requests = RequestDates.query.filter(
+            RequestDates.request_id.in_(request_ids_to_reject)
+        ).all()
+
+        updated_requests = []
+        
+        # Step 3: Batch update all related requests to "Rejected"
+        for req in related_requests:
+            req.request_status = 'Rejected'
+            updated_requests.append(req)
+        
+        # Batch commit all the changes to the database
+        db.session.commit()
+
+        # Step 4: Update the reason in the original request table for each request
+        for request_id in request_ids_to_reject:
+            data = {
+                "request_id": request_id,
+                "reason": "1 or more date(s) have been auto-rejected by the system",
+                "status": "Rejected"
+            }
             update_reason_response = invoke_http(
                 request_URL + "/update_reason", json=data, method="PUT"
             )
@@ -519,22 +592,27 @@ def auto_reject():
                     }
                 ), update_reason_response.get("code", 500)
 
+            # Log the rejection event for the request
             log_data = {
-                "request_id": request.request_id,
-                "action": str(request.request_date) + " has been auto rejected by system",
-                "reason": "Auto rejected"
+                "request_id": request_id,
+                "action": "The entire request has been auto-rejected by the system",
+                "reason": "Auto rejected due to one or more dates being older than 2 months"
             }
-
             invoke_http(status_log_URL + "/add_event", json=log_data, method='POST')
 
+        # Step 5: Return response with unique request IDs of rejected requests
+        return jsonify({
+            'message': f'{len(request_ids_to_reject)} unique requests have been updated to Rejected',
+            'requests': list(request_ids_to_reject)  # Return unique request IDs
+        }), 200
 
-    # Commit the changes to the database
-    db.session.commit()
-
+    # If no requests need to be updated
     return jsonify({
-        'message': f'{len(updated_requests)} requests have been updated to Rejected',
-        'updated_requests': [{'id': req.request_id, 'request_date': req.request_date, 'new_status': req.request_status} for req in updated_requests]
+        'message': 'No requests were found to be auto-rejected.',
+        'updated_requests': []
     }), 200
+
+
 
 
 if __name__ == '__main__':
