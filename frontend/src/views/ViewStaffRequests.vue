@@ -10,11 +10,11 @@
             </v-card-title>
 
             <v-tabs v-model="tab" align-tabs="center" color="red-lighten-2">
-                <v-tab :value="1">Pending Approval</v-tab>
-                <v-tab :value="2">Approved</v-tab>
-                <v-tab :value="3">Pending Withdrawal</v-tab>
-                <v-tab :value="4">Rescinded</v-tab>
-                <v-tab :value="5">Rejected</v-tab>
+                <v-tab :value="1" @click=formatData()>Pending Approval</v-tab>
+                <v-tab :value="2" @click=formatData()>Approved</v-tab>
+                <v-tab :value="3" @click=formatData()>Pending Withdrawal</v-tab>
+                <v-tab :value="4" @click=formatData()>Rescinded</v-tab>
+                <v-tab :value="5" @click=formatData()>Rejected</v-tab>
             </v-tabs>
 
             <v-tabs-window v-model="tab">
@@ -24,6 +24,7 @@
                             item-key="request_id">
                             <template v-slot:item="{ item }">
                                 <tr>
+                                    <td>{{ item.staff_name }}</td>
                                     <td>{{ item.request_id }}</td>
                                     <td>{{ item.creation_date }}</td>
                                     <td>{{ item.request_date }}</td>
@@ -101,6 +102,7 @@ export default {
             selectedItem: null,
             items: [],
             headers: [
+                { title: 'Staff Name', value: 'staff_name', key: 'staff_name' },
                 { title: 'Request ID', value: 'request_id', key: 'request_id' },
                 { title: 'Creation Date', value: 'creation_date', key: 'creation_date' },
                 { title: 'Request Date', value: 'request_date', key: 'request_date' },
@@ -162,6 +164,8 @@ export default {
 
                     this.items = rawData.flatMap((item) =>
                         item.wfh_dates.map((wfh) => ({
+                            //TODO: call staff name from backend instead of hardcoding
+                            staff_name: "Jacob Tan",
                             request_id: item.request_id,
                             creation_date: item.creation_date,
                             request_date: wfh.request_date,

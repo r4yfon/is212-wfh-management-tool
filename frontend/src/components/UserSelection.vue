@@ -49,15 +49,15 @@ export default {
           role: 1,
         },
         {
-          staff_id: 140008,
-          staff_fname: "Jaclyn",
+          staff_id: 151408,
+          staff_fname: "Philip",
           staff_lname: "Lee",
-          department: "Sales",
-          position: "Sales Manager",
+          department: "Engineering",
+          position: "Director",
           country: "Singapore",
-          email: "Jaclyn.Lee@allinone.com.sg",
-          reporting_manager: 140001,
-          role: 3
+          email: "Philip.Lee@allinone.com.sg",
+          reporting_manager: 130002,
+          role: 1
         }
       ],
     }
