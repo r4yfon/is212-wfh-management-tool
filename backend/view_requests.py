@@ -214,11 +214,9 @@ def m_retrieve_requests(m_staff_id):
             RequestDates.request_status
         ).join(Request, Employee.staff_id == Request.staff_id) \
          .join(RequestDates, Request.request_id == RequestDates.request_id) \
-         .filter(Employee.reporting_manager == m_staff_id, 
-                 RequestDates.request_status.in_(["Pending Approval", "Pending Withdrawal"])) \
+         .filter(Employee.reporting_manager == m_staff_id) \
          .all()
         
-        print("DAWDAW", results)
         # Organizing the results
         request_dicts = {}
         for row in results:
