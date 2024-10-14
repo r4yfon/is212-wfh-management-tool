@@ -617,7 +617,7 @@ VALUES
 INSERT INTO Request (Staff_ID, Creation_Date, Apply_Reason, Reject_Reason)
 VALUES
 (150488, '2024-09-15', 'Family event', NULL),
-(150445, '2024-09-10', 'Medical appointment', NULL),
+(150488, '2024-09-10', 'Medical appointment', NULL),
 (150446, '2024-09-12', 'Personal reasons', 'Insufficient documentation'),
 (150632, '2024-09-11', 'Vacation', NULL),
 (150638, '2024-09-05', 'Family event', NULL),
@@ -626,7 +626,11 @@ VALUES
 (151591, '2024-09-13', 'Medical appointment', NULL),
 (151596, '2024-09-17', 'Family event', NULL),
 (151598, '2024-09-16', 'Vacation', 'Project deadline'),
-(150488, '2024-10-15', 'Family event', NULL);
+(150488, '2024-10-15', 'Family event', NULL),
+(150488, '2024-10-13', 'Family event', NULL),
+(150488, '2024-06-13', 'Feeling Sick', NULL),
+(130002, '2024-10-13', 'Feeling Sick', NULL),
+(150488, '2024-10-13', 'Feeling Sick', NULL);
 
 -- Insert into Request_Dates Table
 INSERT INTO Request_Dates (Request_ID, Request_Date, Request_Shift, Request_Status, Withdraw_Reason, Rescind_Reason)
@@ -644,4 +648,8 @@ VALUES
 (8, '2024-09-13', 'Full', 'Pending Approval', NULL , NULL),
 (9, '2024-09-17', 'PM', 'Approved', NULL , NULL),
 (10, '2024-09-16', 'Full', 'Rejected', NULL , NULL),
-(11, '2024-10-15', 'PM', 'Approved', NULL , NULL);
+(11, '2024-10-15', 'PM', 'Approved', NULL , NULL),
+(12, '2024-10-13', 'PM', 'Rejected', NULL , NULL),
+(13, '2024-07-11', 'PM', 'Pending Approval', NULL , NULL),
+(14, '2024-10-13', 'AM', 'Pending Approval', NULL , NULL),
+(15, '2024-10-11', 'PM', 'Pending Approval', NULL , NULL);

@@ -116,7 +116,7 @@ class TestMRetrieveRequests(unittest.TestCase):
 
 
         # Make a GET request to the endpoint
-        response = self.client.get('/m_retrieve_requests/150555')
+        response = self.client.get('/m_retrieve_requests/151408')
 
         # Assert that the response was successful
         self.assertEqual(response.status_code, 200)
@@ -141,7 +141,7 @@ class TestMRetrieveRequests(unittest.TestCase):
         ]
 
         # Make a GET request to the endpoint
-        response = self.client.get('/m_retrieve_requests/151408')
+        response = self.client.get('/m_retrieve_requests/150488')
 
         # Assert that the response was successful with an empty data list
         self.assertEqual(response.status_code, 200)
