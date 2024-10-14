@@ -112,7 +112,7 @@ class TestMRetrieveRequests(unittest.TestCase):
     @patch('view_requests.invoke_http')  # Mock the invoke_http method
     def test_m_retrieve_requests_success(self, mock_invoke_http):
         # Mock responses for the sequence of invoke_http calls
-        mock_invoke_http.side_effect = [(150488, 'Jacob', 'Tan', 1, 'Family event', datetime.date(2024, 10, 17), 'PM', 'Pending Approval'), (150488, 'Jacob', 'Tan', 1, 'Family event', datetime.date(2024, 10, 22), 'Full', 'Pending Approval'), (150488, 'Jacob', 'Tan', 1, 'Family event', datetime.date(2024, 5, 29), 'AM', 'Pending Approval'), (150446, 'Daniel', 'Tan', 2, 'Medical appointment', datetime.date(2024, 7, 10), 'Full', 'Pending Approval'), (150446, 'Daniel', 'Tan', 2, 'Medical appointment', datetime.date(2024, 9, 17), 'Full', 'Pending Approval'), (150446, 'Daniel', 'Tan', 2, 'Medical appointment', datetime.date(2024, 9, 12), 'AM', 'Pending Approval')]
+        mock_invoke_http.return_value = [(150488, 'Jacob', 'Tan', 1, 'Family event', datetime.date(2024, 10, 17), 'PM', 'Pending Approval'), (150488, 'Jacob', 'Tan', 1, 'Family event', datetime.date(2024, 10, 22), 'Full', 'Pending Approval'), (150488, 'Jacob', 'Tan', 1, 'Family event', datetime.date(2024, 5, 29), 'AM', 'Pending Approval'), (150446, 'Daniel', 'Tan', 2, 'Medical appointment', datetime.date(2024, 7, 10), 'Full', 'Pending Approval'), (150446, 'Daniel', 'Tan', 2, 'Medical appointment', datetime.date(2024, 9, 17), 'Full', 'Pending Approval'), (150446, 'Daniel', 'Tan', 2, 'Medical appointment', datetime.date(2024, 9, 12), 'AM', 'Pending Approval')]
 
 
         # Make a GET request to the endpoint
@@ -123,12 +123,199 @@ class TestMRetrieveRequests(unittest.TestCase):
 
         # Define the expected response
         expected_response = {
-            "code": 200,
-            "data": [
-                {"reason": "Family event", "request_dates": [{"2024-10-17": "PM"}, {"2024-10-22": "Full"}, {"2024-05-29": "AM"}], "request_id": 1, "request_status": "Pending Approval", "staff_id": 150488, "staff_name": "Jacob Tan"},
-                {"reason": "Medical appointment", "request_dates": [{"2024-07-10": "Full"}, {"2024-09-17": "Full"}, {"2024-09-12": "AM"}], "request_id": 2, "request_status": "Pending Approval", "staff_id": 150446, "staff_name": "Daniel Tan"}
-            ]
+    "code": 200,
+    "data": [
+        {
+            "reason": "Family event",
+            "request_dates": [
+                {
+                    "2024-09-15": "PM"
+                },
+                {
+                    "2024-09-22": "PM"
+                },
+                {
+                    "2024-09-29": "PM"
+                }
+            ],
+            "request_id": 1,
+            "request_status": "Approved",
+            "staff_id": 150488,
+            "staff_name": "Jacob Tan"
+        },
+        {
+            "reason": "Medical appointment",
+            "request_dates": [
+                {
+                    "2024-09-10": "Full"
+                },
+                {
+                    "2024-09-17": "Full"
+                }
+            ],
+            "request_id": 2,
+            "request_status": "Pending Approval",
+            "staff_id": 150488,
+            "staff_name": "Jacob Tan"
+        },
+        {
+            "reason": "Personal reasons",
+            "request_dates": [
+                {
+                    "2024-09-12": "AM"
+                }
+            ],
+            "request_id": 3,
+            "request_status": "Rejected",
+            "staff_id": 150446,
+            "staff_name": "Daniel Tan"
+        },
+        {
+            "reason": "Vacation",
+            "request_dates": [
+                {
+                    "2024-09-11": "Full"
+                }
+            ],
+            "request_id": 4,
+            "request_status": "Approved",
+            "staff_id": 150632,
+            "staff_name": "Charlotte Toh"
+        },
+        {
+            "reason": "Family event",
+            "request_dates": [
+                {
+                    "2024-09-05": "Full"
+                }
+            ],
+            "request_id": 5,
+            "request_status": "Pending Approval",
+            "staff_id": 150638,
+            "staff_name": "Eva Ng"
+        },
+        {
+            "reason": "Conference",
+            "request_dates": [
+                {
+                    "2024-09-18": "Full"
+                }
+            ],
+            "request_id": 6,
+            "request_status": "Approved",
+            "staff_id": 150645,
+            "staff_name": "Sophia Tan"
+        },
+        {
+            "reason": "Personal reasons",
+            "request_dates": [
+                {
+                    "2024-09-14": "Full"
+                }
+            ],
+            "request_id": 7,
+            "request_status": "Rejected",
+            "staff_id": 151595,
+            "staff_name": "Mani Devi"
+        },
+        {
+            "reason": "Medical appointment",
+            "request_dates": [
+                {
+                    "2024-09-13": "Full"
+                }
+            ],
+            "request_id": 8,
+            "request_status": "Pending Approval",
+            "staff_id": 151591,
+            "staff_name": "Nanda Kesavan"
+        },
+        {
+            "reason": "Family event",
+            "request_dates": [
+                {
+                    "2024-09-17": "PM"
+                }
+            ],
+            "request_id": 9,
+            "request_status": "Approved",
+            "staff_id": 151596,
+            "staff_name": "Koh Seng"
+        },
+        {
+            "reason": "Vacation",
+            "request_dates": [
+                {
+                    "2024-09-16": "Full"
+                }
+            ],
+            "request_id": 10,
+            "request_status": "Rejected",
+            "staff_id": 151598,
+            "staff_name": "Kumaru Pillai"
+        },
+        {
+            "reason": "Family event",
+            "request_dates": [
+                {
+                    "2024-10-15": "PM"
+                }
+            ],
+            "request_id": 11,
+            "request_status": "Approved",
+            "staff_id": 150488,
+            "staff_name": "Jacob Tan"
+        },
+        {
+            "reason": "Family event",
+            "request_dates": [
+                {
+                    "2024-10-13": "PM"
+                }
+            ],
+            "request_id": 12,
+            "request_status": "Rejected",
+            "staff_id": 150488,
+            "staff_name": "Jacob Tan"
+        },
+        {
+            "reason": "Feeling Sick",
+            "request_dates": [
+                {
+                    "2024-07-11": "PM"
+                }
+            ],
+            "request_id": 13,
+            "request_status": "Rejected",
+            "staff_id": 150488,
+            "staff_name": "Jacob Tan"
+        },
+        {
+            "reason": "Feeling Sick",
+            "request_dates": [
+                {
+                    "2024-10-11": "PM"
+                }
+            ],
+            "request_id": 15,
+            "request_status": "Pending Approval",
+            "staff_id": 150488,
+            "staff_name": "Jacob Tan"
+        },
+        {
+            "reason": "ddd",
+            "request_dates": [
+                {
+                    "2024-10-15": "AM"
+                }
+            ],
+            "request_id": 16,
+            "request_status": "Pending Approval",
+            "staff_id": 150488,
+            "staff_name": "Jacob Tan"
         }
+    ]
+}
 
         self.assertEqual(response.json, expected_response)
 
