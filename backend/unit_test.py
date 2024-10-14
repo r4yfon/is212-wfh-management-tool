@@ -101,6 +101,7 @@ class TestGetStaffByManager(unittest.TestCase):
         self.assertEqual(response.status_code, 500)
         self.assertEqual(response.json, expected_response)
 
+
 class TestMRetrieveRequests(unittest.TestCase):
     def setUp(self):
         self.app = Flask(__name__)
@@ -111,115 +112,11 @@ class TestMRetrieveRequests(unittest.TestCase):
     @patch('view_requests.invoke_http')  # Mock the invoke_http method
     def test_m_retrieve_requests_success(self, mock_invoke_http):
         # Mock responses for the sequence of invoke_http calls
-        mock_invoke_http.side_effect = [
-            {
-                "data": [
-                    {
-                    "country": "Singapore",
-                    "dept": "Engineering",
-                    "email": "Eva.Ng@allinone.com.sg",
-                    "position": "Junior Engineers",
-                    "reporting_manager": 151408,
-                    "role": 2,
-                    "staff_fname": "Eva",
-                    "staff_id": 150638,
-                    "staff_lname": "Ng"
-                    },
-                    {
-                    "country": "Singapore",
-                    "dept": "Engineering",
-                    "email": "Nanda.Kesavan@allinone.com.sg",
-                    "position": "Junior Engineers",
-                    "reporting_manager": 151408,
-                    "role": 2,
-                    "staff_fname": "Nanda",
-                    "staff_id": 151591,
-                    "staff_lname": "Kesavan"
-                    },
-                    {
-                    "country": "Singapore",
-                    "dept": "Engineering",
-                    "email": "Ethan.Loh@allinone.com.sg",
-                    "position": "Call Centre",
-                    "reporting_manager": 151408,
-                    "role": 2,
-                    "staff_fname": "Ethan",
-                    "staff_id": 150445,
-                    "staff_lname": "Loh"
-                    },
-                ]
-            },  # Staff list response
-            {
-                "data": [
-                    {
-                        "apply_reason": "Medical appointment",
-                        "creation_date": "2024-09-13",
-                        "reject_reason": None,
-                        "request_id": 8,
-                        "staff_id": 151591
-                    },
-                    {
-                        "apply_reason": "Family event",
-                        "creation_date": "2024-09-05",
-                        "reject_reason": None,
-                        "request_id": 5,
-                        "staff_id": 150638
-                    },
-                    {
-                        "apply_reason": "Medical appointment",
-                        "creation_date": "2024-09-10",
-                        "reject_reason": None,
-                        "request_id": 2,
-                        "staff_id": 150445
-                    }
-                ]
-            },  # Staff requests response
-            {"data": [
-                {
-                    "request_date": "2024-09-10",
-                    "request_date_id": 4,
-                    "request_id": 2,
-                    "request_shift": "Full",
-                    "request_status": "Pending Approval",
-                    "rescind_reason": None,
-                    "withdraw_reason": None
-                },
-                {
-                    "request_date": "2024-09-17",
-                    "request_date_id": 5,
-                    "request_id": 2,
-                    "request_shift": "Full",
-                    "request_status": "Pending Approval",
-                    "rescind_reason": None,
-                    "withdraw_reason": None
-                }
-            ]},
-            {"data": [
-                {
-                    "request_date": "2024-09-05",
-                    "request_date_id": 8,
-                    "request_id": 5,
-                    "request_shift": "Full",
-                    "request_status": "Pending Approval",
-                    "rescind_reason": None,
-                    "withdraw_reason": None
-                }
-            ]},
-            {"data": [
-                {
-                    "request_date": "2024-09-13",
-                    "request_date_id": 11,
-                    "request_id": 8,
-                    "request_shift": "Full",
-                    "request_status": "Pending Approval",
-                    "rescind_reason": None,
-                    "withdraw_reason": None
-                }
-            ]}
-        ]
+        mock_invoke_http.side_effect = [(150488, 'Jacob', 'Tan', 1, 'Family event', datetime.date(2024, 10, 17), 'PM', 'Pending Approval'), (150488, 'Jacob', 'Tan', 1, 'Family event', datetime.date(2024, 10, 22), 'Full', 'Pending Approval'), (150488, 'Jacob', 'Tan', 1, 'Family event', datetime.date(2024, 5, 29), 'AM', 'Pending Approval'), (150446, 'Daniel', 'Tan', 2, 'Medical appointment', datetime.date(2024, 7, 10), 'Full', 'Pending Approval'), (150446, 'Daniel', 'Tan', 2, 'Medical appointment', datetime.date(2024, 9, 17), 'Full', 'Pending Approval'), (150446, 'Daniel', 'Tan', 2, 'Medical appointment', datetime.date(2024, 9, 12), 'AM', 'Pending Approval')]
+
 
         # Make a GET request to the endpoint
-        response = self.client.get('/m_retrieve_requests/151408')
+        response = self.client.get('/m_retrieve_requests/150555')
 
         # Assert that the response was successful
         self.assertEqual(response.status_code, 200)
@@ -228,47 +125,11 @@ class TestMRetrieveRequests(unittest.TestCase):
         expected_response = {
             "code": 200,
             "data": [
-                {
-                    "reason": "Medical appointment",
-                    "request_dates": [
-                        {
-                            "2024-09-10": "Full"
-                        },
-                        {
-                            "2024-09-17": "Full"
-                        }
-                    ],
-                    "request_id": 2,
-                    "request_status": "Pending Approval",
-                    "staff_id": 150445,
-                    "staff_name": "Ethan Loh"
-                },
-                {
-                    "reason": "Family event",
-                    "request_dates": [
-                        {
-                            "2024-09-05": "Full"
-                        }
-                    ],
-                    "request_id": 5,
-                    "request_status": "Pending Approval",
-                    "staff_id": 150638,
-                    "staff_name": "Eva Ng"
-                },
-                {
-                    "reason": "Medical appointment",
-                    "request_dates": [
-                        {
-                            "2024-09-13": "Full"
-                        }
-                    ],
-                    "request_id": 8,
-                    "request_status": "Pending Approval",
-                    "staff_id": 151591,
-                    "staff_name": "Nanda Kesavan"
-                }
+                {"reason": "Family event", "request_dates": [{"2024-10-17": "PM"}, {"2024-10-22": "Full"}, {"2024-05-29": "AM"}], "request_id": 1, "request_status": "Pending Approval", "staff_id": 150488, "staff_name": "Jacob Tan"},
+                {"reason": "Medical appointment", "request_dates": [{"2024-07-10": "Full"}, {"2024-09-17": "Full"}, {"2024-09-12": "AM"}], "request_id": 2, "request_status": "Pending Approval", "staff_id": 150446, "staff_name": "Daniel Tan"}
             ]
         }
+
         self.assertEqual(response.json, expected_response)
 
     @patch('view_requests.invoke_http')  # Mock the invoke_http method
@@ -280,7 +141,7 @@ class TestMRetrieveRequests(unittest.TestCase):
         ]
 
         # Make a GET request to the endpoint
-        response = self.client.get('/m_retrieve_requests/150488')
+        response = self.client.get('/m_retrieve_requests/151408')
 
         # Assert that the response was successful with an empty data list
         self.assertEqual(response.status_code, 200)
@@ -325,7 +186,6 @@ class TestMRetrieveRequests(unittest.TestCase):
 
         # Assert the response indicates an error
         self.assertEqual(response.status_code, 404)
-
 
 
 class TestRejectRequest(unittest.TestCase):
@@ -376,73 +236,65 @@ class TestRejectRequest(unittest.TestCase):
         self.assertEqual(response_json["code"], 500)
         self.assertEqual(response_json["message"], "Failed to update reason.")
 
-class TestChangeStatusToApproved(unittest.TestCase):
+
+class TestChangeStatusToApproved(flask_testing.TestCase):
+    request_dates_app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///:memory:"  # In-memory database
+    request_dates_app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {}
+    request_dates_app.config['TESTING'] = True
+
+    def create_app(self):
+        return request_dates_app
+
     def setUp(self):
-        # Use the request_dates app for testing
-        self.app = request_dates_app
-        self.app.testing = True
-        self.client = self.app.test_client()  # Create a test client from the app
-
-        # Set up the database in the testing environment
-        with self.app.app_context():
-            db.create_all()  # Create the tables
-
-            # Check if the employee already exists
-            existing_employee = Employee.query.filter_by(staff_id=150489).first()
-            if existing_employee is None:
-                # Add a test record
-                test_employee = Employee(
-                    staff_id=150488,
-                    staff_fname='Jacob',
-                    staff_lname='Tan',
-                    dept='Engineering',
-                    position='Call Centre',
-                    country='Singapore',
-                    email='Jacob.Tan@allinone.com.sg',
-                    role=2,
-                    reporting_manager=None
-                )
-                db.session.add(test_employee)
-                db.session.commit()
-
-            # Check if the request already exists
-            existing_request = Request.query.filter_by(request_id=1000).first()
-            if existing_request is None:
-                # Now add a test request
-                test_request = Request(
-                    request_id=100,
-                    staff_id=150488,
-                    creation_date=date(2024, 10, 10),
-                    apply_reason='WFH',
-                    reject_reason=None
-                )
-                db.session.add(test_request)
-                db.session.commit()
-
-            # Check if the request_dates already exists for the given request_id
-            existing_request_date = RequestDates.query.filter_by(request_id=1000, request_date=date(2024, 10, 17)).first()
-            if existing_request_date is None:
-                # Add test data for the request_dates table
-                request_date1 = RequestDates(
-                    request_id=100,
-                    request_date=date(2024, 10, 17),
-                    request_shift='PM',
-                    request_status='Pending Approval'
-                )
-                db.session.add(request_date1)  # Use the correct variable name for the object
-                db.session.commit()
+        # Mock the database session
+        self.patcher = patch('request_dates.db.session', new_callable=MagicMock)
+        self.mock_db_session = self.patcher.start()
 
     def tearDown(self):
-        # Clean up after tests
-        with self.app.app_context():
-            db.session.remove()
-            db.drop_all()  # Drop the tables after tests
+        self.patcher.stop()
 
-    @patch('request_dates.invoke_http')  # Mock the invoke_http function
+class approveRequest(TestChangeStatusToApproved):
+    @patch('view_requests.invoke_http')
     def test_approve_request(self, mock_invoke_http):
-        # Define the input data for the request
+        # Set up the mock request date
+        mock_request_date = RequestDates(
+            request_date_id=1,
+            request_id=1000,
+            request_date=date(2024, 10, 17),
+            request_shift='PM',
+            request_status='Pending Approval'
+        )
+
+        # Configure the mock to return the test object
+        mock_invoke_http.return_value = mock_request_date
+
+        # Mock the employee query
+        self.mock_db_session.query.return_value.filter_by.return_value.first.return_value = None  # No existing employee
+
+        # Prepare to mock adding an employee
+        test_employee = Employee(
+            staff_id=999999,
+            staff_fname='Jacob',
+            staff_lname='Tan',
+            dept='Engineering',
+            position='Call Centre',
+            country='Singapore',
+            email='Jacob.Tan@allinone.com.sg',
+            role=2,
+            reporting_manager=None
+        )
+
+        # Mock adding the employee to the session
+        self.mock_db_session.add.return_value = None  # Mocking the add method
+        self.mock_db_session.commit.return_value = None  # Mocking the commit method
+
+        # Simulate the creation of an employee
+        self.mock_db_session.add(test_employee)
+        self.mock_db_session.commit()
+
+        # Prepare the input data
         request_data = {
-            "request_id": 100,  # Updated to match the expected key
+            "request_id": 1000,
             "status": "Approved"
         }
 
@@ -452,7 +304,8 @@ class TestChangeStatusToApproved(unittest.TestCase):
         # Check the status code and the response
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json["code"], 200)
-        self.assertIn("Request status for request ID 100 updated to Approved.", response.json["message"])
+        self.assertIn("Request status for request ID 1000 updated to Approved.", response.json["message"])
+
 
 class ChangeAllStatusTestCase(unittest.TestCase):
     def setUp(self):

@@ -276,7 +276,7 @@ def change_all_status():
                 "code": 404,
                 "message": f"No request dates found for request ID {request_id}."
             }), 404
-        
+
         # Update the Request_Status for each record
         for request_date in request_dates:
             if request_date.request_status != "Withdrawn" and request_date.request_status != "Pending Withdrawal":

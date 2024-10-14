@@ -220,7 +220,6 @@ def m_retrieve_requests(m_staff_id):
         # Organizing the results
         request_dicts = {}
         for row in results:
-            print(row)
             staff_id = row[0]
             staff_fname = row[1]
             staff_lname = row[2]
