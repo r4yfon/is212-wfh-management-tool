@@ -47,7 +47,7 @@ jobs:
     - name: Set up MySQL
       run: |
         mysql -h 127.0.0.1 -u root -pis212_wfh_scheduling -e "CREATE DATABASE IF NOT EXISTS test_db;"
-        mysql -h 127.0.0.1 -u root -pis212_wfh_scheduling test_db < backend/SQL/Data.sql
+        mysql -h 127.0.0.1 -u root -pis212_wfh_scheduling test_db < backend/SQL/Data no FK constraint.sql
 
     - name: Lint with flake8
       run: |
