@@ -51,8 +51,11 @@ jobs:
     - name: Set up MySQL
       run: |
         mysql -h 127.0.0.1 -u root wfh_scheduling < backend/SQL/DataNoFKConstraint.sql
-        # Optionally check if tables exist
         mysql -h 127.0.0.1 -u root -e "SHOW TABLES;" wfh_scheduling
+
+    - name: Log the MySQL error
+      run: |
+        tail -n 100 /var/log/mysql/error.log
 
     - name: Lint with flake8
       run: |
