@@ -24,13 +24,10 @@ jobs:
         options: --health-cmd="mysqladmin ping --silent" --health-interval=10s --health-timeout=5s --health-retries=5
 
     steps:
+    - uses: actions/checkout@v4
     - name: Set up environment variables for Flask
       run: |
         export dbURL=mysql+mysqlconnector://root@localhost:3306/wfh_scheduling
-
-
-    steps:
-    - uses: actions/checkout@v4
 
     - name: Set up Python 3.12
       uses: actions/setup-python@v3
