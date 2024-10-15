@@ -20,9 +20,14 @@ jobs:
         ports:
           - 3306:3306
         env:
-          MYSQL_ROOT_PASSWORD: is212_wfh_scheduling
-          MYSQL_DATABASE: test_db
+          MYSQL_DATABASE: wfh_scheduling
         options: --health-cmd="mysqladmin ping --silent" --health-interval=10s --health-timeout=5s --health-retries=5
+
+    steps:
+    - name: Set up environment variables for Flask
+      run: |
+        export dbURL=mysql+mysqlconnector://root@localhost:3306/wfh_scheduling
+
 
     steps:
     - uses: actions/checkout@v4
@@ -46,8 +51,9 @@ jobs:
 
     - name: Set up MySQL
       run: |
-        mysql -h 127.0.0.1 -u root -pis212_wfh_scheduling -e "CREATE DATABASE IF NOT EXISTS test_db;"
-        mysql -h 127.0.0.1 -u root -pis212_wfh_scheduling test_db < backend/SQL/DataNoFKConstraint.sql
+        mysql -h 127.0.0.1 -u root wfh_scheduling < backend/SQL/Data.sql
+        # Optionally check if tables exist
+        mysql -h 127.0.0.1 -u root -pis212_wfh_scheduling -e "SHOW TABLES;" wfh_scheduling
 
     - name: Lint with flake8
       run: |
@@ -56,6 +62,6 @@ jobs:
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-    - name: Run unit tests
+    - name: Run unit tests in verbose mode
       run: |
-        python backend/unit_test.py
+        pytest backend/unit_test.py -v
