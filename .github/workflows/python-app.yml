@@ -49,7 +49,7 @@ jobs:
 
     - name: Set up MySQL
       run: |
-        mysql -h 127.0.0.1 -u root wfh_scheduling < backend/SQL/Data.sql
+        mysql -h 127.0.0.1 -u root wfh_scheduling < backend/SQL/DataNoFKConstraint.sql
         # Optionally check if tables exist
         mysql -h 127.0.0.1 -u root -pis212_wfh_scheduling -e "SHOW TABLES;" wfh_scheduling
 
