@@ -303,13 +303,25 @@ class TestMRetrieveRequests(unittest.TestCase):
             "staff_name": "Jacob Tan"
         },
         {
-            "reason": "ddd",
+            "reason": "nil",
             "request_dates": [
                 {
-                    "2024-10-15": "AM"
+                    "2024-10-14": "AM"
                 }
             ],
             "request_id": 16,
+            "request_status": "Pending Approval",
+            "staff_id": 150488,
+            "staff_name": "Jacob Tan"
+        },
+        {
+            "reason": "hi",
+            "request_dates": [
+                {
+                    "2024-10-25": "PM"
+                }
+            ],
+            "request_id": 17,
             "request_status": "Pending Approval",
             "staff_id": 150488,
             "staff_name": "Jacob Tan"
