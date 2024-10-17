@@ -146,153 +146,200 @@ def view_weekly_schedule(staff_id, date_entered):
         return jsonify({"error": f"Failed to fetch requests: {str(e)}"}), 500
 
 
-# Get organisation schedule
-@app.route("/get_org_schedule", methods=["GET"])
-def get_org_schedule():
-    # Get all requests made by the staff_id
-    request_response = invoke_http(request_URL + "/get_all_requests", method="GET")
 
-    if request_response["code"] == 200:
-        request_list = []
-        for request in request_response["data"]:
-            request_dict = {
-                "staff_id": request["staff_id"],
-                "staff_name": request["staff_id"],
-                "request_id": request["request_id"],
-                "request_dates": [],
+@app.route("/o_get_org_schedule", methods=["GET"])
+def o_get_org_schedule():
+    try:
+        # Perform a union join query to get all relevant data
+        results = db.session.query(
+            Request.staff_id,
+            Employee.staff_fname,
+            Employee.staff_lname,
+            Employee.dept,
+            RequestDates.request_date,
+            RequestDates.request_shift,
+            RequestDates.request_status
+        ).join(Employee, Employee.staff_id == Request.staff_id) \
+        .join(RequestDates, Request.request_id == RequestDates.request_id) \
+        .filter(RequestDates.request_status.in_(["Pending Approval", "Approved"])) \
+        .all()
+
+        dept_dict = {}  # Dictionary to store results by department
+
+        for staff_id, staff_fname, staff_lname, dept, request_date, request_shift, request_status in results:
+            request_date_str = request_date.strftime("%Y-%m-%d")
+
+            if dept not in dept_dict:
+                dept_dict[dept] = {}
+            if request_date_str not in dept_dict[dept]:
+                dept_dict[dept][request_date_str] = []
+
+            staff_schedule = {
+                "staff_name": f"{staff_fname} {staff_lname}",
+                "staff_id": staff_id,
+                "schedule": []
             }
 
-            staff_request_dates = invoke_http(
-                request_dates_URL + "/get_by_request_id/" + str(request["request_id"]),
-                method="GET",
+            if request_status == "Pending Approval":
+                staff_schedule["schedule"].append(f"Pending - {request_shift}")
+            else:
+                staff_schedule["schedule"].append(f"WFH - {request_shift}")
+
+            existing_staff = next(
+                (staff for staff in dept_dict[dept][request_date_str] if staff["staff_id"] == staff_id),
+                None
             )
-            for request_dates in staff_request_dates[0]["data"]:
-                if (
-                    request_dates["request_status"] == "Pending Approval"
-                    or request_dates["request_status"] == "Approved"
-                ):
-                    request_dict["request_dates"].append(
-                        {request_dates["request_date"]: request_dates["request_shift"]}
-                    )
-                    request_dict["request_status"] = request_dates["request_status"]
-            if len(request_dict["request_dates"]) > 0:
-                request_list.append(request_dict)
 
-    # Return the modified response including the request_dates
-    return jsonify(request_list)
+            if existing_staff:
+                existing_staff["schedule"].append(staff_schedule["schedule"][0])
+            else:
+                dept_dict[dept][request_date_str].append(staff_schedule)
+
+        return jsonify(dept_dict), 200  # Return 200 OK with the schedule
+
+    except Exception as e:
+        return jsonify({"message": "An error occurred while retrieving the schedule.", "error": str(e)}), 500
 
 
-# Get team schedule
-@app.route("/get_team_schedule/<int:staff_id>", methods=["GET"])
-def get_team_schedule(staff_id):
-    # Get all requests made by the staff_id
-    response = invoke_http(employee_URL + "/get_all_employees", method="GET")
 
-    def get_team_members(staff_id, visited=None, staff_details=None):
-        # Initialize visited set to track processed staff_ids
-        if visited is None:
-            visited = set()
-        if staff_details is None:
-            staff_details = {}
 
-        # Prevent recursion if the staff_id has already been processed
-        if staff_id in visited:
+@app.route("/m_get_team_schedule/<int:staff_id>", methods=["GET"])
+def m_get_team_schedule(staff_id):
+    try:
+        response = invoke_http(employee_URL + "/get_all_employees", method="GET")
+
+        def get_team_members(staff_id, visited=None, staff_details=None):
+            if visited is None:
+                visited = set()
+            if staff_details is None:
+                staff_details = {}
+
+            if staff_id in visited:
+                return staff_details
+
+            visited.add(staff_id)
+
+            for member in response["data"]:
+                if member["reporting_manager"] == staff_id:
+                    staff_details[member["staff_id"]] = {
+                        "staff_name": member["staff_name"],
+                        "dept": member["dept"],
+                        "position": member["position"],
+                    }
+
+                    staff_details.update(get_team_members(member["staff_id"], visited, staff_details))
+
             return staff_details
 
-        # Mark this staff_id as visited
-        visited.add(staff_id)
+        all_team_members = get_team_members(staff_id)
 
-        # Iterate through each member in the response data
-        for member in response["data"]:
-            if member["reporting_manager"] == staff_id:
-                # Add the current member's details to the staff_details dictionary
-                staff_details[member["staff_id"]] = {
-                    "staff_name": member["staff_name"],
-                    "dept": member["dept"],
-                    "position": member["position"],
+        results = db.session.query(
+            Request.staff_id,
+            Employee.staff_fname,
+            Employee.staff_lname,
+            Employee.dept,
+            RequestDates.request_date,
+            RequestDates.request_shift,
+            RequestDates.request_status
+        ).join(Employee, Employee.staff_id == Request.staff_id) \
+        .join(RequestDates, Request.request_id == RequestDates.request_id) \
+        .filter(RequestDates.request_status.in_(["Pending Approval", "Approved"])) \
+        .all()
+
+        dept_dict = {}
+
+        for staff_id, staff_fname, staff_lname, dept, request_date, request_shift, request_status in results:
+            if staff_id in all_team_members:
+                request_date_str = request_date.strftime("%Y-%m-%d")
+
+                if dept not in dept_dict:
+                    dept_dict[dept] = {}
+                if request_date_str not in dept_dict[dept]:
+                    dept_dict[dept][request_date_str] = []
+
+                staff_schedule = {
+                    "staff_name": f"{staff_fname} {staff_lname}",
+                    "staff_id": staff_id,
+                    "schedule": []
                 }
 
-                # Recursively find team members under the current member
-                staff_details.update(
-                    get_team_members(member["staff_id"], visited, staff_details)
+                if request_status == "Pending Approval":
+                    staff_schedule["schedule"].append(f"Pending - {request_shift}")
+                else:
+                    staff_schedule["schedule"].append(f"WFH - {request_shift}")
+
+                existing_staff = next(
+                    (staff for staff in dept_dict[dept][request_date_str] if staff["staff_id"] == staff_id),
+                    None
                 )
 
-        return staff_details
+                if existing_staff:
+                    existing_staff["schedule"].append(staff_schedule["schedule"][0])
+                else:
+                    dept_dict[dept][request_date_str].append(staff_schedule)
 
-    # Get the full list of team members under the given staff_id
-    all_team_members = get_team_members(staff_id)
+        return jsonify(dept_dict), 200
 
-    request_response = invoke_http(request_URL + "/get_all_requests", method="GET")
-
-    if request_response["code"] == 200:
-        request_list = []
-        for request in request_response["data"]:
-            if request["staff_id"] in all_team_members.keys():
-                request_dict = {
-                    "staff_id": request["staff_id"],
-                    "staff_name": all_team_members[request["staff_id"]]["staff_name"],
-                    "request_id": request["request_id"],
-                    "request_dates": [],
-                }
-
-                staff_request_dates = invoke_http(
-                    request_dates_URL
-                    + "/get_by_request_id/"
-                    + str(request["request_id"]),
-                    method="GET",
-                )
-                for request_dates in staff_request_dates[0]["data"]:
-                    if (
-                        request_dates["request_status"] == "Pending Approval"
-                        or request_dates["request_status"] == "Approved"
-                    ):
-                        request_dict["request_dates"].append(
-                            {
-                                request_dates["request_date"]: request_dates[
-                                    "request_shift"
-                                ]
-                            }
-                        )
-                        request_dict["request_status"] = request_dates["request_status"]
-                if len(request_dict["request_dates"]) > 0:
-                    request_list.append(request_dict)
-
-    return jsonify({"code": 200, "data": request_list})
+    except Exception as e:
+        return jsonify({"message": "An error occurred while retrieving the team schedule.", "error": str(e)}), 500
 
 
-# # Retrieve wfh numbers by department
-# @app.route("/get_wfh_status/<string:department>", methods=['GET'])
-# def get_wfh_status(department):
-#     results = db.session.query(
-#         Employee.staff_id,
-#         RequestDates.request_date
-#     ).join(Request, Request.request_id == RequestDates.request_id) \
-#     .join(Employee, Employee.staff_id == Request.staff_id) \
-#     .filter(Employee.dept == department) \
-#     .all()
 
-#     num_employee_in_dept = db.session.query(
-#         Employee.staff_id
-#     ).filter(Employee.dept == department) \
-#     .count()  # Count the number of employees in the department
+@app.route("/s_get_team_schedule/<int:staff_id>", methods=["GET"])
+def s_get_team_schedule(staff_id):
+    try:
+        results = db.session.query(
+            Request.staff_id,
+            Employee.staff_fname,
+            Employee.staff_lname,
+            Employee.dept,
+            RequestDates.request_date,
+            RequestDates.request_shift,
+            RequestDates.request_status
+        ).join(Employee, Employee.staff_id == Request.staff_id) \
+        .join(RequestDates, Request.request_id == RequestDates.request_id) \
+        .filter(RequestDates.request_status.in_(["Pending Approval", "Approved"]),
+                Employee.position == "Senior Engineers",
+                Employee.role == 2) \
+        .all()
 
-#     status = {}
+        dept_dict = {}
 
-#     for result in results:
-#         date_str = result[1].isoformat()  # Convert date to string in YYYY-MM-DD format
-#         staff_id = result[0]  # staff_id
+        for staff_id, staff_fname, staff_lname, dept, request_date, request_shift, request_status in results:
+            request_date_str = request_date.strftime("%Y-%m-%d")
 
-#         if date_str not in status:
-#             status[date_str] = [staff_id]  # Initialize the list with the first staff_id
-#         elif staff_id not in status[date_str]:
-#             status[date_str].append(staff_id)  # Add staff_id to the existing list for this date
+            if dept not in dept_dict:
+                dept_dict[dept] = {}
+            if request_date_str not in dept_dict[dept]:
+                dept_dict[dept][request_date_str] = []
 
-#     # Return the result as JSON with employee count included
-#     return jsonify({
-#         "code": 200,
-#         "data": status,
-#         "num_employee_in_dept": num_employee_in_dept  # Include the count of employees in the response
-#     })
+            staff_schedule = {
+                "staff_name": f"{staff_fname} {staff_lname}",
+                "staff_id": staff_id,
+                "schedule": []
+            }
+
+            if request_status == "Pending Approval":
+                staff_schedule["schedule"].append(f"Pending - {request_shift}")
+            else:
+                staff_schedule["schedule"].append(f"WFH - {request_shift}")
+
+            existing_staff = next(
+                (staff for staff in dept_dict[dept][request_date_str] if staff["staff_id"] == staff_id),
+                None
+            )
+
+            if existing_staff:
+                existing_staff["schedule"].append(staff_schedule["schedule"][0])
+            else:
+                dept_dict[dept][request_date_str].append(staff_schedule)
+
+        return jsonify(dept_dict), 200
+
+    except Exception as e:
+        return jsonify({"message": "An error occurred while retrieving the staff schedule.", "error": str(e)}), 500
+
+
 
 
 # Retrieve wfh count and total by department
