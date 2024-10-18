@@ -258,7 +258,7 @@ def change_all_status():
         # Get request data
         request_id = request.json.get('request_id')
         new_status = request.json.get('status')
-        reason = ""
+        reason = request.json.get('reason')
 
         # Check if the necessary data is provided
         if not request_id or not new_status:
@@ -266,6 +266,7 @@ def change_all_status():
                 "code": 400,
                 "message": "Request ID or status not provided."
             }), 400
+    
 
         # Query the request dates by request_id
         request_dates = RequestDates.query.filter_by(
@@ -281,6 +282,14 @@ def change_all_status():
         for request_date in request_dates:
             if request_date.request_status != "Withdrawn" and request_date.request_status != "Pending Withdrawal":
                 request_date.request_status = new_status
+
+
+        # Get request by request_id and change reject reason
+        if new_status == "Rejected":
+            original_request = Request.query.filter_by(request_id=request_id).first()
+            print(original_request)
+            original_request.reject_reason = reason
+            print(original_request.reject_reason)
 
         # Commit the changes to the database
         db.session.commit()
