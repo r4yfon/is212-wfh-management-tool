@@ -152,7 +152,7 @@ export default {
         // Format the data to the structure needed for the table
         formatData() {
             // TODO: to change this to m_retrieve_requests when DB is properly populated with requests
-            fetch(`http://localhost:5101/s_retrieve_requests/150488`)
+            fetch(`http://localhost:5101/m_retrieve_requests/151408`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
@@ -165,7 +165,7 @@ export default {
                     this.items = rawData.flatMap((item) =>
                         item.wfh_dates.map((wfh) => ({
                             //TODO: call staff name from backend instead of hardcoding
-                            staff_name: "Jacob Tan",
+                            staff_name: item.staff_name,
                             request_id: item.request_id,
                             creation_date: item.creation_date,
                             request_date: wfh.request_date,
