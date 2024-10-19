@@ -3,15 +3,15 @@ import { defineStore } from "pinia";
 export const useMainStore = defineStore("main", {
   state: () => ({
     user: {
-      staff_id: 150488,
-      staff_fname: "Jacob",
-      staff_lname: "Tan",
+      staff_id: 151408,
+      staff_fname: "Philip",
+      staff_lname: "Lee",
       department: "Engineering",
-      position: "Call Centre",
+      position: "Director",
       country: "Singapore",
-      email: "Jacob.Tan@allinone.com.sg",
-      reporting_manager: "151408",
-      role: 2,
+      email: "Philip.Lee@allinone.com.sg",
+      reporting_manager: 130002,
+      role: 1
     },
     paths: {
       employee: "http://localhost:5000/employee",

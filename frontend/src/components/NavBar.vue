@@ -1,9 +1,9 @@
 <script setup>
 import { RouterLink } from "vue-router";
-
 import UserSelection from "./UserSelection.vue";
 import { is_within_word_count, two_months_before, three_months_after } from "@/inputValidation";
-
+import { useMainStore } from "@/store";
+const userStore = useMainStore();
 </script>
 
 <template>
@@ -23,9 +23,9 @@ import { is_within_word_count, two_months_before, three_months_after } from "@/i
           <RouterLink to="/weeklycalendar" class="btn d-none d-md-block align-content-center">View
             Schedule</RouterLink>
           <RouterLink to="/requestslist" class="btn d-none d-md-block align-content-center">View
-            Own Requests</RouterLink>
-          <RouterLink to="/viewstaffrequests" class="btn d-none d-md-block align-content-center">
-            Requests List
+            My Requests</RouterLink>
+          <RouterLink v-if="userStore.user.role!=2" to="/viewstaffrequests" class="btn d-none d-md-block align-content-center">
+            View Staff Requests
           </RouterLink>
           <v-btn @click="dialog = true" variant="outlined" text="Apply to WFH" class="btn"></v-btn>
         </div>
@@ -91,8 +91,8 @@ import { is_within_word_count, two_months_before, three_months_after } from "@/i
             <v-btn class="justify-content-start" href="/weeklycalendar" @click="toggleMenu" variant="plain">View
               Schedule</v-btn>
             <v-btn class="justify-content-start" href="/requestslist" @click="toggleMenu" variant="plain">View
-              Own Requests</v-btn>
-            <v-btn class="justify-content-start" href="/viewstaffrequests" @click="toggleMenu" variant="plain">View
+              My Requests</v-btn>
+            <v-btn v-if="userStore.user.role!=2" class="justify-content-start" href="/viewstaffrequests" @click="toggleMenu" variant="plain">View
               Staff Requests</v-btn>
             <v-btn class="justify-content-start" @click="dialog = true" variant="plain">Apply to WFH</v-btn>
           </div>
