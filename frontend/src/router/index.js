@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import WeeklyCalendar from "../views/FullCalendar.vue";
+import HRViewSchedule from "@/components/OrgSchedule.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -12,7 +13,7 @@ const router = createRouter({
     {
       path: "/weeklycalendar",
       name: "weeklycalendar",
-      component: () => import("../views/FullCalendar.vue"),
+      component: WeeklyCalendar,
     },
     {
       path: "/requestslist",
@@ -23,6 +24,10 @@ const router = createRouter({
       path: "/viewstaffrequests",
       name: "viewstaffrequests",
       component: () => import("../views/ViewStaffRequests.vue"),
+    },
+    {
+      path: "/org_schedule",
+      component: HRViewSchedule,
     },
   ],
 });
