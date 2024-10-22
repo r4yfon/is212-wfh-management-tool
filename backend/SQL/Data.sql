@@ -48,7 +48,7 @@ CREATE TABLE Request_Dates (
 CREATE TABLE Status_Log (
     log_id INT PRIMARY KEY AUTO_INCREMENT,
     request_id INT,
-    log_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    log_date DATE,
     action VARCHAR(100) NOT NULL,
     reason VARCHAR(100),
     CONSTRAINT FK_Request_Log FOREIGN KEY (request_id)

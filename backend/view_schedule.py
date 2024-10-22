@@ -156,17 +156,18 @@ def o_get_org_schedule():
             Employee.staff_fname,
             Employee.staff_lname,
             Employee.dept,
+            Employee.position,
             RequestDates.request_date,
             RequestDates.request_shift,
             RequestDates.request_status
         ).join(Employee, Employee.staff_id == Request.staff_id) \
         .join(RequestDates, Request.request_id == RequestDates.request_id) \
-        .filter(RequestDates.request_status.in_(["Pending Approval", "Approved"])) \
+        .filter(RequestDates.request_status.in_(["Approved"])) \
         .all()
 
         dept_dict = {}  # Dictionary to store results by department
 
-        for staff_id, staff_fname, staff_lname, dept, request_date, request_shift, request_status in results:
+        for staff_id, staff_fname, staff_lname, dept, position, request_date, request_shift, request_status in results:
             request_date_str = request_date.strftime("%Y-%m-%d")
 
             if dept not in dept_dict:
@@ -177,6 +178,7 @@ def o_get_org_schedule():
             staff_schedule = {
                 "staff_name": f"{staff_fname} {staff_lname}",
                 "staff_id": staff_id,
+                "position": position,
                 "schedule": []
             }
 
@@ -238,6 +240,7 @@ def m_get_team_schedule(staff_id):
             Employee.staff_fname,
             Employee.staff_lname,
             Employee.dept,
+            Employee.position,
             RequestDates.request_date,
             RequestDates.request_shift,
             RequestDates.request_status
@@ -248,7 +251,7 @@ def m_get_team_schedule(staff_id):
 
         dept_dict = {}
 
-        for staff_id, staff_fname, staff_lname, dept, request_date, request_shift, request_status in results:
+        for staff_id, staff_fname, staff_lname, dept, position, request_date, request_shift, request_status in results:
             if staff_id in all_team_members:
                 request_date_str = request_date.strftime("%Y-%m-%d")
 
@@ -260,6 +263,7 @@ def m_get_team_schedule(staff_id):
                 staff_schedule = {
                     "staff_name": f"{staff_fname} {staff_lname}",
                     "staff_id": staff_id,
+                    "position": position,
                     "schedule": []
                 }
 
@@ -287,25 +291,30 @@ def m_get_team_schedule(staff_id):
 
 @app.route("/s_get_team_schedule/<int:staff_id>", methods=["GET"])
 def s_get_team_schedule(staff_id):
+    response = invoke_http(employee_URL + "/get_details/" + str(staff_id), method="GET")
+    staff_position = response["data"]["position"]
+    staff_role = response["data"]["role"]
+
     try:
         results = db.session.query(
             Request.staff_id,
             Employee.staff_fname,
             Employee.staff_lname,
             Employee.dept,
+            Employee.position,
             RequestDates.request_date,
             RequestDates.request_shift,
             RequestDates.request_status
         ).join(Employee, Employee.staff_id == Request.staff_id) \
         .join(RequestDates, Request.request_id == RequestDates.request_id) \
         .filter(RequestDates.request_status.in_(["Pending Approval", "Approved"]),
-                Employee.position == "Senior Engineers",
-                Employee.role == 2) \
+                Employee.position == staff_position,
+                Employee.role == staff_role) \
         .all()
 
         dept_dict = {}
 
-        for staff_id, staff_fname, staff_lname, dept, request_date, request_shift, request_status in results:
+        for staff_id, staff_fname, staff_lname, dept, position, request_date, request_shift, request_status in results:
             request_date_str = request_date.strftime("%Y-%m-%d")
 
             if dept not in dept_dict:
@@ -316,6 +325,7 @@ def s_get_team_schedule(staff_id):
             staff_schedule = {
                 "staff_name": f"{staff_fname} {staff_lname}",
                 "staff_id": staff_id,
+                "position": position,
                 "schedule": []
             }
 
@@ -340,6 +350,105 @@ def s_get_team_schedule(staff_id):
         return jsonify({"message": "An error occurred while retrieving the staff schedule.", "error": str(e)}), 500
 
 
+# @app.route("/get_wfh_status", methods=["GET"])
+# def get_wfh_status():
+#     # Querying necessary fields from Employee, RequestDates, and Request tables
+#     results = (
+#         db.session.query(Employee.staff_id, Employee.staff_fname, Employee.position, Employee.dept, RequestDates.request_date, RequestDates.request_status)
+#         .join(Request, Request.request_id == RequestDates.request_id)
+#         .join(Employee, Employee.staff_id == Request.staff_id)
+#         .all()
+#     )
+
+#     # Count total number of employees in the company
+#     num_employees_in_company = db.session.query(Employee.staff_id).count()
+
+#     # Get number of employees per department
+#     department_employee_counts = (
+#         db.session.query(Employee.dept, db.func.count(Employee.staff_id))
+#         .group_by(Employee.dept)
+#         .all()
+#     )
+
+#     # Initialize the status dictionary
+#     status = {}
+
+#     # Initialize department data with number of employees
+#     for department, count in department_employee_counts:
+#         status[department] = {
+#             "num_employees": count
+#         }
+
+#     # Process results to add employees' WFH status by date and time of day (AM/PM/Full Day)
+#     valid_wfh_statuses = ["AM", "PM", "Full"]  # Only these statuses are allowed
+
+#     for result in results:
+#         staff_id = result[0]
+#         name = result[1]
+#         position = result[2]
+#         department = result[3]
+#         date_str = result[4].isoformat()  # Convert date to YYYY-MM-DD format
+#         wfh_status = result[5]  # WFH status ("WFH - AM", "WFH - PM", "WFH - Full")
+
+#         # Ensure we only process valid WFH statuses
+#         if wfh_status not in valid_wfh_statuses:
+#             continue  # Ignore invalid statuses like "Pending Approval"
+
+#         # Initialize the date's data structure if not already present
+#         if date_str not in status[department]:
+#             status[department][date_str] = {
+#                 "AM": [],
+#                 "PM": [],
+#                 "Full": []
+#             }
+
+#         # Add employee data to the respective WFH status
+#         status[department][date_str][wfh_status].append({
+#             "staff_id": staff_id,
+#             "name": name,
+#             "position": position
+#         })
+
+#     # Generate date ranges for 2 months in the past and 3 months in the future
+#     from datetime import datetime, timedelta
+#     from dateutil.relativedelta import relativedelta
+
+#     def get_date_ranges():
+#         today = datetime.today().date()  # Get today's date as a date object
+
+#         # Calculate the start date for 2 months ago and the end date for 3 months in the future
+#         start_date_past = today - relativedelta(months=2)
+#         end_date_future = today + relativedelta(months=3)
+
+#         # Generate list of dates from 2 months ago to 3 months in the future
+#         date_list = []
+#         for i in range((end_date_future - start_date_past).days):
+#             date = start_date_past + timedelta(days=i)
+#             date_list.append(date.strftime("%Y-%m-%d"))  # Format to YYYY-MM-DD
+
+#         return date_list
+
+#     # Add missing dates to each department
+#     date_list = get_date_ranges()
+#     for department in status.keys():
+#         for date in date_list:
+#             if date not in status[department]:
+#                 status[department][date] = {
+#                     "AM": [],
+#                     "PM": [],
+#                     "Full": []
+#                 }
+
+#     # Add total employee count in the company to the JSON response
+#     status["num_employees_in_company"] = num_employees_in_company
+
+#     # Return the result as JSON
+#     return jsonify(
+#         {
+#             "code": 200,
+#             "data": status
+#         }
+#     )
 
 
 # Retrieve wfh count and total by department

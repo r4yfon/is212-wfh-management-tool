@@ -16,14 +16,13 @@ class TestGetOrgSchedule(unittest.TestCase):
         mock_query = MagicMock()
         mock_db.session.query.return_value = mock_query
         mock_query.join.return_value.join.return_value.filter.return_value.all.return_value = [
-            (1, "John", "Doe", "HR", datetime(2024, 10, 16), "Morning", "Approved"),
-            (3, "Alice", "Johnson", "HR", datetime(2024, 10, 16), "Evening", "Approved"),
-            (1, "John", "Doe", "HR", datetime(2024, 10, 17), "Evening", "Pending Approval"),
-            (2, "Jane", "Smith", "IT", datetime(2024, 10, 16), "Afternoon", "Pending Approval"),
-            (4, "Bob", "Brown", "IT", datetime(2024, 10, 17), "Morning", "Approved"),
-            (2, "Jane", "Smith", "IT", datetime(2024, 10, 17), "Afternoon", "Approved")
+            (1, "John", "Doe", "HR", "Manager", datetime(2024, 10, 16), "Morning", "Approved"),
+            (3, "Alice", "Johnson", "HR", "Staff", datetime(2024, 10, 16), "Evening", "Approved"),
+            (1, "John", "Doe", "HR", "Manager", datetime(2024, 10, 17), "Evening", "Pending Approval"),
+            (2, "Jane", "Smith", "IT", "Developer", datetime(2024, 10, 16), "Afternoon", "Pending Approval"),
+            (4, "Bob", "Brown", "IT", "Manager", datetime(2024, 10, 17), "Morning", "Approved"),
+            (2, "Jane", "Smith", "IT", "Developer", datetime(2024, 10, 17), "Afternoon", "Approved")
         ]
-
 
         # Make a GET request to the route
         response = self.client.get('/o_get_org_schedule')
@@ -32,20 +31,20 @@ class TestGetOrgSchedule(unittest.TestCase):
         expected_response = {
             "HR": {
                 "2024-10-16": [
-                    {"staff_name": "John Doe", "staff_id": 1, "schedule": ["WFH - Morning"]},
-                    {"staff_name": "Alice Johnson", "staff_id": 3, "schedule": ["WFH - Evening"]}
+                    {"staff_name": "John Doe", "staff_id": 1, "position": "Manager", "schedule": ["WFH - Morning"]},
+                    {"staff_name": "Alice Johnson", "staff_id": 3, "position": "Staff", "schedule": ["WFH - Evening"]}
                 ],
                 "2024-10-17": [
-                    {"staff_name": "John Doe", "staff_id": 1, "schedule": ["Pending - Evening"]}
+                    {"staff_name": "John Doe", "staff_id": 1, "position": "Manager", "schedule": ["Pending - Evening"]}
                 ]
             },
             "IT": {
                 "2024-10-16": [
-                    {"staff_name": "Jane Smith", "staff_id": 2, "schedule": ["Pending - Afternoon"]}
+                    {"staff_name": "Jane Smith", "staff_id": 2, "position": "Developer", "schedule": ["Pending - Afternoon"]}
                 ],
                 "2024-10-17": [
-                    {"staff_name": "Bob Brown", "staff_id": 4, "schedule": ["WFH - Morning"]},
-                    {"staff_name": "Jane Smith", "staff_id": 2, "schedule": ["WFH - Afternoon"]}
+                    {"staff_name": "Bob Brown", "staff_id": 4, "position": "Manager", "schedule": ["WFH - Morning"]},
+                    {"staff_name": "Jane Smith", "staff_id": 2, "position": "Developer", "schedule": ["WFH - Afternoon"]}
                 ]
             }
         }
@@ -73,6 +72,11 @@ class TestGetOrgSchedule(unittest.TestCase):
         self.assertEqual(response.json, expected_error_response)
 
 
+import unittest
+from unittest.mock import patch, MagicMock
+from datetime import datetime
+from view_schedule import app as view_schedule_app, db, Request, Employee, RequestDates  # Adjust import if needed
+
 class TestGetManagerSchedule(unittest.TestCase):
     # Set up the Flask test client
     def setUp(self):
@@ -97,46 +101,42 @@ class TestGetManagerSchedule(unittest.TestCase):
         mock_query = MagicMock()
         mock_db.session.query.return_value = mock_query
         mock_query.join.return_value.join.return_value.filter.return_value.all.return_value = [
-            (1, "John", "Doe", "HR", datetime(2024, 10, 16), "Morning", "Approved"),
-            (3, "Alice", "Johnson", "HR", datetime(2024, 10, 16), "Evening", "Approved"),
-            (1, "John", "Doe", "HR", datetime(2024, 10, 17), "Evening", "Pending Approval"),
-            (2, "Jane", "Smith", "IT", datetime(2024, 10, 16), "Afternoon", "Pending Approval"),
-            (4, "Bob", "Brown", "IT", datetime(2024, 10, 17), "Morning", "Approved"),
-            (2, "Jane", "Smith", "IT", datetime(2024, 10, 17), "Afternoon", "Approved")
+            (2, "Jane", "Smith", "IT", "Developer", datetime(2024, 10, 16), "Afternoon", "Pending Approval"),
+            (4, "Bob", "Brown", "IT", "Developer", datetime(2024, 10, 17), "Morning", "Approved"),
+            (3, "Alice", "Johnson", "HR", "HR Specialist", datetime(2024, 10, 16), "Evening", "Approved"),
+            (1, "John", "Doe", "HR", "Manager", datetime(2024, 10, 17), "Evening", "Pending Approval"),
         ]
 
         # Make a GET request to the route
         response = self.client.get('/m_get_team_schedule/1')
 
         # Define the expected response
-        expected_response = data = {
+        expected_response = {
             'HR': {
                 '2024-10-16': [
                     {
-                        'schedule': ['WFH - Evening'],
+                        'staff_name': 'Alice Johnson',
                         'staff_id': 3,
-                        'staff_name': 'Alice Johnson'
+                        'position': 'HR Specialist',
+                        'schedule': ['WFH - Evening']
                     }
                 ]
             },
             'IT': {
                 '2024-10-16': [
                     {
-                        'schedule': ['Pending - Afternoon'],
+                        'staff_name': 'Jane Smith',
                         'staff_id': 2,
-                        'staff_name': 'Jane Smith'
+                        'position': 'Developer',
+                        'schedule': ['Pending - Afternoon']
                     }
                 ],
                 '2024-10-17': [
                     {
-                        'schedule': ['WFH - Morning'],
+                        'staff_name': 'Bob Brown',
                         'staff_id': 4,
-                        'staff_name': 'Bob Brown'
-                    },
-                    {
-                        'schedule': ['WFH - Afternoon'],
-                        'staff_id': 2,
-                        'staff_name': 'Jane Smith'
+                        'position': 'Developer',
+                        'schedule': ['WFH - Morning']
                     }
                 ]
             }
@@ -178,42 +178,38 @@ class TestGetStaffSchedule(unittest.TestCase):
         self.client = view_schedule_app.test_client()  # Use the test client directly
         self.maxDiff = None
 
+    @patch('view_schedule.invoke_http')  # Mock the invoke_http function
     @patch('view_schedule.db')  # Adjust the patch path accordingly
-    def test_get_staff_schedule_success(self, mock_db):
+    def test_get_staff_schedule_success(self, mock_db, mock_invoke_http):
+        # Mock the invoke_http response to return staff position and role
+        mock_invoke_http.return_value = {
+            "data": {
+                "position": "Developer",
+                "role": "Full-Time"
+            }
+        }
+
         # Mock the query results
         mock_query = MagicMock()
         mock_db.session.query.return_value = mock_query
         mock_query.join.return_value.join.return_value.filter.return_value.all.return_value = [
-            (1, "John", "Doe", "HR", datetime(2024, 10, 16), "Morning", "Approved"),
-            (3, "Alice", "Johnson", "HR", datetime(2024, 10, 16), "Evening", "Approved"),
-            (1, "John", "Doe", "HR", datetime(2024, 10, 17), "Evening", "Pending Approval"),
-            (2, "Jane", "Smith", "IT", datetime(2024, 10, 16), "Afternoon", "Pending Approval"),
-            (4, "Bob", "Brown", "IT", datetime(2024, 10, 17), "Morning", "Approved"),
-            (2, "Jane", "Smith", "IT", datetime(2024, 10, 17), "Afternoon", "Approved")
+            (2, "Jane", "Smith", "IT", "Developer", datetime(2024, 10, 16), "Afternoon", "Pending Approval"),
+            (4, "Bob", "Brown", "IT", "Developer", datetime(2024, 10, 17), "Morning", "Approved"),
+            (2, "Jane", "Smith", "IT", "Developer", datetime(2024, 10, 17), "Afternoon", "Approved")
         ]
-
 
         # Make a GET request to the route
         response = self.client.get('/s_get_team_schedule/151408')
 
         # Define the expected response
         expected_response = {
-            "HR": {
-                "2024-10-16": [
-                    {"staff_name": "John Doe", "staff_id": 1, "schedule": ["WFH - Morning"]},
-                    {"staff_name": "Alice Johnson", "staff_id": 3, "schedule": ["WFH - Evening"]}
-                ],
-                "2024-10-17": [
-                    {"staff_name": "John Doe", "staff_id": 1, "schedule": ["Pending - Evening"]}
-                ]
-            },
             "IT": {
                 "2024-10-16": [
-                    {"staff_name": "Jane Smith", "staff_id": 2, "schedule": ["Pending - Afternoon"]}
+                    {"staff_name": "Jane Smith", "staff_id": 2, "position": "Developer", "schedule": ["Pending - Afternoon"]}
                 ],
                 "2024-10-17": [
-                    {"staff_name": "Bob Brown", "staff_id": 4, "schedule": ["WFH - Morning"]},
-                    {"staff_name": "Jane Smith", "staff_id": 2, "schedule": ["WFH - Afternoon"]}
+                    {"staff_name": "Bob Brown", "staff_id": 4, "position": "Developer", "schedule": ["WFH - Morning"]},
+                    {"staff_name": "Jane Smith", "staff_id": 2, "position": "Developer", "schedule": ["WFH - Afternoon"]}
                 ]
             }
         }

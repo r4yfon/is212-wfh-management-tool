@@ -47,6 +47,48 @@ request_dates_URL = environ.get(
 # Staff view own requests
 @app.route("/s_retrieve_requests/<int:s_staff_id>", methods=['GET'])
 def s_retrieve_requests(s_staff_id):
+    """
+    Parameters:
+    staff_id (int): The staff_id
+
+    Success response:
+    [
+        {
+            "request_id": 1,
+            "staff_id": 150488,
+            "creation_date": "2024-05-28",
+            "apply_reason": "Family event",
+            "reject_reason": None,
+            "wfh_dates": [
+                {
+                    "request_date_id": 1,
+                    "request_date": "2024-09-22",
+                    "request_shift": "Full",
+                    "request_status": "Pending Approval",
+                    "rescind_reason": None,
+                    "withdraw_reason": None
+                }
+            ]
+        },
+        {
+            "request_id": 2,
+            "staff_id": 150446,
+            "creation_date": "2024-09-10",
+            "apply_reason": "Medical appointment",
+            "reject_reason": None,
+            "wfh_dates": [
+                {
+                    "request_date_id": 3,
+                    "request_date": "2024-09-10",
+                    "request_shift": "Full",
+                    "request_status": "Pending Approval",
+                    "rescind_reason": None,
+                    "withdraw_reason": None
+                }
+            ]
+        }
+    ]
+    """
     try:
         # Perform an inner join between Request and RequestDates tables where staff_id matches
         results = db.session.query(Request, RequestDates).join(RequestDates, Request.request_id == RequestDates.request_id).filter(Request.staff_id == s_staff_id).all()

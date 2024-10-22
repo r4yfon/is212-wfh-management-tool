@@ -218,6 +218,7 @@ def create_request():
                 json={
                     "request_id": new_request.request_id,
                     "request_dates": request_dates,
+                    "staff_id": staff_id
                 },
             )
 
