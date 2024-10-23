@@ -15,3 +15,7 @@ body {
 hr {
   margin: 0;
 }
+
+.v-checkbox .v-selection-control {
+  min-height: 1rem;
+}

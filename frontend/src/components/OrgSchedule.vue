@@ -2,13 +2,13 @@
   <div class="container-fluid d-flex mt-4">
     <aside class="p-3 d-none d-lg-block bg-primary-subtle me-4 rounded" v-if="showSidebar">
       <!-- Sidebar content goes here -->
-      <input type="date" />
+      <DatePicker v-model="selectedDate" inline />
       <v-checkbox v-for="department in departments" :key="department" :value="department" :label="department"
-        v-model="selectedDepartments"></v-checkbox>
+        :color="calendarOptions.departmentColors[department]" v-model="selectedDepartments" hide-details></v-checkbox>
     </aside>
     <section class="flex-grow-1">
       <button @click="toggleSidebar" class="btn btn-outline-primary">Toggle Sidebar</button>
-      <FullCalendar :options="calendarOptions" />
+      <FullCalendar ref="fullCalendar" :options="calendarOptions" />
       <v-dialog v-model="showDialog" max-width="75%">
         <v-card>
           <v-card-title>{{ clickedDate }}</v-card-title>
@@ -27,56 +27,18 @@ import interactionPlugin from '@fullcalendar/interaction';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import { url_paths } from '@/url_paths.js';
+import DatePicker from 'primevue/datepicker';
 
-// const colors = {
-//   'WFH - AM': '#BA55D3',
-//   'WFH - PM': '#BA55D3',
-//   'WFH - Full': '#BA55D3',
-//   Office: '#4169E1',
-//   'Pending: WFH - AM': '#FF7F50',
-//   'Pending: WFH - PM': '#FF7F50',
-//   'Pending: WFH - Full': '#FF7F50',
-//   'Pending Withdrawal: WFH - AM': 'pink',
-//   'Pending Withdrawal: WFH - PM': 'pink',
-//   'Pending Withdrawal: WFH - Full': 'pink',
-// };
-
-// const timeMapping = {
-//   "WFH - AM": { start: 9, end: 13 },
-//   "WFH - PM": { start: 14, end: 18 },
-//   "WFH - Full": { start: 9, end: 18 },
-//   "Pending: WFH - AM": { start: 9, end: 13 },
-//   "Pending: WFH - PM": { start: 14, end: 18 },
-//   "Pending: WFH - Full": { start: 9, end: 18 },
-//   "Office": { start: 9, end: 18 },
-//   "Pending Withdrawal: WFH - AM": { start: 9, end: 13 },
-//   "Pending Withdrawal: WFH - PM": { start: 14, end: 18 },
-//   "Pending Withdrawal: WFH - Full": { start: 9, end: 18 },
-// };
-
-// const getTextColors = {
-//   'WFH - AM': '#BA55D3',
-//   'WFH - PM': '#BA55D3',
-//   'WFH - Full': '#BA55D3',
-//   Office: '#4169E1',
-//   'Pending: WFH - AM': '#FF7F50',
-//   'Pending: WFH - PM': '#FF7F50',
-//   'Pending: WFH - Full': '#FF7F50',
-//   'Pending Withdrawal: WFH - AM': 'pink',
-//   'Pending Withdrawal: WFH - PM': 'pink',
-//   'Pending Withdrawal: WFH - Full': 'pink',
-// };
 
 export default {
   components: {
-    FullCalendar,
+    FullCalendar, DatePicker
   },
   data() {
     return {
       calendarOptions: {
         plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
         initialView: 'dayGridWeek',
-        expandRows: true,
         validRange: {
           start: new Date(new Date().getFullYear(), new Date().getMonth() - 2, new Date().getDate()).toISOString().split('T')[0],
           end: new Date(new Date().getFullYear(), new Date().getMonth() + 3, new Date().getDate()).toISOString().split('T')[0],
@@ -97,8 +59,19 @@ export default {
         events: [],
         dateClick: this.handleDateClick,
         eventClick: this.handleEventClick,
+        departmentColors: {
+          CEO: '#FFB3BA',
+          Consultancy: '#FFDFBA',
+          Engineering: '#FFFFBA',
+          Finance: '#BAFFC9',
+          IT: '#BAE1FF',
+          HR: '#D7BAFF',
+          Sales: '#FFB3E6',
+          Solutioning: '#FFDFD3'
+        }
       },
 
+      selectedDate: new Date(),
       showDialog: false,
       showSidebar: true,
       departments: [],
@@ -127,6 +100,12 @@ export default {
         });
       },
       deep: true,
+    },
+
+    selectedDate: {
+      handler(value) {
+        this.$refs.fullCalendar.getApi().gotoDate(value);
+      },
     },
   },
 
@@ -172,7 +151,9 @@ export default {
                       staff: [],
                       start: date,
                       description: department,
-                      allDay: true
+                      allDay: true,
+                      color: this.calendarOptions.departmentColors[department],
+                      textColor: "#000000",
                     };
                     formatted_events.push(event);
                   }
@@ -200,8 +181,8 @@ export default {
         })
     },
 
-    compileDepartments() {
-
+    selectDate(value) {
+      console.log(value)
     },
 
     toggleSidebar() {
@@ -218,6 +199,6 @@ export default {
 
 <style scoped>
 aside {
-  width: 15%;
+  width: 20%;
 }
 </style>
