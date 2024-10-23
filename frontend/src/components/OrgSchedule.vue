@@ -2,7 +2,7 @@
   <div class="container-fluid d-flex mt-4">
     <aside class="p-3 d-none d-lg-block bg-primary-subtle me-4 rounded w-auto" v-if="showSidebar">
       <!-- Sidebar content goes here -->
-      <DatePicker v-model="selectedDate" inline class="mb-4" />
+      <DatePicker v-model="selectedDate" inline class="mb-4" :minDate="datePicker.start" :maxDate="datePicker.end" />
       <v-checkbox v-for="department in departments" :key="department" :value="department" :label="department"
         :color="calendarOptions.departmentColors[department]" v-model="selectedDepartments" hide-details></v-checkbox>
     </aside>
@@ -69,6 +69,11 @@ export default {
           Sales: '#FFB3E6',
           Solutioning: '#FFDFD3'
         }
+      },
+
+      datePicker: {
+        start: new Date(new Date().getFullYear(), new Date().getMonth() - 2, new Date().getDate()),
+        end: new Date(new Date().getFullYear(), new Date().getMonth() + 3, new Date().getDate()),
       },
 
       selectedDate: new Date(),
