@@ -11,7 +11,7 @@ export const useMainStore = defineStore("main", {
       country: "Singapore",
       email: "Philip.Lee@allinone.com.sg",
       reporting_manager: 130002,
-      role: 1
+      role: 1,
     },
     paths: {
       employee: "http://localhost:5000/employee",
