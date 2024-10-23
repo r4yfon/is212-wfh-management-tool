@@ -1,22 +1,22 @@
 <template>
   <!-- button to approve pending request -->
-  <v-btn v-if="item.status === 'Pending Approval'" @click="toggleDialog('Approved')" color="green" :item="item"
+  <v-btn v-if="item.status === 'Pending Approval'" @click="openDialog('Approved')" color="green" :item="item"
     variant="outlined" small>
     Approve
   </v-btn>
 
   <!-- button to reject pending request -->
-  <v-btn v-if="item.status === 'Pending Approval'" @click="toggleDialog('Rejected')" color="red" :item="item"
+  <v-btn v-if="item.status === 'Pending Approval'" @click="openDialog('Rejected')" color="red" :item="item"
     variant="outlined" small>
     Reject
   </v-btn>
 
-  <v-btn v-if="item.status === 'Approved'" @click="toggleDialog('Rescinded')" color="red" :item="item"
-    variant="outlined" small>
+  <v-btn v-if="item.status === 'Approved'" @click="openDialog('Rescinded')" color="red" :item="item" variant="outlined"
+    small>
     Rescind
   </v-btn>
 
-  <v-btn v-if="item.status === 'Pending Withdrawl'" @click="toggleDialog('Withdrawn')" color="green" :item="item"
+  <v-btn v-if="item.status === 'Pending Withdrawl'" @click="openDialog('Withdrawn')" color="green" :item="item"
     variant="outlined" small>
     Approve Withdrawal
   </v-btn>
@@ -48,12 +48,12 @@
       </v-card-text>
 
       <!-- display attendance rate if manager is about to approve request -->
-      <v-card-text v-else-if="this.newStatus === 'Approved' && !this.isLoading">
+      <v-card-text v-else-if="newStatus === 'Approved'">
         <p>Requested date(s): {{ this.request_dates.join(", ") }}</p>
         <p>By approving this request,</p>
         <div v-for="request_date in this.request_dates" :key="request_date" class="mb-3">
           <p>
-            {{ request_date }}: {{ dept_wfh_schedule[request_date]?.length || 1 }}/{{ this.num_employees_in_dept }}
+            {{ request_date }}: {{ dept_wfh_schedule[request_date]?.length || 1 }}/{{ this.num_employees_in_dept + 1 }}
             employees in the department will be WFH.
           </p>
           <p
@@ -64,17 +64,20 @@
       </v-card-text>
 
       <!-- choose dates to rescind request for -->
-      <v-card-text v-else-if="this.newStatus === 'Rescinded' && !this.isLoading">
+      <v-card-text v-else-if="newStatus === 'Rescinded'">
         <v-checkbox v-for="request in alreadyRescinded" disabled value="1" :key="request.request_date_id"
           :label="request.request_date" model-value="1" hide-details></v-checkbox>
         <v-checkbox v-for="request in rescindableRequests" :key="request.request_date_id" :label="request.request_date"
-          :value="request.request_date" v-model="datesToRescind" hide-details></v-checkbox>
-        <v-text-field v-model="reason" outlined label="Reason for rescinding"></v-text-field>
+          :value="request.request_date" v-model="datesToRescind"
+          :error-messages="errorMessages.datesToRescind"></v-checkbox>
+        <v-text-field v-model="reason" outlined label="Reason for rescinding" :error-messages="errorMessages.reason"
+          class="mt-4"></v-text-field>
       </v-card-text>
 
       <!-- input reason (applies to all ManagerActions) -->
-      <v-card-text v-else-if="this.newStatus !== 'Approved'">
-        <v-text-field v-model="reason" outlined label="Reason for rejection"></v-text-field>
+      <v-card-text v-else-if="newStatus === 'Rejected'">
+        <v-text-field v-model="reason" outlined label="Reason for rejection"
+          :error-messages="errorMessages.reason"></v-text-field>
       </v-card-text>
       <v-card-actions>
         <v-btn @click="closeDialog" text>Cancel</v-btn>
@@ -108,6 +111,10 @@ export default {
       alreadyRescinded: [],
       rescindableRequests: [],
       datesToRescind: [],
+      errorMessages: {
+        datesToRescind: [],
+        reason: []
+      },
     }
   },
   props: {
@@ -115,8 +122,8 @@ export default {
   },
   emits: ['refresh-data'],
   methods: {
-    toggleDialog(newStatus) {
-      this.dialogOpened = !this.dialogOpened;
+    openDialog(newStatus) {
+      this.dialogOpened = true;
       if (newStatus) {
         this.newStatus = newStatus
       }
@@ -158,16 +165,6 @@ export default {
           })
       }
     },
-    compareItems(a, b) {
-      console.log("a", a);
-      console.log("b", b);
-      console.log("selectedRequests", this.selectedRequestsToRescind)
-      console.log("rescindable", this.rescindableRequests)
-      return a.request_date === b;
-    },
-    isAlreadyRescinded(request_date) {
-      return this.alreadyRescinded.some(item => item.request_date === request_date);
-    },
 
     attendance_in_office(request_date) {
       return (100 - (this.dept_wfh_schedule[request_date]?.length / this.num_employees_in_dept * 100)).toFixed(2);
@@ -175,12 +172,28 @@ export default {
 
     closeDialog() {
       this.reason = "";
-      this.toggleDialog();
+      this.errorMessages.datesToRescind = [];
+      this.errorMessages.reason = [];
+      this.dialogOpened = false;
     },
+
+    noErrorMessages() {
+      return Object.values(this.errorMessages).every(arr => arr.length === 0);
+    },
+
     confirmAction(item) {
-      if (this.newStatus === 'Rejected' || this.newStatus === "Approved" || this.newStatus === 'Withdrawn') {
+      this.errorMessages.reason = [];
+      this.errorMessages.datesToRescind = [];
+
+      if (this.newStatus !== "Approved" && !this.reason) {
+        this.errorMessages.reason.push("Reason cannot be empty");
+      }
+      if (this.newStatus === "Rescinded" && this.datesToRescind.length === 0) {
+        this.errorMessages.datesToRescind.push("Please select at least one date to rescind");
+      }
+      if (this.newStatus !== "Rescinded" && this.noErrorMessages()) {
         this.approveRejectWithdraw(item);
-      } else if (this.newStatus === "Rescinded") {
+      } else if (this.newStatus === "Rescinded" && this.noErrorMessages()) {
         this.rescind(item);
       }
     },
@@ -206,8 +219,9 @@ export default {
         .then(responseData => {
           console.log('Success:', responseData);
           this.buttonIsLoading = false;
-          location.reload();
           this.newStatus = '';
+          this.$emit('refresh-data');
+          this.closeDialog();
         })
         .catch(error => console.error('Error updating status:', error));
     },
@@ -231,6 +245,7 @@ export default {
           console.log('Success:', data);
           this.buttonIsLoading = false;
           this.$emit('refresh-data');
+          this.closeDialog();
         })
     },
   },
