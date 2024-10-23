@@ -208,20 +208,7 @@ export default {
             }
         },
 
-        // Determine if the Rescind button should be shown
-        canRescind(status, request_date) {
-            const currentDate = new Date();
-            const requestDate = new Date(request_date);
 
-            // Calculate the time difference in milliseconds
-            const timeDiffInMs = requestDate.getTime() - currentDate.getTime();
-
-            // Convert time difference to months
-            const diffInMonths = timeDiffInMs / (1000 * 60 * 60 * 24 * 30);
-
-            // Check if it's within 1 month in the past and 3 months in the future, and status is 'Approved'
-            return (status === "Approved" && diffInMonths >= -1 && diffInMonths <= 3);
-        },
 
         // Get status color classes for each status
         getStatusColor(status) {

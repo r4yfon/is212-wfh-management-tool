@@ -11,8 +11,8 @@
     Reject
   </v-btn>
 
-  <v-btn v-if="item.status === 'Approved'" @click="openDialog('Rescinded')" color="red" :item="item" variant="outlined"
-    small>
+  <v-btn v-if="item.status === 'Approved' && withinRescindTimeLimit(item.request_date)" @click="openDialog('Rescinded')"
+    color="red" :item="item" variant="outlined" small>
     Rescind
   </v-btn>
 
@@ -166,16 +166,17 @@ export default {
       }
     },
 
-    attendance_in_office(request_date) {
-      return (100 - (this.dept_wfh_schedule[request_date]?.length / this.num_employees_in_dept * 100)).toFixed(2);
-    },
-
     closeDialog() {
       this.reason = "";
       this.errorMessages.datesToRescind = [];
       this.errorMessages.reason = [];
       this.dialogOpened = false;
     },
+
+    attendance_in_office(request_date) {
+      return (100 - (this.dept_wfh_schedule[request_date]?.length / this.num_employees_in_dept * 100)).toFixed(2);
+    },
+
 
     noErrorMessages() {
       return Object.values(this.errorMessages).every(arr => arr.length === 0);
@@ -197,6 +198,24 @@ export default {
         this.rescind(item);
       }
     },
+
+    // Determine if the Rescind button should be shown
+    withinRescindTimeLimit(request_date) {
+      const currentDate = new Date();
+      const requestDate = new Date(request_date);
+
+      // Calculate the date 1 month before the current date
+      const oneMonthBefore = new Date(currentDate);
+      oneMonthBefore.setMonth(currentDate.getMonth() - 1);
+
+      // Calculate the date 3 months after the current date
+      const threeMonthsAfter = new Date(currentDate);
+      threeMonthsAfter.setMonth(currentDate.getMonth() + 3);
+
+      // Check if the request date is within the range
+      return (requestDate >= oneMonthBefore && requestDate <= threeMonthsAfter);
+    },
+
     approveRejectWithdraw(item) {
       this.buttonIsLoading = true;
       fetch('http://localhost:5002/request_dates/change_all_status', {
