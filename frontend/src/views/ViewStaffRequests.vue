@@ -9,18 +9,18 @@ import { useMainStore } from '@/store.js';
         <v-card flat>
             <v-card-title class="d-flex flex-column flex-md-row align-center mb-3 row-gap-1 row-gap-md-0">
                 Staff Requests List
-                <v-icon icon="mdi-refresh" size="x-small" class="ms-2" @click="formatData"></v-icon>
+                <v-icon icon="mdi-refresh" size="x-small" class="ms-2" @click="formatData(user)"></v-icon>
                 <v-spacer></v-spacer>
                 <v-text-field v-model="search" density="compact" label="Search" prepend-inner-icon="mdi-magnify"
                     variant="solo-filled" flat hide-details single-line class="w-100 w-md-initial"></v-text-field>
             </v-card-title>
 
             <v-tabs v-model="tab" align-tabs="center" color="red-lighten-2">
-                <v-tab :value="1" @click=formatData()>Pending Approval</v-tab>
-                <v-tab :value="2" @click=formatData()>Approved</v-tab>
-                <v-tab :value="3" @click=formatData()>Pending Withdrawal</v-tab>
-                <v-tab :value="4" @click=formatData()>Rescinded</v-tab>
-                <v-tab :value="5" @click=formatData()>Rejected</v-tab>
+                <v-tab :value="1">Pending Approval</v-tab>
+                <v-tab :value="2">Approved</v-tab>
+                <v-tab :value="3">Pending Withdrawal</v-tab>
+                <v-tab :value="4">Rescinded</v-tab>
+                <v-tab :value="5">Rejected</v-tab>
             </v-tabs>
 
             <v-tabs-window v-model="tab">
@@ -42,7 +42,8 @@ import { useMainStore } from '@/store.js';
                                     <td v-if="n === 4">{{ item.rescind_reason }}</td>
                                     <td v-if="n === 5">{{ item.reject_reason }}</td>
                                     <td v-if="n !== 4 || n !== 5">
-                                        <ManagerActions :item="item" @refresh-data="formatData"></ManagerActions>
+                                        <ManagerActions :item="item" @refresh-data="formatData(user)">
+                                        </ManagerActions>
                                     </td>
                                     <td v-else-if="item.status === 'Rejected'">
                                         {{ item.reject_reason }}
@@ -100,6 +101,7 @@ export default {
 
     data() {
         return {
+            user: {},
             tab: 1,
             search: "",
             rejectDialog: false,
@@ -154,9 +156,8 @@ export default {
     },
     mounted() {
         const userStore = useMainStore();
-        const user = userStore.user
-        this.formatData(user);
-        
+        this.user = userStore.user;
+        this.formatData(this.user);
     },
     methods: {
         // Format the data to the structure needed for the table
@@ -175,7 +176,6 @@ export default {
 
                     this.items = rawData.flatMap((item) =>
                         item.wfh_dates.map((wfh) => ({
-                            //TODO: call staff name from backend instead of hardcoding
                             staff_name: item.staff_name,
                             request_id: item.request_id,
                             creation_date: item.creation_date,
