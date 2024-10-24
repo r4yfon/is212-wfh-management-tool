@@ -154,10 +154,10 @@ def view_weekly_schedule(staff_id, date_entered):
 @app.route("/o_get_org_schedule", methods=["GET"])
 def o_get_org_schedule():
     try:
-        
+
         # Get today's date
         today = datetime.today()
-        
+
         # Calculate the range of dates from 2 months before to 3 months after today
         start_date = today - timedelta(days=60)
         end_date = today + timedelta(days=90)
@@ -205,7 +205,7 @@ def o_get_org_schedule():
         # Initialize the structure for each department
         for staff_id, staff_fname, staff_lname, dept, position, request_date, request_shift, request_status in results:
             request_date_str = request_date.strftime("%Y-%m-%d")
-            
+
             # Initialize department if not already in dict
             if dept not in dept_dict:
                 dept_dict[dept] = {}
@@ -325,7 +325,7 @@ def m_get_team_schedule(staff_id):
 @app.route("/s_get_team_schedule/<int:staff_id>", methods=["GET"])
 def s_get_team_schedule(staff_id):
     response = invoke_http(employee_URL + "/get_details/" + str(staff_id), method="GET")
-    
+
     try:
         staff_position = response["data"]["position"]
         staff_role = response["data"]["role"]
