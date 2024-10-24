@@ -186,10 +186,6 @@ export default {
         })
     },
 
-    selectDate(value) {
-      console.log(value)
-    },
-
     toggleSidebar() {
       this.showSidebar = !this.showSidebar;
     },
