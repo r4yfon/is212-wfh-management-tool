@@ -292,10 +292,10 @@ def m_get_team_schedule(staff_id):
 @app.route("/s_get_team_schedule/<int:staff_id>", methods=["GET"])
 def s_get_team_schedule(staff_id):
     response = invoke_http(employee_URL + "/get_details/" + str(staff_id), method="GET")
-    staff_position = response["data"]["position"]
-    staff_role = response["data"]["role"]
-
+    
     try:
+        staff_position = response["data"]["position"]
+        staff_role = response["data"]["role"]
         results = db.session.query(
             Request.staff_id,
             Employee.staff_fname,
