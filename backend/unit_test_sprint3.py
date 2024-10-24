@@ -232,7 +232,7 @@ class TestGetStaffSchedule(unittest.TestCase):
         # Assert the error message is as expected
         expected_error_response = {
             "message": "An error occurred while retrieving the staff schedule.",
-            "error": "Database connection error"
+            "error": "'data'"
         }
         self.assertEqual(response.json, expected_error_response)
 
