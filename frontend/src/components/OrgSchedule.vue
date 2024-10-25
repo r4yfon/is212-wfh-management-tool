@@ -71,7 +71,7 @@ export default {
         headerToolbar: {
           left: 'prev,next today',
           center: 'title',
-          right: 'dayGridWeek,dayGridDay', // Options for week and day views
+          right: 'dayGridWeek,dayGridDay',
         },
         eventTimeFormat: {
           hour: 'numeric',
@@ -106,14 +106,16 @@ export default {
   },
   watch: {
     selectedDepartments: {
-      handler(newDepts, oldDepts) {
-        if (newDepts === oldDepts) {
-          return;
-        }
-        if (!oldDepts || newDepts.length !== oldDepts.length || newDepts.some(dept => !oldDepts.includes(dept))) {
-          // Only update events if there is a change in departments
-          this.updateCalendarEvents(newDepts);
-        }
+      handler(newDepartments) {
+        // Clear current events
+        this.calendarOptions.events = [];
+
+        // Populate events based on selected departments
+        newDepartments.forEach(department => {
+          // if (this.events[department]) {
+          this.calendarOptions.events.push(...this.events[department]);
+          // }
+        });
       },
       deep: true,
     },
@@ -131,14 +133,6 @@ export default {
     displayDepartments(orgSchedule) {
       this.departments = Object.keys(orgSchedule);
       this.selectedDepartments = [...this.departments];
-    },
-
-    updateCalendarEvents(departments) {
-      const newEvents = departments.flatMap(dept => this.events[dept] || []);
-      this.calendarOptions = {
-        ...this.calendarOptions,
-        events: newEvents,
-      };
     },
 
     renderEventContent(arg) {
@@ -208,16 +202,6 @@ export default {
       this.showSidebar = !this.showSidebar;
     },
 
-    // handleDateClick(arg) {
-    //   this.clickedDateString = arg.dateStr;
-    //   this.showDialog = true;
-    //   console.log(this.clickedDateString);
-    // },
-
-    modifySelectedDepartments() {
-      this.selectedDepartments = this.selectedDepartments.filter(department => this.departments.includes(department));
-    },
-
     handleEventClick(arg) {
       const d = new Date(arg.event.start);
       const year = d.getFullYear();
@@ -240,11 +224,3 @@ export default {
   padding: 0.25rem;
 }
 </style>
-
-formatDate(date) {
-const d = new Date(date);
-const year = d.getFullYear();
-const month = String(d.getMonth() + 1).padStart(2, '0'); // Months are zero-based
-const day = String(d.getDate()).padStart(2, '0');
-return `${year}-${month}-${day}`;
-}
