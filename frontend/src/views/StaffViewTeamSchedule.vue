@@ -28,7 +28,7 @@ const handleEventClick = (arg) => {
     (clickedEventDetails.value.amCount > 0 && clickedEventDetails.value.staffNames.length > 0) ||
     (clickedEventDetails.value.pmCount > 0 && clickedEventDetails.value.pmStaffNames.length > 0) ||
     (clickedEventDetails.value.fullCount > 0 && clickedEventDetails.value.fullStaffNames.length > 0) ||
-    (clickedEventDetails.value.inOfficeCount = 0 && clickedEventDetails.value.inOfficeStaffNames.length > 0);
+    (clickedEventDetails.value.inOfficeCount > 0 && clickedEventDetails.value.inOfficeStaffNames.length > 0);
   
   if (hasStaff) {
     showDialog.value = true;
