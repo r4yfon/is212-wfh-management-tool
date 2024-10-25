@@ -58,6 +58,7 @@ def create_request_dates():
     ---
     Parameters (in JSON body):
         request_id (int): The request_id
+        staff_id (int)
         request_dates (dict): A dictionary with dates in YYYY-MM-DD format as keys and request shifts as values
             {
                 "2024-09-24": "PM",
@@ -83,6 +84,15 @@ def create_request_dates():
         data = request.get_json()
         request_id = data.get('request_id')
         request_dates = data.get('request_dates')
+        staff_id = data.get('staff_id')
+
+        if staff_id == 130002:
+            request_status = "Approved"
+        else:
+            request_status = "Pending Approval"
+        
+        print(staff_id)
+        print(request_status)
 
         if not request_id or not request_dates:
             return jsonify({
@@ -104,6 +114,7 @@ def create_request_dates():
                         request_id=request_id,
                         request_date=request_date,
                         request_shift=request_shift,
+                        request_status=request_status
                     )
                     db.session.add(new_request_date)
                     new_request_dates.append(new_request_date)

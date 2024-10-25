@@ -16,9 +16,11 @@
     "@fullcalendar/interaction": "^6.1.15",
     "@fullcalendar/timegrid": "^6.1.15",
     "@fullcalendar/vue3": "^6.1.15",
+    "@primevue/themes": "^4.1.1",
     "bootstrap": "^5.3.3",
     "pinia": "^2.2.4",
     "pinia-plugin-persistedstate": "^4.1.1",
+    "primevue": "^4.1.1",
     "vue": "^3.4.29",
     "vue-router": "^4.3.3",
     "vuetify": "^3.7.2"

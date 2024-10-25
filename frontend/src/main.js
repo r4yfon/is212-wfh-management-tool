@@ -13,6 +13,8 @@ import { VCalendar } from "vuetify/labs/VCalendar";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import "./assets/base.css";
+import PrimeVue from "primevue/config";
+import Aura from "@primevue/themes/aura";
 
 // Create Vuetify instance
 const vuetify = createVuetify({
@@ -26,7 +28,7 @@ const vuetify = createVuetify({
       ripple: false,
     },
     VLabel: {
-      style: "color: black;",
+      style: "color: black; opacity: 1;",
     },
   },
 });
@@ -38,6 +40,9 @@ pinia.use(piniaPluginPersistedstate); // Add persisted state plugin
 app.use(vuetify); // Add Vuetify to the app
 app.use(pinia);
 app.use(router); // Add router to the app
+app.use(PrimeVue, {
+  theme: { preset: Aura },
+});
 
 // Mount the Vue app
 app.mount("#app");

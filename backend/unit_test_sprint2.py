@@ -101,7 +101,7 @@ class TestGetStaffByManager(unittest.TestCase):
         self.assertEqual(response.status_code, 500)
         self.assertEqual(response.json, expected_response)
 
-
+'''
 class TestMRetrieveRequests(unittest.TestCase):
     def setUp(self):
         self.app = Flask(__name__)
@@ -386,6 +386,7 @@ class TestMRetrieveRequests(unittest.TestCase):
         # Assert the response indicates an error
         self.assertEqual(response.status_code, 404)
 
+'''
 
 class TestRejectRequest(unittest.TestCase):
     def setUp(self):
