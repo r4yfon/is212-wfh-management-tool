@@ -1,19 +1,39 @@
+<script setup>
+const departmentColors = {
+  CEO: '#FFB3BA',
+  Consultancy: '#FFDFBA',
+  Engineering: '#FFFFBA',
+  Finance: '#BAFFC9',
+  IT: '#BAE1FF',
+  HR: '#D7BAFF',
+  Sales: '#FFB3E6',
+  Solutioning: '#A3E4D7'
+}
+</script>
+
 <template>
   <div class="container-fluid d-flex mt-4">
     <aside class="p-3 d-none d-lg-block bg-primary-subtle me-4 rounded w-auto" v-if="showSidebar">
       <!-- Sidebar content goes here -->
       <DatePicker v-model="selectedDate" inline class="mb-4" :minDate="datePicker.start" :maxDate="datePicker.end" />
       <v-checkbox v-for="department in departments" :key="department" :value="department" :label="department"
-        :color="calendarOptions.departmentColors[department]" v-model="selectedDepartments" hide-details></v-checkbox>
+        :color="departmentColors[department]" v-model="selectedDepartments" hide-details></v-checkbox>
     </aside>
     <section class="flex-grow-1">
       <button @click="toggleSidebar" class="btn btn-outline-primary">Toggle Sidebar</button>
-      <FullCalendar ref="fullCalendar" :options="calendarOptions" />
+      <FullCalendar ref="fullCalendar" :options="calendarOptions">
+        <template v-slot:eventContent="event">
+          {{ event.event.title }} <br />
+          Attendance rate in office: <span
+            :class="event.event.extendedProps.officeAttendanceRate > 50 ? 'text-success-emphasis' : 'text-danger'">
+            {{ Math.floor(event.event.extendedProps.officeAttendanceRate) }}%</span>
+        </template>
+      </FullCalendar>
       <v-dialog v-model="showDialog" max-width="75%">
         <v-card>
-          <v-card-title>{{ clickedDate }}</v-card-title>
+          <v-card-title>{{ clickedDateString }}</v-card-title>
           <v-card-text>
-
+            {{ clickedEventDepartment }}
           </v-card-text>
         </v-card>
       </v-dialog>
@@ -29,6 +49,16 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import { url_paths } from '@/url_paths.js';
 import DatePicker from 'primevue/datepicker';
 
+const departmentColors = {
+  CEO: '#FFB3BA',
+  Consultancy: '#FFDFBA',
+  Engineering: '#FFFFBA',
+  Finance: '#BAFFC9',
+  IT: '#BAE1FF',
+  HR: '#D7BAFF',
+  Sales: '#FFB3E6',
+  Solutioning: '#A3E4D7'
+}
 
 export default {
   components: {
@@ -43,7 +73,7 @@ export default {
           start: new Date(new Date().getFullYear(), new Date().getMonth() - 2, new Date().getDate()).toISOString().split('T')[0],
           end: new Date(new Date().getFullYear(), new Date().getMonth() + 3, new Date().getDate()).toISOString().split('T')[0],
         },
-        height: '373px',
+        height: 'auto',
         headerToolbar: {
           left: 'prev,next today',
           center: 'title',
@@ -53,22 +83,11 @@ export default {
           hour: 'numeric',
           meridiem: true,
         },
-        displayEventEnd: true,
-        // eventDisplay: "block",
-        eventDidMount: this.eventDidMount,
+        // displayEventEnd: true,
+        // eventDidMount: this.eventDidMount,
         events: [],
-        dateClick: this.handleDateClick,
+        // dateClick: this.handleDateClick,
         eventClick: this.handleEventClick,
-        departmentColors: {
-          CEO: '#FFB3BA',
-          Consultancy: '#FFDFBA',
-          Engineering: '#FFFFBA',
-          Finance: '#BAFFC9',
-          IT: '#BAE1FF',
-          HR: '#D7BAFF',
-          Sales: '#FFB3E6',
-          Solutioning: '#FFDFD3'
-        }
       },
 
       datePicker: {
@@ -84,7 +103,8 @@ export default {
       events: {},
       scheduledData: {},
       currentDate: new Date(),
-      clickedDate: null,
+      clickedDateString: null,
+      clickedEventDepartment: null,
     };
   },
 
@@ -99,9 +119,9 @@ export default {
 
         // Populate events based on selected departments
         newDepartments.forEach(department => {
-          if (this.events[department]) {
-            this.calendarOptions.events.push(...this.events[department]);
-          }
+          // if (this.events[department]) {
+          this.calendarOptions.events.push(...this.events[department]);
+          // }
         });
       },
       deep: true,
@@ -109,12 +129,19 @@ export default {
 
     selectedDate: {
       handler(value) {
-        this.$refs.fullCalendar.getApi().gotoDate(value);
+        this.$nextTick(() => {
+          this.$refs.fullCalendar.getApi().gotoDate(value);
+        });
       },
     },
   },
 
   methods: {
+    displayDepartments(orgSchedule) {
+      this.departments = Object.keys(orgSchedule);
+      this.selectedDepartments = [...this.departments];
+    },
+
     get_org_schedule() {
       fetch(`${url_paths.view_schedule}/o_get_org_schedule`)
         .then(response => {
@@ -124,80 +151,88 @@ export default {
           return response.json();
         })
         .then(data => {
-          // this.events = [
-          //   {
-          //     title: "WFH - AM",
-          //     staff: [
-          //       {
-          //         staff_id: 150488,
-          //         staff_name: "Jacob Tan"
-          //       },
-          //       {
-          //         // ...
-          //       }
-          //     ],
-          //     start: "2024-10-25"
-          //   }
-          // ]
+          // "CEO": {
+          //   "2024-10-24": {
+          //     "AM": [],
+          //       "PM": [150488],
+          //     "Full": []
+          //   }.
+          //   "2024-10-25": { ... }
+          // },
+          // "Consultancy": {
+          //   ...
+          // }
+
+          this.displayDepartments(data);
 
           let formatted_events = [];
-
           for (const department in data) {
             for (const date in data[department]) {
-              const staff_schedules = data[department][date];
-
-              staff_schedules.forEach(schedule_item => {
-                schedule_item.schedule.forEach(schedule_type => {
-                  let event = formatted_events.find(event => event.title === schedule_type && event.start === date);
-
-                  if (!event) {
-                    event = {
-                      title: schedule_type,
-                      staff: [],
-                      start: date,
-                      description: department,
-                      allDay: true,
-                      color: this.calendarOptions.departmentColors[department],
-                      textColor: "#000000",
-                    };
-                    formatted_events.push(event);
-                  }
-
-                  event.staff.push({
-                    staff_id: schedule_item.staff_id,
-                    staff_name: schedule_item.staff_name
-                  });
-                });
-              });
+              const departmentStrength = data[department]["num_employee"];
+              if (date !== "num_employee") {
+                const manpowerInOffice = departmentStrength - data[department][date]["AM"].length - data[department][date]["PM"].length - data[department][date]["Full"].length;
+                const officeAttendanceRate = manpowerInOffice / departmentStrength * 100;
+                const event = {
+                  title: `${department}: ${manpowerInOffice} / ${departmentStrength} in office`,
+                  start: date,
+                  department: department,
+                  manpowerInOffice: manpowerInOffice,
+                  departmentStrength: departmentStrength,
+                  officeAttendanceRate: officeAttendanceRate,
+                  color: departmentColors[department],
+                  textColor: "#000000",
+                };
+                formatted_events.push(event);
+              }
             }
             this.events[department] = formatted_events;
             formatted_events = [];
           }
-
           this.calendarOptions.events = formatted_events;
-          console.log(this.events);
-
-          for (let department in this.events) {
-            console.log(department)
-            this.departments.push(department);
-          }
-
-          this.selectedDepartments = this.departments;
         })
-    },
-
-    selectDate(value) {
-      console.log(value)
     },
 
     toggleSidebar() {
       this.showSidebar = !this.showSidebar;
     },
 
-    handleDateClick(arg) {
+    // handleDateClick(arg) {
+    //   this.clickedDateString = arg.dateStr;
+    //   this.showDialog = true;
+    //   console.log(this.clickedDateString);
+    // },
+
+    modifySelectedDepartments() {
+      this.selectedDepartments = this.selectedDepartments.filter(department => this.departments.includes(department));
+    },
+
+    handleEventClick(arg) {
+      const d = new Date(arg.event.start);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      this.clickedDateString = `${year}-${month}-${day}`;
       this.showDialog = true;
-      this.clickedDate = arg.dateStr;
+      this.clickedEventDepartment = arg.event.extendedProps.department;
     }
   }
 }
 </script>
+
+<style>
+.fc-h-event .fc-event-title {
+  white-space: normal;
+}
+
+.fc-event-main {
+  padding: 0.25rem;
+}
+</style>
+
+formatDate(date) {
+const d = new Date(date);
+const year = d.getFullYear();
+const month = String(d.getMonth() + 1).padStart(2, '0'); // Months are zero-based
+const day = String(d.getDate()).padStart(2, '0');
+return `${year}-${month}-${day}`;
+}
