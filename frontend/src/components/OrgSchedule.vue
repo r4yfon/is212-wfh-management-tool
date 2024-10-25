@@ -21,14 +21,7 @@ const departmentColors = {
     </aside>
     <section class="flex-grow-1">
       <button @click="toggleSidebar" class="btn btn-outline-primary">Toggle Sidebar</button>
-      <FullCalendar ref="fullCalendar" :options="calendarOptions">
-        <template v-slot:eventContent="event">
-          {{ event.event.title }} <br />
-          Attendance rate in office: <span
-            :class="event.event.extendedProps.officeAttendanceRate > 50 ? 'text-success-emphasis' : 'text-danger'">
-            {{ Math.floor(event.event.extendedProps.officeAttendanceRate) }}%</span>
-        </template>
-      </FullCalendar>
+      <FullCalendar ref="fullCalendar" :options="calendarOptions" />
       <v-dialog v-model="showDialog" max-width="75%">
         <v-card>
           <v-card-title>{{ clickedDateString }}</v-card-title>
@@ -73,6 +66,7 @@ export default {
           start: new Date(new Date().getFullYear(), new Date().getMonth() - 2, new Date().getDate()).toISOString().split('T')[0],
           end: new Date(new Date().getFullYear(), new Date().getMonth() + 3, new Date().getDate()).toISOString().split('T')[0],
         },
+        eventContent: this.renderEventContent,
         height: 'auto',
         headerToolbar: {
           left: 'prev,next today',
@@ -84,7 +78,6 @@ export default {
           meridiem: true,
         },
         // displayEventEnd: true,
-        // eventDidMount: this.eventDidMount,
         events: [],
         // dateClick: this.handleDateClick,
         eventClick: this.handleEventClick,
@@ -113,16 +106,14 @@ export default {
   },
   watch: {
     selectedDepartments: {
-      handler(newDepartments) {
-        // Clear current events
-        this.calendarOptions.events = [];
-
-        // Populate events based on selected departments
-        newDepartments.forEach(department => {
-          // if (this.events[department]) {
-          this.calendarOptions.events.push(...this.events[department]);
-          // }
-        });
+      handler(newDepts, oldDepts) {
+        if (newDepts === oldDepts) {
+          return;
+        }
+        if (!oldDepts || newDepts.length !== oldDepts.length || newDepts.some(dept => !oldDepts.includes(dept))) {
+          // Only update events if there is a change in departments
+          this.updateCalendarEvents(newDepts);
+        }
       },
       deep: true,
     },
@@ -140,6 +131,27 @@ export default {
     displayDepartments(orgSchedule) {
       this.departments = Object.keys(orgSchedule);
       this.selectedDepartments = [...this.departments];
+    },
+
+    updateCalendarEvents(departments) {
+      const newEvents = departments.flatMap(dept => this.events[dept] || []);
+      this.calendarOptions = {
+        ...this.calendarOptions,
+        events: newEvents,
+      };
+    },
+
+    renderEventContent(arg) {
+      const rate = Math.floor(arg.event.extendedProps.officeAttendanceRate);
+      const rateClass = rate > 50 ? 'text-success-emphasis' : 'text-danger';
+      return {
+        html: `
+        <div>
+          ${arg.event.title}<br />
+          Attendance rate in office: <span class="${rateClass}">${rate}%</span>
+        </div>
+      `
+      }
     },
 
     get_org_schedule() {
@@ -171,7 +183,7 @@ export default {
               const departmentStrength = data[department]["num_employee"];
               if (date !== "num_employee") {
                 const manpowerInOffice = departmentStrength - data[department][date]["AM"].length - data[department][date]["PM"].length - data[department][date]["Full"].length;
-                const officeAttendanceRate = manpowerInOffice / departmentStrength * 100;
+                const officeAttendanceRate = Math.floor(manpowerInOffice / departmentStrength * 100);
                 const event = {
                   title: `${department}: ${manpowerInOffice} / ${departmentStrength} in office`,
                   start: date,
