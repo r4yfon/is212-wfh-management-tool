@@ -28,6 +28,8 @@ const userStore = useMainStore();
             class="btn d-none d-md-block align-content-center">
             View Staff Requests
           </RouterLink>
+          <RouterLink to="/staffweeklyschedule" class="btn d-none d-md-block align-content-center">
+            View Team Schedule</RouterLink>
           <RouterLink v-if="userStore.user.role != 2" to="/org_schedule"
             class="btn d-none d-md-block align-content-center">
             View Organisation Schedule
@@ -100,6 +102,9 @@ const userStore = useMainStore();
             <v-btn v-if="userStore.user.role != 2" class="justify-content-start" href="/viewstaffrequests"
               @click="toggleMenu" variant="plain">View
               Staff Requests</v-btn>
+            <v-btn class="justify-content-start" href="/staffweeklyschedule"
+              @click="toggleMenu" variant="plain">View
+              Team Schedule</v-btn>
             <v-btn v-if="userStore.user.role != 2" class="justify-content-start" href="/org_schedule"
               @click="toggleMenu" variant="plain">View
               Organisation Schedule</v-btn>

@@ -1,5 +1,5 @@
 <template>
-    <div class="container mt-5">
+    <div class="container mt-2">
         <v-card flat>
             <v-card-title class="d-flex align-center pe-2">
                 Requests List
