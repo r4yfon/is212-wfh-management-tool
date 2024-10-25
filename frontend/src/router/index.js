@@ -24,6 +24,11 @@ const router = createRouter({
       name: "viewstaffrequests",
       component: () => import("../views/ViewStaffRequests.vue"),
     },
+    {
+      path: "/teamweeklyschedule",
+      name: "teamweeklyschedule",
+      component: () => import("../views/StaffViewTeamSchedule.vue"),
+    },
   ],
 });
 
