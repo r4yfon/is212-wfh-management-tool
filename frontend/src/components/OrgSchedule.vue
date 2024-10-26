@@ -14,8 +14,9 @@
           <v-card-title>{{ clickedDateString }}: {{ clickedEventDepartment }}</v-card-title>
           <v-card-text>
             <ag-grid-vue :rowData="Object.values(employeesByDepartment[clickedEventDepartment])"
-              :defaultColDef="defaultColDef" :columnDefs="orgScheduleTableColumns" style="height: 800px"
-              class="ag-theme-quartz" :autoSizeStrategy="autoSizeStrategy"></ag-grid-vue>
+              :defaultColDef="agGridOptions.defaultColDef" :columnDefs="agGridOptions.columnHeaders"
+              style="height: 800px" class="ag-theme-quartz"
+              :autoSizeStrategy="agGridOptions.autoSizeStrategy"></ag-grid-vue>
 
           </v-card-text>
         </v-card>
@@ -59,9 +60,7 @@ export default {
           hour: 'numeric',
           meridiem: true,
         },
-        // displayEventEnd: true,
         events: [],
-        // dateClick: this.handleDateClick,
         eventClick: this.handleEventClick,
       },
 
@@ -81,46 +80,37 @@ export default {
         end: new Date(new Date().getFullYear(), new Date().getMonth() + 3, new Date().getDate()),
       },
 
+      agGridOptions: {
+        columnHeaders: [
+          { headerName: "Staff Name", field: "staff_name" },
+          { headerName: "Staff ID", field: "staff_id" },
+          { headerName: "Role", field: "role" },
+          {
+            headerName: "WFH Status", valueGetter: this.scheduleValueGetter, filter: true, cellStyle: params => {
+              return params.value === 'In Office' ? { color: 'green' } : { color: 'red' };
+            }
+          }
+        ],
+        autoSizeStrategy: {
+          type: "fitGridWidth",
+          defaultMinWidth: 100,
+        },
+        defaultColDef: {
+          resizable: false,
+        }
+      },
+
       selectedDate: new Date(),
       showDialog: false,
-      showSidebar: true,
+      // showSidebar: true,
       departments: [],
       employeesByDepartment: {},
       selectedDepartments: [],
       formattedEvents: {},
       orgSchedule: {},
       scheduledData: {},
-      currentDate: new Date(),
       clickedDateString: null,
       clickedEventDepartment: null,
-      orgScheduleTableColumns: [
-        { headerName: "Staff Name", field: "staff_name" },
-        { headerName: "Staff ID", field: "staff_id" },
-        { headerName: "Role", field: "role" },
-        {
-          headerName: "WFH Status", valueGetter: this.scheduleValueGetter, filter: true, cellStyle: params => {
-            if (params.value === 'In Office') {
-              //mark police cells as red
-              return { color: 'green' };
-            } else {
-              return { color: 'red' };
-            }
-          }
-        }
-      ],
-      autoSizeStrategy: {
-        type: "fitGridWidth",
-        defaultMinWidth: 100,
-        columnLimits: [
-          {
-            colId: "country",
-            minWidth: 900,
-          },
-        ],
-      },
-      defaultColDef: {
-        resizable: false,
-      }
     };
   },
 
@@ -128,17 +118,13 @@ export default {
     this.get_org_schedule();
     this.getEmployeeDetails();
   },
+
   watch: {
     selectedDepartments: {
       handler(newDepartments) {
-        // Clear current events
         this.calendarOptions.events = [];
-
-        // Populate events based on selected departments
         newDepartments.forEach(department => {
-          // if (this.formattedEvents[department]) {
           this.calendarOptions.events.push(...this.formattedEvents[department]);
-          // }
         });
       },
       deep: true,
