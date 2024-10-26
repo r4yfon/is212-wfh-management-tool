@@ -6,7 +6,7 @@ const userStore = useMainStore();
 <template>
   <v-menu>
     <template v-slot:activator="{ props }">
-      <v-btn flat variant="outlined" color="grey" text v-bind="props" prepend-icon="mdi-account">
+      <v-btn flat variant="outlined" color="black" text v-bind="props" prepend-icon="mdi-account">
         {{ userStore.user.staff_fname }} {{ userStore.user.staff_lname }}
       </v-btn>
     </template>
@@ -14,7 +14,7 @@ const userStore = useMainStore();
       <v-list-item v-for="user in users" :key="user.staff_id" @click="selectUser(user)">
         <v-list-item-title>
           {{ user.staff_fname }} {{ user.staff_lname }}
-          <v-list-item-subtitle>{{ user.dept }}</v-list-item-subtitle>
+          <v-list-item-subtitle>{{ user.department }}</v-list-item-subtitle>
         </v-list-item-title>
       </v-list-item>
     </v-list>
@@ -30,7 +30,7 @@ export default {
           staff_id: 150488,
           staff_fname: "Jacob",
           staff_lname: "Tan",
-          dept: "Engineering",
+          department: "Engineering",
           position: "Call Centre",
           country: "Singapore",
           email: "Jacob.Tan@allinone.com.sg",
@@ -41,7 +41,7 @@ export default {
           staff_id: 130002,
           staff_fname: "Jack",
           staff_lname: "Sim",
-          dept: "CEO",
+          department: "CEO",
           position: "MD",
           country: "Singapore",
           email: "jack.sim@allinone.com.sg",
@@ -49,15 +49,15 @@ export default {
           role: 1,
         },
         {
-          "staff_id": 140008,
-          "staff_fname": "Jaclyn",
-          "staff_lname": "Lee",
-          "dept": "Sales",
-          "position": "Sales Manager",
-          "country": "Singapore",
-          "email": "Jaclyn.Lee@allinone.com.sg",
-          "reporting_manager": 140001,
-          "role": 3
+          staff_id: 151408,
+          staff_fname: "Philip",
+          staff_lname: "Lee",
+          department: "Engineering",
+          position: "Director",
+          country: "Singapore",
+          email: "Philip.Lee@allinone.com.sg",
+          reporting_manager: 130002,
+          role: 1
         }
       ],
     }

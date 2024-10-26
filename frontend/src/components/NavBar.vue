@@ -1,43 +1,40 @@
 <script setup>
 import { RouterLink } from "vue-router";
-import {
-  VTextField,
-  VBtn,
-  VDialog,
-  VCard,
-  VCardText,
-  VCardActions,
-  VSpacer,
-  VProgressCircular,
-} from "vuetify/components";
 import UserSelection from "./UserSelection.vue";
 import { is_within_word_count, two_months_before, three_months_after } from "@/inputValidation";
-import { useMainStore } from '@/store.js';
-
+import { useMainStore } from "@/store";
 const userStore = useMainStore();
 </script>
 
 <template>
-  <header class="container-fluid position-sticky bg-info-subtle py-1 py-md-3 z-3">
+  <header class="container-fluid position-sticky bg-info-subtle py-1 py-lg-3 z-3">
     <!-- <div class="wrapper"> -->
     <v-col cols="12">
       <v-row align="center" justify="end" class="header-buttons">
         <!-- hambuger menu for mobile -->
-        <v-btn class="d-md-none" icon="mdi-menu" variant="plain" @click="toggleMenu"></v-btn>
+        <v-btn class="d-lg-none" icon="mdi-menu" variant="plain" @click="toggleMenu"></v-btn>
 
         <RouterLink to="/">
           <img src="@/assets/logo.svg" alt="Vue Logo" height="32" />
         </RouterLink>
 
         <!-- buttons for desktop -->
-        <div class="d-none d-md-flex">
-          <v-btn variant="plain" href="/weeklycalendar" class="d-none d-md-block align-content-center">View
-            Schedule</v-btn>
-          <v-btn variant="plain" href="/requestslist" class="d-none d-md-block align-content-center">View
-            Own Requests</v-btn>
-          <v-btn variant="plain" href="/viewstaffrequests" class="d-none d-md-block align-content-center">View
-            Staff Requests</v-btn>
-          <v-btn @click="dialog = true" variant="plain">Apply to WFH</v-btn>
+        <div class="d-none d-lg-flex ms-md-3">
+          <RouterLink to="/weeklycalendar" class="btn d-none d-md-block align-content-center">View
+            Schedule</RouterLink>
+          <RouterLink to="/requestslist" class="btn d-none d-md-block align-content-center">
+            My Requests</RouterLink>
+          <RouterLink v-if="userStore.user.role != 2" to="/viewstaffrequests"
+            class="btn d-none d-md-block align-content-center">
+            View Staff Requests
+          </RouterLink>
+          <RouterLink to="/staffweeklyschedule" class="btn d-none d-md-block align-content-center">
+            View Team Schedule</RouterLink>
+          <RouterLink v-if="userStore.user.role != 2" to="/org_schedule"
+            class="btn d-none d-md-block align-content-center">
+            Organisation Schedule
+          </RouterLink>
+          <v-btn @click="dialog = true" variant="outlined" text="Apply to WFH" class="btn"></v-btn>
         </div>
 
         <v-dialog v-model="dialog" max-width="500px">
@@ -46,7 +43,7 @@ const userStore = useMainStore();
             <v-card-text>
               <v-form>
                 <!-- Event Title -->
-                <VTextField v-model="newEvent.staffId" label="Staff ID" required></VTextField>
+                <VTextField :model-value="newEvent.staffId" label="Staff ID" required disabled></VTextField>
 
                 <!-- Toggle Buttons for One Day and Recurring -->
                 <v-btn-toggle v-model="requestType" mandatory class="mb-4">
@@ -96,14 +93,19 @@ const userStore = useMainStore();
         <UserSelection />
 
         <!-- dropdown menu for mobile -->
-        <div class="d-md-none w-100" id="mobile-menu" v-show="isMenuOpen">
+        <div class="d-lg-none w-100" id="mobile-menu" v-show="isMenuOpen">
           <div class="d-flex flex-column">
             <v-btn class="justify-content-start" href="/weeklycalendar" @click="toggleMenu" variant="plain">View
               Schedule</v-btn>
-            <v-btn class="justify-content-start" href="/requestslist" @click="toggleMenu" variant="plain">View
-              Own Requests</v-btn>
-            <v-btn class="justify-content-start" href="/viewstaffrequests" @click="toggleMenu" variant="plain">View
+            <v-btn class="justify-content-start" href="/requestslist" @click="toggleMenu" variant="plain">
+              My Requests</v-btn>
+            <v-btn v-if="userStore.user.role != 2" class="justify-content-start" href="/viewstaffrequests"
+              @click="toggleMenu" variant="plain">View
               Staff Requests</v-btn>
+            <v-btn class="justify-content-start" href="/staffweeklyschedule" @click="toggleMenu" variant="plain">View
+              Team Schedule</v-btn>
+            <v-btn v-if="userStore.user.role != 2" class="justify-content-start" href="/org_schedule"
+              @click="toggleMenu" variant="plain">Organisation Schedule</v-btn>
             <v-btn class="justify-content-start" @click="dialog = true" variant="plain">Apply to WFH</v-btn>
           </div>
         </div>
@@ -141,6 +143,8 @@ export default {
   mounted() {
     this.twoWeeksBefore = two_months_before(new Date());
     this.threeMonthsAfter = three_months_after(new Date());
+    const userStore = useMainStore();
+    this.newEvent.staffId = userStore.user.staff_id;
   },
   watch: {
     "newEvent.date"() {
@@ -282,7 +286,6 @@ export default {
           // alert("Please fill in all required fields and try again.");
           this.loading = false;
         }
-        this.newEvent.staffId = "";
         this.newEvent.date = "";
         this.newEvent.endDate = "";
         this.newEvent.shift = "";
@@ -298,5 +301,13 @@ export default {
 <style scoped>
 header {
   box-shadow: 0 3px 12px #00000014;
+}
+
+.btn {
+  text-transform: unset;
+
+  &:hover {
+    background-color: #00000014;
+  }
 }
 </style>

@@ -1,0 +1,70 @@
+name: Python application
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:latest
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'true'
+          MYSQL_DATABASE: wfh_scheduling
+        options: --health-cmd="mysqladmin ping --silent" --health-interval=10s --health-timeout=5s --health-retries=5
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up environment variables for Flask
+      run: |
+        export dbURL=mysql+mysqlconnector://root@localhost:3306/wfh_scheduling
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.12"
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 pytest
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi 
+
+    - name: Wait for MySQL to start
+      run: |
+        sudo apt-get install -y mysql-client
+        sleep 30  # Give MySQL some time to start
+        mysqladmin --host=127.0.0.1 --user=root ping --silent
+
+    - name: Set up MySQL
+      run: |
+        mysql -h 127.0.0.1 -u root wfh_scheduling < backend/SQL/Data.sql
+        mysql -h 127.0.0.1 -u root -e "SHOW TABLES;" wfh_scheduling
+
+    - name: Log the MySQL error
+      run: |
+        tail -n 100 /var/log/mysql/error.log
+
+    - name: Lint with flake8
+      run: |
+        # stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    - name: Run unit tests in verbose mode
+      run: |
+        pytest backend/unit_test_sprint2.py -v
+        pytest backend/unit_test_sprint3.py -v

@@ -11,7 +11,7 @@ fetch(`http://localhost:5002/request_dates/auto_reject`, {
     }
     return response.json();
   })
-  .then(responseData => {
+  .then(() => {
     console.log('Success');
   })
   .catch(error => console.error('Error updating status:', error));
@@ -138,6 +138,7 @@ export default {
       console.log(`Date ${arg.dateStr} clicked`);
     },
     handleEventClick(arg) {
+      // console.log(new Date(arg.event.start).toISOString().split("T")[0]);
       console.log(`Event ${arg.event.title} clicked`);
     },
     handleNextClick() {
@@ -217,7 +218,7 @@ export default {
           }
 
           this.calendarOptions.events = this.events;
-          console.log(data.data);
+          console.log(this.calendarOptions.events);
         })
         .catch((error) => {
           console.error("Error fetching schedule data:", error);
