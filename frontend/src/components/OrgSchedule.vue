@@ -1,61 +1,22 @@
-<script setup>
-const departmentColors = {
-  CEO: '#FFB3BA',
-  Consultancy: '#FFDFBA',
-  Engineering: '#FFFFBA',
-  Finance: '#BAFFC9',
-  IT: '#BAE1FF',
-  HR: '#D7BAFF',
-  Sales: '#FFB3E6',
-  Solutioning: '#A3E4D7'
-}
-</script>
-
 <template>
   <div class="container-fluid d-flex mt-4">
     <aside class="p-3 d-none d-lg-block bg-primary-subtle me-4 rounded w-auto" v-if="showSidebar">
       <!-- Sidebar content goes here -->
       <DatePicker v-model="selectedDate" inline class="mb-4" :minDate="datePicker.start" :maxDate="datePicker.end" />
       <v-checkbox v-for="department in departments" :key="department" :value="department" :label="department"
-        :color="departmentColors[department]" v-model="selectedDepartments" hide-details></v-checkbox>
+        :color="this.departmentColors[department]" v-model="selectedDepartments" hide-details></v-checkbox>
     </aside>
     <section class="flex-grow-1">
-      <button @click="toggleSidebar" class="btn btn-outline-primary">Toggle Sidebar</button>
+      <!-- <button @click="toggleSidebar" class="btn btn-outline-primary">Toggle Sidebar</button> -->
       <FullCalendar ref="fullCalendar" :options="calendarOptions" />
-      <v-dialog v-model="showDialog" max-width="80%">
+      <v-dialog v-model="showDialog" max-width="60%">
         <v-card>
           <v-card-title>{{ clickedDateString }}: {{ clickedEventDepartment }}</v-card-title>
           <v-card-text>
-            <table class="table table-striped">
-              <thead>
-                <tr>
-                  <th>Employee Name</th>
-                  <th>Employee ID</th>
-                  <th>Employee Role</th>
-                  <th>WFH Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="employee in Object.entries(employeesByDepartment[clickedEventDepartment])"
-                  :key="employee.id">
-                  <!-- {{ employee }} -->
-                  <td>{{ employee[1].staff_name }}</td>
-                  <td>{{ employee[0] }}</td>
-                  <td>{{ employee[1].role }}</td>
-                  <td>
-                    <span v-if="orgSchedule[clickedEventDepartment][clickedDateString].AM.includes(employee.id)">WFH
-                      AM</span>
-                    <span
-                      v-else-if="orgSchedule[clickedEventDepartment][clickedDateString].PM.includes(employee.id)">WFH
-                      PM</span>
-                    <span
-                      v-else-if="orgSchedule[clickedEventDepartment][clickedDateString].Full.includes(employee.id)">WFH
-                      Full</span>
-                    <span v-else>In Office</span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <ag-grid-vue :rowData="Object.values(employeesByDepartment[clickedEventDepartment])"
+              :defaultColDef="defaultColDef" :columnDefs="orgScheduleTableColumns" style="height: 800px"
+              class="ag-theme-quartz" :autoSizeStrategy="autoSizeStrategy"></ag-grid-vue>
+
           </v-card-text>
         </v-card>
       </v-dialog>
@@ -70,21 +31,13 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import { url_paths } from '@/url_paths.js';
 import DatePicker from 'primevue/datepicker';
-
-const departmentColors = {
-  CEO: '#FFB3BA',
-  Consultancy: '#FFDFBA',
-  Engineering: '#FFFFBA',
-  Finance: '#BAFFC9',
-  IT: '#BAE1FF',
-  HR: '#D7BAFF',
-  Sales: '#FFB3E6',
-  Solutioning: '#A3E4D7'
-}
+import "ag-grid-community/styles/ag-grid.css"; // Mandatory CSS required by the Data Grid
+import "ag-grid-community/styles/ag-theme-quartz.css"; // Optional Theme applied to the Data Grid
+import { AgGridVue } from "ag-grid-vue3"; // Vue Data Grid Component
 
 export default {
   components: {
-    FullCalendar, DatePicker
+    FullCalendar, DatePicker, AgGridVue
   },
   data() {
     return {
@@ -112,6 +65,17 @@ export default {
         eventClick: this.handleEventClick,
       },
 
+      departmentColors: {
+        CEO: '#FFB3BA',
+        Consultancy: '#FFDFBA',
+        Engineering: '#FFFFBA',
+        Finance: '#BAFFC9',
+        IT: '#BAE1FF',
+        HR: '#D7BAFF',
+        Sales: '#FFB3E6',
+        Solutioning: '#A3E4D7'
+      },
+
       datePicker: {
         start: new Date(new Date().getFullYear(), new Date().getMonth() - 2, new Date().getDate()),
         end: new Date(new Date().getFullYear(), new Date().getMonth() + 3, new Date().getDate()),
@@ -129,6 +93,34 @@ export default {
       currentDate: new Date(),
       clickedDateString: null,
       clickedEventDepartment: null,
+      orgScheduleTableColumns: [
+        { headerName: "Staff Name", field: "staff_name" },
+        { headerName: "Staff ID", field: "staff_id" },
+        { headerName: "Role", field: "role" },
+        {
+          headerName: "WFH Status", valueGetter: this.scheduleValueGetter, filter: true, cellStyle: params => {
+            if (params.value === 'In Office') {
+              //mark police cells as red
+              return { color: 'green' };
+            } else {
+              return { color: 'red' };
+            }
+          }
+        }
+      ],
+      autoSizeStrategy: {
+        type: "fitGridWidth",
+        defaultMinWidth: 100,
+        columnLimits: [
+          {
+            colId: "country",
+            minWidth: 900,
+          },
+        ],
+      },
+      defaultColDef: {
+        resizable: false,
+      }
     };
   },
 
@@ -154,11 +146,9 @@ export default {
 
     selectedDate: {
       handler(value) {
-        this.$nextTick(() => {
-          this.$refs.fullCalendar.getApi().gotoDate(value);
-        });
+        this.$refs.fullCalendar.getApi().gotoDate(value);
       },
-    },
+    }
   },
 
   methods: {
@@ -201,7 +191,6 @@ export default {
 
           this.orgSchedule = data;
           this.displayDepartments(data);
-          // console.log(this.orgSchedule);
 
           let formatted_events = [];
           for (const department in data) {
@@ -217,7 +206,7 @@ export default {
                   manpowerInOffice: manpowerInOffice,
                   departmentStrength: departmentStrength,
                   officeAttendanceRate: officeAttendanceRate,
-                  color: departmentColors[department],
+                  color: this.departmentColors[department],
                   textColor: "#000000",
                 };
                 formatted_events.push(event);
@@ -242,9 +231,9 @@ export default {
         })
     },
 
-    toggleSidebar() {
-      this.showSidebar = !this.showSidebar;
-    },
+    // toggleSidebar() {
+    //   this.showSidebar = !this.showSidebar;
+    // },
 
     handleEventClick(arg) {
       const d = new Date(arg.event.start);
@@ -254,9 +243,23 @@ export default {
       this.clickedDateString = `${year}-${month}-${day}`;
       this.showDialog = true;
       this.clickedEventDepartment = arg.event.extendedProps.department;
+    },
 
+    scheduleValueGetter(params) {
+      const staff_id = params.data.staff_id;
       console.log(this.orgSchedule[this.clickedEventDepartment][this.clickedDateString]);
-      console.log(this.employeesByDepartment[this.clickedEventDepartment]);
+
+      const isInArray = (array, id) => array.some(item => item.staff_id === id);
+
+      if (isInArray(this.orgSchedule[this.clickedEventDepartment][this.clickedDateString].AM, staff_id)) {
+        return 'WFH - AM';
+      } else if (isInArray(this.orgSchedule[this.clickedEventDepartment][this.clickedDateString].PM, staff_id)) {
+        return 'WFH - PM';
+      } else if (isInArray(this.orgSchedule[this.clickedEventDepartment][this.clickedDateString].Full, staff_id)) {
+        return 'WFH - Full';
+      } else {
+        return 'In Office';
+      }
     }
   }
 }
@@ -275,9 +278,16 @@ export default {
   &:hover {
     border: 1px solid rgba(0, 0, 0, 0.4);
     border-radius: 3px;
-
     margin: 0;
-    /* box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2), 0 4px 20px rgba(0, 0, 0, 0.1); */
   }
+}
+
+.fc-icon {
+  display: flex;
+}
+
+.fc-col-header-cell-cushion {
+  text-decoration: none;
+  color: black;
 }
 </style>
