@@ -22,11 +22,40 @@ const departmentColors = {
     <section class="flex-grow-1">
       <button @click="toggleSidebar" class="btn btn-outline-primary">Toggle Sidebar</button>
       <FullCalendar ref="fullCalendar" :options="calendarOptions" />
-      <v-dialog v-model="showDialog" max-width="75%">
+      <v-dialog v-model="showDialog" max-width="80%">
         <v-card>
-          <v-card-title>{{ clickedDateString }}</v-card-title>
+          <v-card-title>{{ clickedDateString }}: {{ clickedEventDepartment }}</v-card-title>
           <v-card-text>
-            {{ clickedEventDepartment }}
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Employee Name</th>
+                  <th>Employee ID</th>
+                  <th>Employee Role</th>
+                  <th>WFH Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="employee in Object.entries(employeesByDepartment[clickedEventDepartment])"
+                  :key="employee.id">
+                  <!-- {{ employee }} -->
+                  <td>{{ employee[1].staff_name }}</td>
+                  <td>{{ employee[0] }}</td>
+                  <td>{{ employee[1].role }}</td>
+                  <td>
+                    <span v-if="orgSchedule[clickedEventDepartment][clickedDateString].AM.includes(employee.id)">WFH
+                      AM</span>
+                    <span
+                      v-else-if="orgSchedule[clickedEventDepartment][clickedDateString].PM.includes(employee.id)">WFH
+                      PM</span>
+                    <span
+                      v-else-if="orgSchedule[clickedEventDepartment][clickedDateString].Full.includes(employee.id)">WFH
+                      Full</span>
+                    <span v-else>In Office</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </v-card-text>
         </v-card>
       </v-dialog>
@@ -92,8 +121,10 @@ export default {
       showDialog: false,
       showSidebar: true,
       departments: [],
+      employeesByDepartment: {},
       selectedDepartments: [],
-      events: {},
+      formattedEvents: {},
+      orgSchedule: {},
       scheduledData: {},
       currentDate: new Date(),
       clickedDateString: null,
@@ -103,6 +134,7 @@ export default {
 
   mounted() {
     this.get_org_schedule();
+    this.getEmployeeDetails();
   },
   watch: {
     selectedDepartments: {
@@ -112,8 +144,8 @@ export default {
 
         // Populate events based on selected departments
         newDepartments.forEach(department => {
-          // if (this.events[department]) {
-          this.calendarOptions.events.push(...this.events[department]);
+          // if (this.formattedEvents[department]) {
+          this.calendarOptions.events.push(...this.formattedEvents[department]);
           // }
         });
       },
@@ -140,11 +172,9 @@ export default {
       const rateClass = rate > 50 ? 'text-success-emphasis' : 'text-danger';
       return {
         html: `
-        <div>
           ${arg.event.title}<br />
           Attendance rate in office: <span class="${rateClass}">${rate}%</span>
-        </div>
-      `
+        `
       }
     },
 
@@ -169,7 +199,9 @@ export default {
           //   ...
           // }
 
+          this.orgSchedule = data;
           this.displayDepartments(data);
+          // console.log(this.orgSchedule);
 
           let formatted_events = [];
           for (const department in data) {
@@ -191,10 +223,22 @@ export default {
                 formatted_events.push(event);
               }
             }
-            this.events[department] = formatted_events;
+            this.formattedEvents[department] = formatted_events;
             formatted_events = [];
           }
-          this.calendarOptions.events = formatted_events;
+        })
+    },
+
+    getEmployeeDetails() {
+      fetch(`${url_paths.employee}/get_all_employees_by_dept`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          return response.json();
+        })
+        .then(data => {
+          this.employeesByDepartment = data.data;
         })
     },
 
@@ -210,6 +254,9 @@ export default {
       this.clickedDateString = `${year}-${month}-${day}`;
       this.showDialog = true;
       this.clickedEventDepartment = arg.event.extendedProps.department;
+
+      console.log(this.orgSchedule[this.clickedEventDepartment][this.clickedDateString]);
+      console.log(this.employeesByDepartment[this.clickedEventDepartment]);
     }
   }
 }
@@ -222,5 +269,15 @@ export default {
 
 .fc-event-main {
   padding: 0.25rem;
+  margin: 1px;
+  cursor: pointer;
+
+  &:hover {
+    border: 1px solid rgba(0, 0, 0, 0.4);
+    border-radius: 3px;
+
+    margin: 0;
+    /* box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2), 0 4px 20px rgba(0, 0, 0, 0.1); */
+  }
 }
 </style>
