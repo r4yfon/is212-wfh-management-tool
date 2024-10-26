@@ -21,14 +21,7 @@ const departmentColors = {
     </aside>
     <section class="flex-grow-1">
       <button @click="toggleSidebar" class="btn btn-outline-primary">Toggle Sidebar</button>
-      <FullCalendar ref="fullCalendar" :options="calendarOptions">
-        <template v-slot:eventContent="event">
-          {{ event.event.title }} <br />
-          Attendance rate in office: <span
-            :class="event.event.extendedProps.officeAttendanceRate > 50 ? 'text-success-emphasis' : 'text-danger'">
-            {{ Math.floor(event.event.extendedProps.officeAttendanceRate) }}%</span>
-        </template>
-      </FullCalendar>
+      <FullCalendar ref="fullCalendar" :options="calendarOptions" />
       <v-dialog v-model="showDialog" max-width="75%">
         <v-card>
           <v-card-title>{{ clickedDateString }}</v-card-title>
@@ -73,18 +66,18 @@ export default {
           start: new Date(new Date().getFullYear(), new Date().getMonth() - 2, new Date().getDate()).toISOString().split('T')[0],
           end: new Date(new Date().getFullYear(), new Date().getMonth() + 3, new Date().getDate()).toISOString().split('T')[0],
         },
+        eventContent: this.renderEventContent,
         height: 'auto',
         headerToolbar: {
           left: 'prev,next today',
           center: 'title',
-          right: 'dayGridWeek,dayGridDay', // Options for week and day views
+          right: 'dayGridWeek,dayGridDay',
         },
         eventTimeFormat: {
           hour: 'numeric',
           meridiem: true,
         },
         // displayEventEnd: true,
-        // eventDidMount: this.eventDidMount,
         events: [],
         // dateClick: this.handleDateClick,
         eventClick: this.handleEventClick,
@@ -142,6 +135,19 @@ export default {
       this.selectedDepartments = [...this.departments];
     },
 
+    renderEventContent(arg) {
+      const rate = Math.floor(arg.event.extendedProps.officeAttendanceRate);
+      const rateClass = rate > 50 ? 'text-success-emphasis' : 'text-danger';
+      return {
+        html: `
+        <div>
+          ${arg.event.title}<br />
+          Attendance rate in office: <span class="${rateClass}">${rate}%</span>
+        </div>
+      `
+      }
+    },
+
     get_org_schedule() {
       fetch(`${url_paths.view_schedule}/o_get_org_schedule`)
         .then(response => {
@@ -171,7 +177,7 @@ export default {
               const departmentStrength = data[department]["num_employee"];
               if (date !== "num_employee") {
                 const manpowerInOffice = departmentStrength - data[department][date]["AM"].length - data[department][date]["PM"].length - data[department][date]["Full"].length;
-                const officeAttendanceRate = manpowerInOffice / departmentStrength * 100;
+                const officeAttendanceRate = Math.floor(manpowerInOffice / departmentStrength * 100);
                 const event = {
                   title: `${department}: ${manpowerInOffice} / ${departmentStrength} in office`,
                   start: date,
@@ -196,16 +202,6 @@ export default {
       this.showSidebar = !this.showSidebar;
     },
 
-    // handleDateClick(arg) {
-    //   this.clickedDateString = arg.dateStr;
-    //   this.showDialog = true;
-    //   console.log(this.clickedDateString);
-    // },
-
-    modifySelectedDepartments() {
-      this.selectedDepartments = this.selectedDepartments.filter(department => this.departments.includes(department));
-    },
-
     handleEventClick(arg) {
       const d = new Date(arg.event.start);
       const year = d.getFullYear();
@@ -228,11 +224,3 @@ export default {
   padding: 0.25rem;
 }
 </style>
-
-formatDate(date) {
-const d = new Date(date);
-const year = d.getFullYear();
-const month = String(d.getMonth() + 1).padStart(2, '0'); // Months are zero-based
-const day = String(d.getDate()).padStart(2, '0');
-return `${year}-${month}-${day}`;
-}

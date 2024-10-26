@@ -30,11 +30,17 @@ const router = createRouter({
       path: "/org_schedule",
       component: HRViewSchedule,
     },
+    {
+      path: "/staffweeklyschedule",
+      name: "staffweeklyschedule",
+      component: () => import("../views/StaffViewTeamSchedule.vue"),
+    },
   ],
 });
 
 const allowedRoles = {
   "/weeklycalendar": [1, 2], // Example: Roles 1 and 2 can access /weeklycalendar
+  "/staffweeklyschedule": [1, 2], // Example: Roles 1 and 2 can access /staffweeklyschedule
   "/requestslist": [1, 2], // Example: Only role 1 can access /requestslist
   "/viewstaffrequests": [1], // Example: Roles 1, 2, and 3 can access /viewstaffrequests
   "/org_schedule": [1], // Example: Only role 1 can access /org_schedule
