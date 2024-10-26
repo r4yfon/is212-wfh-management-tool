@@ -257,10 +257,7 @@ def m_get_team_schedule(staff_id):
         num_employee = db.session.query(
             Employee.dept,
             func.count(Employee.staff_id).label('staff_count')
-        ).group_by(Employee.dept) \
-        .filter(Employee.dept == employee_dept) \
-        .all()
-
+        ).group_by(Employee.dept).all()
 
 
         # Create a dictionary to store department data
@@ -268,17 +265,18 @@ def m_get_team_schedule(staff_id):
 
         # Iterate over the results and populate the department dictionary
         for dept, staff_count in num_employee:
-            dept_dict[dept] = {
-                "num_employee": staff_count
-            }
-            # Initialize all dates for the department
-            for date in all_dates:
-                dept_dict[dept][date] = {
-                    "AM": [],
-                    "PM": [],
-                    "Full": []
+            if dept == employee_dept:
+                dept_dict[dept] = {
+                    "num_employee": staff_count
                 }
-
+                # Initialize all dates for the department
+                for date in all_dates:
+                    dept_dict[dept][date] = {
+                        "AM": [],
+                        "PM": [],
+                        "Full": []
+                    }
+        
         response = invoke_http(employee_URL + "/get_all_employees", method="GET")
 
         def get_team_members(staff_id, visited=None, staff_details=None):
@@ -379,10 +377,7 @@ def s_get_team_schedule(staff_id):
         num_employee = db.session.query(
             Employee.dept,
             func.count(Employee.staff_id).label('staff_count')
-        ).group_by(Employee.dept) \
-        .filter(Employee.dept == employee_dept) \
-        .all()
-
+        ).group_by(Employee.dept).all()
 
 
         # Create a dictionary to store department data
@@ -390,16 +385,17 @@ def s_get_team_schedule(staff_id):
 
         # Iterate over the results and populate the department dictionary
         for dept, staff_count in num_employee:
-            dept_dict[dept] = {
-                "num_employee": staff_count
-            }
-            # Initialize all dates for the department
-            for date in all_dates:
-                dept_dict[dept][date] = {
-                    "AM": [],
-                    "PM": [],
-                    "Full": []
+            if dept == employee_dept:
+                dept_dict[dept] = {
+                    "num_employee": staff_count
                 }
+                # Initialize all dates for the department
+                for date in all_dates:
+                    dept_dict[dept][date] = {
+                        "AM": [],
+                        "PM": [],
+                        "Full": []
+                    }
 
 
         # Perform a union join query to get all relevant data
