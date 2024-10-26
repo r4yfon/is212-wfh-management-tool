@@ -1,6 +1,6 @@
 <template>
   <div class="container-fluid d-flex mt-4">
-    <aside class="p-3 d-none d-lg-block bg-primary-subtle me-4 rounded w-auto" v-if="showSidebar">
+    <aside class="p-3 d-none d-lg-block bg-primary-subtle me-4 rounded w-auto">
       <!-- Sidebar content goes here -->
       <DatePicker v-model="selectedDate" inline class="mb-4" :minDate="datePicker.start" :maxDate="datePicker.end" />
       <v-checkbox v-for="department in departments" :key="department" :value="department" :label="department"
