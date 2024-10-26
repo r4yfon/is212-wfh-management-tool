@@ -201,5 +201,63 @@ def get_all_employees():
         }), 500
 
 
+# Retrieve employees, grouped by department
+@app.route("/employee/get_all_employees_by_dept", methods=["GET"])
+def get_all_employees_by_dept():
+    """
+    Get all staff IDs and their details, grouped by department.
+    
+    Success response:
+    {
+        "code": 200,
+        "data": {
+            "Engineering": {
+                "150488": {
+                    "staff_name": "Jacob Tan",
+                    "role": "Junior Engineer"
+                },
+                "104821": {
+                    "staff_name": "James Teo",
+                    "role": "Junior Engineer"
+                },
+            },
+            "Sales": { ... },
+        }
+    }
+    """
+    try:
+        # Fetch all employees
+        employees = Employee.query.all()
+
+        # Prepare the data grouped by department
+        reporting_structure = {}
+        
+        for employee in employees:
+            dept = employee.dept
+            staff_id = employee.staff_id
+            
+            # Initialize department if it doesn't exist in the structure
+            if dept not in reporting_structure:
+                reporting_structure[dept] = {}
+            
+            # Add employee data under the specific department and staff_id
+            reporting_structure[dept][staff_id] = {
+                "staff_name": employee.staff_fname + " " + employee.staff_lname,
+                "role": employee.position
+            }
+
+        return jsonify({
+            "code": 200,
+            "data": reporting_structure
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "code": 500,
+            "error": "An error occurred while fetching reporting structure. " + str(e)
+        }), 500
+
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
