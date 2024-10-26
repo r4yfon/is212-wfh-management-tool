@@ -16,9 +16,9 @@
                 align-tabs="center"
                 color="red-lighten-2"
             >
-                <v-tab :value="1">Pending Requests</v-tab>
-                <v-tab :value="2">Approved Requests</v-tab>
-                <v-tab :value="3">Rejected/Rescinded Requests</v-tab>
+                <v-tab :value="0">Pending Requests</v-tab>
+                <v-tab :value="1">Approved Requests</v-tab>
+                <v-tab :value="2">Rejected/Rescinded Requests</v-tab>
             </v-tabs>
 
             <v-window v-model="tab" color="red-lighten-2">
@@ -30,7 +30,7 @@
 
                 <v-card-text>
                     <v-window v-model="tab">
-                        <v-window-item value="1">
+                        <v-window-item value="0">
                             <v-data-table v-model:search="search" :items="filteredItemsForTab1">
 
                             <!-- ID Requested Column -->
@@ -77,7 +77,7 @@
 
                         </v-window-item>
 
-                        <v-window-item value="2">
+                        <v-window-item value="1">
                             <v-data-table v-model:search="search" :items="filteredItemsForTab2">
 
                             <!-- ID Requested Column -->
@@ -119,7 +119,7 @@
                             </v-data-table>
                         </v-window-item>
 
-                        <v-window-item value="3">
+                        <v-window-item value="2">
                             <v-data-table v-model:search="search" :items="filteredItemsForTab3">
 
                             <!-- ID Requested Column -->
