@@ -3,6 +3,7 @@ import FullCalendar from '@fullcalendar/vue3';
 import interactionPlugin from '@fullcalendar/interaction';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
+import { useMainStore } from '@/store.js';
 
 export default {
   components: {
@@ -14,9 +15,8 @@ export default {
         'WFH - AM': '#F48BA9',
         'WFH - PM': '#FFB6C1',
         'WFH - Full': '#BA55D3',
-        Office: '#86CBED'
+        Office: '#86CBED',
       },
-      selectedTeam: 'Engineering', // Assumes the user is from the Engineering department
       showDialog: false,
       clickedDateString: null,
       clickedEventDetails: null,
@@ -39,6 +39,17 @@ export default {
       },
     };
   },
+  computed: {
+    user_store() {
+      return useMainStore();
+    },
+    selectedTeam() {
+      return this.user_store.user.department || null;
+    },
+    staff_id() {
+      return this.user_store.user.staff_id || null;
+    }
+  },
   methods: {
     handleEventClick(arg) {
       const d = new Date(arg.event.start);
@@ -48,21 +59,21 @@ export default {
       this.clickedDateString = `${year}-${month}-${day}`;
       this.clickedEventDetails = arg.event.extendedProps;
 
-      const hasPeople = 
-        this.clickedEventDetails.amCount > 0 || 
-        this.clickedEventDetails.pmCount > 0 || 
-        this.clickedEventDetails.fullCount > 0 || 
+      const hasPeople =
+        this.clickedEventDetails.amCount > 0 ||
+        this.clickedEventDetails.pmCount > 0 ||
+        this.clickedEventDetails.fullCount > 0 ||
         this.clickedEventDetails.inOfficeCount > 0;
 
       this.showDialog = hasPeople;
     },
-    async fetchAndDisplayData(staff_id) {
+    async fetchAndDisplayData() {
       try {
         const employeeResponse = await fetch('http://127.0.0.1:5000/employee/get_all_employees_by_dept');
         if (!employeeResponse.ok) throw new Error('Failed to fetch employee details');
         const employeeData = await employeeResponse.json();
 
-        const scheduleResponse = await fetch(`http://127.0.0.1:5100/s_get_team_schedule/${staff_id}`);
+        const scheduleResponse = await fetch(`http://127.0.0.1:5100/s_get_team_schedule/${this.staff_id}`);
         if (!scheduleResponse.ok) throw new Error('Failed to fetch schedule');
         const scheduleData = await scheduleResponse.json();
 
@@ -134,7 +145,6 @@ export default {
 
       this.calendarOptions.events = formattedEvents;
     },
-    // Methods to filter staff names based on the search term
     filterStaffNames(staffList) {
       return staffList.filter(name =>
         name.toLowerCase().includes(this.searchTerm.toLowerCase())
@@ -143,16 +153,25 @@ export default {
   },
   watch: {
     searchTerm() {
-      // Trigger reactivity for the filtered lists by watching searchTerm
       this.filteredAMStaffNames = this.filterStaffNames(this.clickedEventDetails?.staffNames || []);
       this.filteredPMStaffNames = this.filterStaffNames(this.clickedEventDetails?.pmStaffNames || []);
       this.filteredFullStaffNames = this.filterStaffNames(this.clickedEventDetails?.fullStaffNames || []);
       this.filteredInOfficeStaffNames = this.filterStaffNames(this.clickedEventDetails?.inOfficeStaffNames || []);
+    },
+    showDialog(value){
+        if (!value){
+            this.searchTerm = ''; // Clear the search bar 
+        }
+    }, 
+    user_store: {
+      handler() {
+        this.fetchAndDisplayData(); // Refetch data if user data changes
+      },
+      deep: true
     }
   },
   mounted() {
-    const staff_id = 150488; // Assume Jacob Tan Staff_Id
-    this.fetchAndDisplayData(staff_id);
+    this.fetchAndDisplayData();
   }
 };
 </script>
@@ -165,7 +184,6 @@ export default {
         <v-card>
           <v-card-title>Staff</v-card-title>
           <v-card-text>
-            <!-- Search box to search for staff names -->
             <div class="search-container">
               <v-text-field
                 v-model="searchTerm"
