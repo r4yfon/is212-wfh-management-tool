@@ -1,39 +1,23 @@
-<script setup>
-const departmentColors = {
-  CEO: '#FFB3BA',
-  Consultancy: '#FFDFBA',
-  Engineering: '#FFFFBA',
-  Finance: '#BAFFC9',
-  IT: '#BAE1FF',
-  HR: '#D7BAFF',
-  Sales: '#FFB3E6',
-  Solutioning: '#A3E4D7'
-}
-</script>
-
 <template>
   <div class="container-fluid d-flex mt-4">
-    <aside class="p-3 d-none d-lg-block bg-primary-subtle me-4 rounded w-auto" v-if="showSidebar">
+    <aside class="p-3 d-none d-lg-block bg-primary-subtle me-4 rounded w-auto">
       <!-- Sidebar content goes here -->
       <DatePicker v-model="selectedDate" inline class="mb-4" :minDate="datePicker.start" :maxDate="datePicker.end" />
       <v-checkbox v-for="department in departments" :key="department" :value="department" :label="department"
-        :color="departmentColors[department]" v-model="selectedDepartments" hide-details></v-checkbox>
+        :color="this.departmentColors[department]" v-model="selectedDepartments" hide-details></v-checkbox>
     </aside>
     <section class="flex-grow-1">
-      <button @click="toggleSidebar" class="btn btn-outline-primary">Toggle Sidebar</button>
-      <FullCalendar ref="fullCalendar" :options="calendarOptions">
-        <template v-slot:eventContent="event">
-          {{ event.event.title }} <br />
-          Attendance rate in office: <span
-            :class="event.event.extendedProps.officeAttendanceRate > 50 ? 'text-success-emphasis' : 'text-danger'">
-            {{ Math.floor(event.event.extendedProps.officeAttendanceRate) }}%</span>
-        </template>
-      </FullCalendar>
-      <v-dialog v-model="showDialog" max-width="75%">
+      <!-- <button @click="toggleSidebar" class="btn btn-outline-primary">Toggle Sidebar</button> -->
+      <FullCalendar ref="fullCalendar" :options="calendarOptions" />
+      <v-dialog v-model="showDialog" max-width="60%">
         <v-card>
-          <v-card-title>{{ clickedDateString }}</v-card-title>
+          <v-card-title>{{ clickedDateString }}: {{ clickedEventDepartment }}</v-card-title>
           <v-card-text>
-            {{ clickedEventDepartment }}
+            <ag-grid-vue :rowData="Object.values(employeesByDepartment[clickedEventDepartment])"
+              :defaultColDef="agGridOptions.defaultColDef" :columnDefs="agGridOptions.columnHeaders"
+              style="height: 800px" class="ag-theme-quartz"
+              :autoSizeStrategy="agGridOptions.autoSizeStrategy"></ag-grid-vue>
+
           </v-card-text>
         </v-card>
       </v-dialog>
@@ -48,21 +32,13 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import { url_paths } from '@/url_paths.js';
 import DatePicker from 'primevue/datepicker';
-
-const departmentColors = {
-  CEO: '#FFB3BA',
-  Consultancy: '#FFDFBA',
-  Engineering: '#FFFFBA',
-  Finance: '#BAFFC9',
-  IT: '#BAE1FF',
-  HR: '#D7BAFF',
-  Sales: '#FFB3E6',
-  Solutioning: '#A3E4D7'
-}
+import "ag-grid-community/styles/ag-grid.css"; // Mandatory CSS required by the Data Grid
+import "ag-grid-community/styles/ag-theme-quartz.css"; // Optional Theme applied to the Data Grid
+import { AgGridVue } from "ag-grid-vue3"; // Vue Data Grid Component
 
 export default {
   components: {
-    FullCalendar, DatePicker
+    FullCalendar, DatePicker, AgGridVue
   },
   data() {
     return {
@@ -73,21 +49,30 @@ export default {
           start: new Date(new Date().getFullYear(), new Date().getMonth() - 2, new Date().getDate()).toISOString().split('T')[0],
           end: new Date(new Date().getFullYear(), new Date().getMonth() + 3, new Date().getDate()).toISOString().split('T')[0],
         },
+        eventContent: this.renderEventContent,
         height: 'auto',
         headerToolbar: {
           left: 'prev,next today',
           center: 'title',
-          right: 'dayGridWeek,dayGridDay', // Options for week and day views
+          right: 'dayGridWeek,dayGridDay',
         },
         eventTimeFormat: {
           hour: 'numeric',
           meridiem: true,
         },
-        // displayEventEnd: true,
-        // eventDidMount: this.eventDidMount,
         events: [],
-        // dateClick: this.handleDateClick,
         eventClick: this.handleEventClick,
+      },
+
+      departmentColors: {
+        CEO: '#FFB3BA',
+        Consultancy: '#FFDFBA',
+        Engineering: '#FFFFBA',
+        Finance: '#BAFFC9',
+        IT: '#BAE1FF',
+        HR: '#D7BAFF',
+        Sales: '#FFB3E6',
+        Solutioning: '#A3E4D7'
       },
 
       datePicker: {
@@ -95,14 +80,35 @@ export default {
         end: new Date(new Date().getFullYear(), new Date().getMonth() + 3, new Date().getDate()),
       },
 
+      agGridOptions: {
+        columnHeaders: [
+          { headerName: "Staff Name", field: "staff_name" },
+          { headerName: "Staff ID", field: "staff_id" },
+          { headerName: "Role", field: "role" },
+          {
+            headerName: "WFH Status", valueGetter: this.scheduleValueGetter, filter: true, cellStyle: params => {
+              return params.value === 'In Office' ? { color: 'green' } : { color: 'red' };
+            }
+          }
+        ],
+        autoSizeStrategy: {
+          type: "fitGridWidth",
+          defaultMinWidth: 100,
+        },
+        defaultColDef: {
+          resizable: false,
+        }
+      },
+
       selectedDate: new Date(),
       showDialog: false,
-      showSidebar: true,
+      // showSidebar: true,
       departments: [],
+      employeesByDepartment: {},
       selectedDepartments: [],
-      events: {},
+      formattedEvents: {},
+      orgSchedule: {},
       scheduledData: {},
-      currentDate: new Date(),
       clickedDateString: null,
       clickedEventDepartment: null,
     };
@@ -110,18 +116,15 @@ export default {
 
   mounted() {
     this.get_org_schedule();
+    this.getEmployeeDetails();
   },
+
   watch: {
     selectedDepartments: {
       handler(newDepartments) {
-        // Clear current events
         this.calendarOptions.events = [];
-
-        // Populate events based on selected departments
         newDepartments.forEach(department => {
-          // if (this.events[department]) {
-          this.calendarOptions.events.push(...this.events[department]);
-          // }
+          this.calendarOptions.events.push(...this.formattedEvents[department]);
         });
       },
       deep: true,
@@ -129,17 +132,26 @@ export default {
 
     selectedDate: {
       handler(value) {
-        this.$nextTick(() => {
-          this.$refs.fullCalendar.getApi().gotoDate(value);
-        });
+        this.$refs.fullCalendar.getApi().gotoDate(value);
       },
-    },
+    }
   },
 
   methods: {
     displayDepartments(orgSchedule) {
       this.departments = Object.keys(orgSchedule);
       this.selectedDepartments = [...this.departments];
+    },
+
+    renderEventContent(arg) {
+      const rate = Math.floor(arg.event.extendedProps.officeAttendanceRate);
+      const rateClass = rate > 50 ? 'text-success-emphasis' : 'text-danger';
+      return {
+        html: `
+          ${arg.event.title}<br />
+          Attendance rate in office: <span class="${rateClass}">${rate}%</span>
+        `
+      }
     },
 
     get_org_schedule() {
@@ -163,6 +175,7 @@ export default {
           //   ...
           // }
 
+          this.orgSchedule = data;
           this.displayDepartments(data);
 
           let formatted_events = [];
@@ -171,7 +184,7 @@ export default {
               const departmentStrength = data[department]["num_employee"];
               if (date !== "num_employee") {
                 const manpowerInOffice = departmentStrength - data[department][date]["AM"].length - data[department][date]["PM"].length - data[department][date]["Full"].length;
-                const officeAttendanceRate = manpowerInOffice / departmentStrength * 100;
+                const officeAttendanceRate = Math.floor(manpowerInOffice / departmentStrength * 100);
                 const event = {
                   title: `${department}: ${manpowerInOffice} / ${departmentStrength} in office`,
                   start: date,
@@ -179,32 +192,34 @@ export default {
                   manpowerInOffice: manpowerInOffice,
                   departmentStrength: departmentStrength,
                   officeAttendanceRate: officeAttendanceRate,
-                  color: departmentColors[department],
+                  color: this.departmentColors[department],
                   textColor: "#000000",
                 };
                 formatted_events.push(event);
               }
             }
-            this.events[department] = formatted_events;
+            this.formattedEvents[department] = formatted_events;
             formatted_events = [];
           }
-          this.calendarOptions.events = formatted_events;
         })
     },
 
-    toggleSidebar() {
-      this.showSidebar = !this.showSidebar;
+    getEmployeeDetails() {
+      fetch(`${url_paths.employee}/get_all_employees_by_dept`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          return response.json();
+        })
+        .then(data => {
+          this.employeesByDepartment = data.data;
+        })
     },
 
-    // handleDateClick(arg) {
-    //   this.clickedDateString = arg.dateStr;
-    //   this.showDialog = true;
-    //   console.log(this.clickedDateString);
+    // toggleSidebar() {
+    //   this.showSidebar = !this.showSidebar;
     // },
-
-    modifySelectedDepartments() {
-      this.selectedDepartments = this.selectedDepartments.filter(department => this.departments.includes(department));
-    },
 
     handleEventClick(arg) {
       const d = new Date(arg.event.start);
@@ -214,6 +229,23 @@ export default {
       this.clickedDateString = `${year}-${month}-${day}`;
       this.showDialog = true;
       this.clickedEventDepartment = arg.event.extendedProps.department;
+    },
+
+    scheduleValueGetter(params) {
+      const staff_id = params.data.staff_id;
+      console.log(this.orgSchedule[this.clickedEventDepartment][this.clickedDateString]);
+
+      const isInArray = (array, id) => array.some(item => item.staff_id === id);
+
+      if (isInArray(this.orgSchedule[this.clickedEventDepartment][this.clickedDateString].AM, staff_id)) {
+        return 'WFH - AM';
+      } else if (isInArray(this.orgSchedule[this.clickedEventDepartment][this.clickedDateString].PM, staff_id)) {
+        return 'WFH - PM';
+      } else if (isInArray(this.orgSchedule[this.clickedEventDepartment][this.clickedDateString].Full, staff_id)) {
+        return 'WFH - Full';
+      } else {
+        return 'In Office';
+      }
     }
   }
 }
@@ -226,13 +258,22 @@ export default {
 
 .fc-event-main {
   padding: 0.25rem;
+  margin: 1px;
+  cursor: pointer;
+
+  &:hover {
+    border: 1px solid rgba(0, 0, 0, 0.4);
+    border-radius: 3px;
+    margin: 0;
+  }
+}
+
+.fc-icon {
+  display: flex;
+}
+
+.fc-col-header-cell-cushion {
+  text-decoration: none;
+  color: black;
 }
 </style>
-
-formatDate(date) {
-const d = new Date(date);
-const year = d.getFullYear();
-const month = String(d.getMonth() + 1).padStart(2, '0'); // Months are zero-based
-const day = String(d.getDate()).padStart(2, '0');
-return `${year}-${month}-${day}`;
-}
