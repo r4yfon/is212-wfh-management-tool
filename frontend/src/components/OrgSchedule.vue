@@ -82,9 +82,9 @@ export default {
 
       agGridOptions: {
         columnHeaders: [
-          { headerName: "Staff Name", field: "staff_name" },
-          { headerName: "Staff ID", field: "staff_id" },
-          { headerName: "Role", field: "role" },
+          { headerName: "Staff Name", field: "staff_name", filter: true },
+          { headerName: "Staff ID", field: "staff_id", filter: true },
+          { headerName: "Role", field: "role", filter: true },
           {
             headerName: "WFH Status", valueGetter: this.scheduleValueGetter, filter: true, cellStyle: params => {
               return params.value === 'In Office' ? { color: 'green' } : { color: 'red' };
