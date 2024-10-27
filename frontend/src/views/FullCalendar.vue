@@ -18,8 +18,8 @@ fetch(`http://localhost:5002/request_dates/auto_reject`, {
 </script>
 
 <template>
-  <div class="container">
-    <FullCalendar :options="calendarOptions" class="calendar" />
+  <div class="container-fluid">
+    <FullCalendar :options="calendarOptions" class="mt-4" />
   </div>
 </template>
 
@@ -106,13 +106,6 @@ export default {
   },
   mounted() {
     const userStore = useMainStore();
-    const nextButton = document.querySelector(".fc-next-button");
-    nextButton.addEventListener("click", this.handleNextClick);
-    const prevButton = document.querySelector(".fc-prev-button");
-    prevButton.addEventListener("click", this.handlePrevClick);
-    const todayButton = document.querySelector(".fc-today-button");
-    todayButton.addEventListener("click", this.handleTodayClick);
-
     this.currentDate = new Date();
     this.getWeeklySchedule(userStore.user);
   },
@@ -124,8 +117,6 @@ export default {
   watch: {
     "user_store.user": {
       handler(newUser) {
-        console.log('change detected')
-        console.log('newuser', newUser);
         this.events = [];
         this.scheduledData = {};
         this.getWeeklySchedule(newUser);

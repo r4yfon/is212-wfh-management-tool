@@ -2,7 +2,7 @@
     <div class="container mt-2">
         <v-card flat>
             <v-card-title class="d-flex align-center pe-2">
-                Requests List
+                My Requests
                 <v-spacer></v-spacer>
                 <v-text-field v-model="search" density="compact" label="Search" prepend-inner-icon="mdi-magnify"
                     variant="solo-filled" flat hide-details single-line></v-text-field>
