@@ -324,8 +324,6 @@ export default {
       this.showDialog = true;
       this.clickedEventDepartment = arg.event.extendedProps.department;
     },
-
-
   }
 }
 </script>
