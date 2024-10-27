@@ -32,7 +32,7 @@ const userStore = useMainStore();
           </RouterLink>
 
           <!-- manager view staff requests -->
-          <RouterLink v-if="userStore.user.role !== 1" to="/viewstaffrequests"
+          <RouterLink v-if="userStore.user.role === 3" to="/viewstaffrequests"
             class="btn d-none d-md-block align-content-center">
             View Staff Requests
           </RouterLink>
