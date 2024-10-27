@@ -48,6 +48,9 @@ export default {
     },
     staff_id() {
       return this.user_store.user.staff_id || null;
+    }, 
+    filteredStaffList(){
+        return this.filterStaffDetails(this.clickedEventDetails.staffDetails || []);
     }
   },
   methods: {
@@ -91,17 +94,23 @@ export default {
           const departmentStrength = teamSchedule[team].num_employee;
           const AMCount = teamSchedule[team][date].AM.length;
           const PMCount = teamSchedule[team][date].PM.length;
+          console.log(teamSchedule[team][date].PM);
           const FullCount = teamSchedule[team][date].Full.length;
           const inOfficeCount = departmentStrength - AMCount - PMCount - FullCount;
 
-          const inOfficeStaffNames = Object.values(employeesByDept[team] || {})
-            .map(staff => staff.staff_name)
-            .filter(staffName =>
-              !teamSchedule[team][date].AM.some(s => s.name === staffName) &&
-              !teamSchedule[team][date].PM.some(s => s.name === staffName) &&
-              !teamSchedule[team][date].Full.some(s => s.name === staffName)
+          const inOfficeStaffDetails= Object.values(employeesByDept[team] || {})
+            .map(staff => ({
+                name: staff.staff_name, 
+                staff_id: staff.staff_id, 
+                role: staff.role
+            }))
+            .filter(staff =>
+              !teamSchedule[team][date].AM.some(s => s.staff_id === staff.staff_id) &&
+              !teamSchedule[team][date].PM.some(s => s.staff_id === staff.staff_id) &&
+              !teamSchedule[team][date].Full.some(s => s.staff_id === staff.staff_id)
             );
 
+         
           formattedEvents.push(
             {
               title: `WFH - AM: ${AMCount} people`,
@@ -109,7 +118,7 @@ export default {
               color: this.workColors['WFH - AM'],
               extendedProps: {
                 amCount: AMCount,
-                staffNames: teamSchedule[team][date].AM.map(staff => staff.name),
+                staffDetails: teamSchedule[team][date].AM,
               },
             },
             {
@@ -118,7 +127,7 @@ export default {
               color: this.workColors['WFH - PM'],
               extendedProps: {
                 pmCount: PMCount,
-                pmStaffNames: teamSchedule[team][date].PM.map(staff => staff.name),
+                staffDetails: teamSchedule[team][date].PM,
               },
             },
             {
@@ -127,7 +136,7 @@ export default {
               color: this.workColors['WFH - Full'],
               extendedProps: {
                 fullCount: FullCount,
-                fullStaffNames: teamSchedule[team][date].Full.map(staff => staff.name),
+                staffDetails: teamSchedule[team][date].Full,
               },
             },
             {
@@ -136,7 +145,7 @@ export default {
               color: this.workColors.Office,
               extendedProps: {
                 inOfficeCount,
-                inOfficeStaffNames: inOfficeStaffNames,
+                staffDetails: inOfficeStaffDetails,
               },
             }
           );
@@ -144,20 +153,26 @@ export default {
       }
 
       this.calendarOptions.events = formattedEvents;
+      console.log(this.calendarOptions.events)
     },
-    filterStaffNames(staffList) {
-      return staffList.filter(name =>
-        name.toLowerCase().includes(this.searchTerm.toLowerCase())
+   
+
+
+    filterStaffDetails(staffList) {
+      return staffList.filter(staff =>
+        staff.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+        staff.staff_id.toString().includes(this.searchTerm) ||
+        staff.role.toLowerCase().includes(this.searchTerm.toLowerCase())
       );
     },
   },
   watch: {
-    searchTerm() {
-      this.filteredAMStaffNames = this.filterStaffNames(this.clickedEventDetails?.staffNames || []);
-      this.filteredPMStaffNames = this.filterStaffNames(this.clickedEventDetails?.pmStaffNames || []);
-      this.filteredFullStaffNames = this.filterStaffNames(this.clickedEventDetails?.fullStaffNames || []);
-      this.filteredInOfficeStaffNames = this.filterStaffNames(this.clickedEventDetails?.inOfficeStaffNames || []);
-    },
+    // searchTerm() {
+    //   this.filteredAMStaffNames = this.filterStaffNames(this.clickedEventDetails?.staffNames || []);
+    //   this.filteredPMStaffNames = this.filterStaffNames(this.clickedEventDetails?.pmStaffNames || []);
+    //   this.filteredFullStaffNames = this.filterStaffNames(this.clickedEventDetails?.fullStaffNames || []);
+    //   this.filteredInOfficeStaffNames = this.filterStaffNames(this.clickedEventDetails?.inOfficeStaffNames || []);
+    // },
     showDialog(value){
         if (!value){
             this.searchTerm = ''; // Clear the search bar 
@@ -187,33 +202,29 @@ export default {
             <div class="search-container">
               <v-text-field
                 v-model="searchTerm"
-                label="Search Staff Names"
+                label="Search"
                 outlined
                 dense
                 hide-details
               ></v-text-field>
             </div>
-            <div class="names-list">
-              <div v-if="clickedEventDetails.amCount">
-                <ul>
-                  <li v-for="(name, index) in filterStaffNames(clickedEventDetails.staffNames || [])" :key="index">{{ name }}</li>
-                </ul>
-              </div>
-              <div v-if="clickedEventDetails.pmCount">
-                <ul>
-                  <li v-for="(name, index) in filterStaffNames(clickedEventDetails.pmStaffNames || [])" :key="index">{{ name }}</li>
-                </ul>
-              </div>
-              <div v-if="clickedEventDetails.fullCount">
-                <ul>
-                  <li v-for="(name, index) in filterStaffNames(clickedEventDetails.fullStaffNames || [])" :key="index">{{ name }}</li>
-                </ul>
-              </div>
-              <div v-if="clickedEventDetails.inOfficeCount">
-                <ul>
-                  <li v-for="(name, index) in filterStaffNames(clickedEventDetails.inOfficeStaffNames || [])" :key="index">{{ name }}</li>
-                </ul>
-              </div>
+            <div class="staff-table-container">
+                <v-table class="staff-table">
+                    <thead>
+                        <tr>
+                            <th>Staff Name</th>
+                            <th>Staff ID</th>
+                            <th>Role</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(staff, index) in filteredStaffList" :key="index">
+                            <td>{{ staff.name }}</td>
+                            <td>{{ staff.staff_id }}</td>
+                            <td>{{ staff.role}}</td>
+                        </tr>
+                    </tbody>
+                </v-table>
             </div>
           </v-card-text>
         </v-card>
@@ -239,9 +250,25 @@ export default {
   padding-bottom: 10px;
 }
 
-.names-list {
-  max-height: 200px;
-  overflow-y: auto;
-  padding-top: 10px;
+.staff-table-container {
+  max-height: 300px; 
+  overflow-y: auto; 
+  border-bottom: 2px solid #ddd;
+}
+
+.staff-table thead th {
+  position: sticky;
+  top: 0;
+  background-color: #f9f9f9; 
+  z-index: 2; /* Ensure it's above the content */
+  border-bottom: 2px solid #ddd;
+  padding: 10px;
+  text-align: left;
+}
+
+.staff-table tbody td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
 }
 </style>
