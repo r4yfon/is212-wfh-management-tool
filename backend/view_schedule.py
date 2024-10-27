@@ -328,8 +328,6 @@ def m_get_team_schedule(staff_id):
                 if dept not in dept_dict:
                     dept_dict[dept] = {}
 
-
-
                 # Add employee information to the correct shift if the request is approved
                 if request_status == "Approved" or request_status == "Pending Approval":
                     staff_schedule = {
@@ -376,26 +374,31 @@ def s_get_team_schedule(staff_id):
         # Query to count staff by department
         num_employee = db.session.query(
             Employee.dept,
+            Employee.position,
+            Employee.role,
             func.count(Employee.staff_id).label('staff_count')
-        ).group_by(Employee.dept).all()
+        ).filter(
+            Employee.dept == employee_dept,
+            Employee.position == employee_position,
+            Employee.role == employee_role
+        ).group_by(Employee.dept, Employee.position, Employee.role).all()
 
 
         # Create a dictionary to store department data
         dept_dict = {}
 
         # Iterate over the results and populate the department dictionary
-        for dept, staff_count in num_employee:
-            if dept == employee_dept:
-                dept_dict[dept] = {
-                    "num_employee": staff_count
+        for dept, position, role, staff_count in num_employee:
+            dept_dict[dept] = {
+                "num_employee": staff_count
+            }
+            # Initialize all dates for the department
+            for date in all_dates:
+                dept_dict[dept][date] = {
+                    "AM": [],
+                    "PM": [],
+                    "Full": []
                 }
-                # Initialize all dates for the department
-                for date in all_dates:
-                    dept_dict[dept][date] = {
-                        "AM": [],
-                        "PM": [],
-                        "Full": []
-                    }
 
 
         # Perform a union join query to get all relevant data
