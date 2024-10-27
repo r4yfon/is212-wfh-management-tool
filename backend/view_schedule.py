@@ -430,7 +430,7 @@ def s_get_team_schedule(staff_id):
                 staff_schedule = {
                     "staff_id": staff_id,
                     "name": f"{staff_fname} {staff_lname}",
-                    "position": position,
+                    "role": position,
                     "reporting_manager": reporting_manager,
                     "request_status": request_status
                 }
