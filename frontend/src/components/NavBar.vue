@@ -20,26 +20,41 @@ const userStore = useMainStore();
 
         <!-- buttons for desktop -->
         <div class="d-none d-lg-flex ms-md-3">
-          <RouterLink to="/weeklycalendar" class="btn d-none d-md-block align-content-center">View
-            Schedule</RouterLink>
+
+          <!-- staff view their own schedule -->
+          <RouterLink to="/weeklycalendar" class="btn d-none d-md-block align-content-center">
+            View Schedule
+          </RouterLink>
+
+          <!-- staff view their requests -->
           <RouterLink to="/requestslist" class="btn d-none d-md-block align-content-center">
-            My Requests</RouterLink>
-          <RouterLink v-if="userStore.user.role != 2" to="/viewstaffrequests"
+            My Requests
+          </RouterLink>
+
+          <!-- manager view staff requests -->
+          <RouterLink v-if="userStore.user.role !== 1" to="/viewstaffrequests"
             class="btn d-none d-md-block align-content-center">
             View Staff Requests
           </RouterLink>
-          <RouterLink to="/staffweeklyschedule" class="btn d-none d-md-block align-content-center">
-            View Team Schedule</RouterLink>
-          <RouterLink v-if="userStore.user.role != 2" to="/org_schedule"
+
+          <!-- staff view team schedule -->
+          <RouterLink to="/staffweeklyschedule" v-if="userStore.user.role === 2"
             class="btn d-none d-md-block align-content-center">
-            Organisation Schedule
+            View Team Schedule
           </RouterLink>
+
+          <!-- managerViewTeamSchedule and HRViewOrganisationSchedule -->
+          <RouterLink class="btn d-none d-md-block align-content-center" v-if="userStore.user.role !== 2"
+            :to="`/team_schedule/${employeeRole[userStore.user.role]}`">
+            {{ userStore.user.role === 1 ? 'Organisation' : 'Manager' }} Schedule
+          </RouterLink>
+
           <v-btn @click="dialog = true" variant="outlined" text="Apply to WFH" class="btn"></v-btn>
         </div>
 
         <v-dialog v-model="dialog" max-width="500px">
           <v-card>
-            <v-card-title>Apply to WFH</v-card-title>
+            <v-card-title>Apply for WFH</v-card-title>
             <v-card-text>
               <v-form>
                 <!-- Event Title -->
@@ -137,6 +152,11 @@ export default {
         endDate: "",
         shift: "",
         reason: "",
+      },
+      employeeRole: {
+        1: "director",
+        2: "staff",
+        3: "manager",
       }
     }
   },

@@ -48,9 +48,9 @@ export default {
     },
     staff_id() {
       return this.user_store.user.staff_id || null;
-    }, 
-    filteredStaffList(){
-        return this.filterStaffDetails(this.clickedEventDetails.staffDetails || []);
+    },
+    filteredStaffList() {
+      return this.filterStaffDetails(this.clickedEventDetails.staffDetails || []);
     }
   },
   methods: {
@@ -98,11 +98,11 @@ export default {
           const FullCount = teamSchedule[team][date].Full.length;
           const inOfficeCount = departmentStrength - AMCount - PMCount - FullCount;
 
-          const inOfficeStaffDetails= Object.values(employeesByDept[team] || {})
+          const inOfficeStaffDetails = Object.values(employeesByDept[team] || {})
             .map(staff => ({
-                name: staff.staff_name, 
-                staff_id: staff.staff_id, 
-                role: staff.role
+              name: staff.staff_name,
+              staff_id: staff.staff_id,
+              role: staff.role
             }))
             .filter(staff =>
               !teamSchedule[team][date].AM.some(s => s.staff_id === staff.staff_id) &&
@@ -110,7 +110,7 @@ export default {
               !teamSchedule[team][date].Full.some(s => s.staff_id === staff.staff_id)
             );
 
-         
+
           formattedEvents.push(
             {
               title: `WFH - AM: ${AMCount} people`,
@@ -155,7 +155,7 @@ export default {
       this.calendarOptions.events = formattedEvents;
       console.log(this.calendarOptions.events)
     },
-   
+
 
 
     filterStaffDetails(staffList) {
@@ -173,11 +173,11 @@ export default {
     //   this.filteredFullStaffNames = this.filterStaffNames(this.clickedEventDetails?.fullStaffNames || []);
     //   this.filteredInOfficeStaffNames = this.filterStaffNames(this.clickedEventDetails?.inOfficeStaffNames || []);
     // },
-    showDialog(value){
-        if (!value){
-            this.searchTerm = ''; // Clear the search bar 
-        }
-    }, 
+    showDialog(value) {
+      if (!value) {
+        this.searchTerm = ''; // Clear the search bar
+      }
+    },
     user_store: {
       handler() {
         this.fetchAndDisplayData(); // Refetch data if user data changes
@@ -206,31 +206,25 @@ export default {
           <v-card-title>Staff</v-card-title>
           <v-card-text>
             <div class="search-container">
-              <v-text-field
-                v-model="searchTerm"
-                label="Search"
-                outlined
-                dense
-                hide-details
-              ></v-text-field>
+              <v-text-field v-model="searchTerm" label="Search" outlined dense hide-details></v-text-field>
             </div>
             <div class="staff-table-container">
-                <v-table class="staff-table">
-                    <thead>
-                        <tr>
-                            <th>Staff Name</th>
-                            <th>Staff ID</th>
-                            <th>Role</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="(staff, index) in filteredStaffList" :key="index">
-                            <td>{{ staff.name }}</td>
-                            <td>{{ staff.staff_id }}</td>
-                            <td>{{ staff.role}}</td>
-                        </tr>
-                    </tbody>
-                </v-table>
+              <v-table class="staff-table">
+                <thead>
+                  <tr>
+                    <th>Staff Name</th>
+                    <th>Staff ID</th>
+                    <th>Role</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(staff, index) in filteredStaffList" :key="index">
+                    <td>{{ staff.name }}</td>
+                    <td>{{ staff.staff_id }}</td>
+                    <td>{{ staff.role }}</td>
+                  </tr>
+                </tbody>
+              </v-table>
             </div>
           </v-card-text>
         </v-card>
@@ -257,16 +251,17 @@ export default {
 }
 
 .staff-table-container {
-  max-height: 300px; 
-  overflow-y: auto; 
+  max-height: 300px;
+  overflow-y: auto;
   border-bottom: 2px solid #ddd;
 }
 
 .staff-table thead th {
   position: sticky;
   top: 0;
-  background-color: #f9f9f9; 
-  z-index: 2; /* Ensure it's above the content */
+  background-color: #f9f9f9;
+  z-index: 2;
+  /* Ensure it's above the content */
   border-bottom: 2px solid #ddd;
   padding: 10px;
   text-align: left;
