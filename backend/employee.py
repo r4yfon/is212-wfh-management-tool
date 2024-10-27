@@ -3,9 +3,10 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 
 app = Flask(__name__)
-app.config.from_object('config.Config')
+app.config.from_object("config.Config")
 db = SQLAlchemy(app)
 CORS(app)
+
 
 class Employee(db.Model):
     __tablename__ = "employee"
@@ -18,10 +19,22 @@ class Employee(db.Model):
     country = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(50), nullable=False)
     reporting_manager = db.Column(
-        db.Integer, db.ForeignKey('employee.staff_id'), nullable=True)
+        db.Integer, db.ForeignKey("employee.staff_id"), nullable=True
+    )
     role = db.Column(db.Integer, nullable=False)
 
-    def __init__(self, staff_id, staff_fname, staff_lname, dept, position, country, email, role, reporting_manager=None):
+    def __init__(
+        self,
+        staff_id,
+        staff_fname,
+        staff_lname,
+        dept,
+        position,
+        country,
+        email,
+        role,
+        reporting_manager=None,
+    ):
         self.staff_id = staff_id
         self.staff_fname = staff_fname
         self.staff_lname = staff_lname
@@ -42,7 +55,7 @@ class Employee(db.Model):
             "country": self.country,
             "email": self.email,
             "reporting_manager": self.reporting_manager,
-            "role": self.role
+            "role": self.role,
         }
 
 
@@ -73,21 +86,12 @@ def get_employee_details(staff_id):
     """
 
     try:
-        employee = db.session.query(Employee).filter_by(
-            staff_id=staff_id).first()
+        employee = db.session.query(Employee).filter_by(staff_id=staff_id).first()
         if employee:
-            return jsonify(
-                {
-                    "code": 200,
-                    "data": employee.json()
-                }
-            )
+            return jsonify({"code": 200, "data": employee.json()})
 
     except Exception as e:
-        return jsonify({
-            "code": 404,
-            "error": "Employee not found. " + str(e)
-        }), 404
+        return jsonify({"code": 404, "error": "Employee not found. " + str(e)}), 404
 
 
 # Retrieve details of employees under an employee/user
@@ -124,24 +128,31 @@ def get_staff_by_manager(staff_id):
         staff_list = Employee.query.filter_by(reporting_manager=staff_id).all()
 
         if not staff_list:
-            return jsonify({
-                "code": 404,
-                "message": f"No staff found reporting to manager with ID {staff_id}."
-            }), 404
+            return (
+                jsonify(
+                    {
+                        "code": 404,
+                        "message": f"No staff found reporting to manager with ID {staff_id}.",
+                    }
+                ),
+                404,
+            )
 
         # Serialize the list of employees
         staff_data = [staff.json() for staff in staff_list]
 
-        return jsonify({
-            "code": 200,
-            "data": staff_data
-        }), 200
+        return jsonify({"code": 200, "data": staff_data}), 200
 
     except Exception as e:
-        return jsonify({
-            "code": 500,
-            "error": "An error occurred while fetching staff data. " + str(e)
-        }), 500
+        return (
+            jsonify(
+                {
+                    "code": 500,
+                    "error": "An error occurred while fetching staff data. " + str(e),
+                }
+            ),
+            500,
+        )
 
 
 # Retrieve all employees
@@ -149,7 +160,7 @@ def get_staff_by_manager(staff_id):
 def get_all_employees():
     """
     Get all staff IDs and their reporting managers.
-    
+
     Success response:
     {
         "code": 200,
@@ -184,21 +195,24 @@ def get_all_employees():
                 "reporting_manager": employee.reporting_manager,
                 "staff_name": employee.staff_fname + " " + employee.staff_lname,
                 "dept": employee.dept,
-                "position": employee.position
+                "position": employee.position,
             }
             for employee in employees
         ]
 
-        return jsonify({
-            "code": 200,
-            "data": reporting_structure
-        }), 200
+        return jsonify({"code": 200, "data": reporting_structure}), 200
 
     except Exception as e:
-        return jsonify({
-            "code": 500,
-            "error": "An error occurred while fetching reporting structure. " + str(e)
-        }), 500
+        return (
+            jsonify(
+                {
+                    "code": 500,
+                    "error": "An error occurred while fetching reporting structure. "
+                    + str(e),
+                }
+            ),
+            500,
+        )
 
 
 # Retrieve employees, grouped by department
@@ -206,7 +220,7 @@ def get_all_employees():
 def get_all_employees_by_dept():
     """
     Get all staff IDs and their details, grouped by department.
-    
+
     Success response:
     {
         "code": 200,
@@ -231,33 +245,36 @@ def get_all_employees_by_dept():
 
         # Prepare the data grouped by department
         reporting_structure = {}
-        
+
         for employee in employees:
             dept = employee.dept
             staff_id = employee.staff_id
-            
+
             # Initialize department if it doesn't exist in the structure
             if dept not in reporting_structure:
                 reporting_structure[dept] = {}
-            
+
             # Add employee data under the specific department and staff_id
             reporting_structure[dept][staff_id] = {
                 "staff_name": employee.staff_fname + " " + employee.staff_lname,
-                "role": employee.position
+                "role": employee.position,
+                "staff_id": employee.staff_id,
             }
 
-        return jsonify({
-            "code": 200,
-            "data": reporting_structure
-        }), 200
+        return jsonify({"code": 200, "data": reporting_structure}), 200
 
     except Exception as e:
-        return jsonify({
-            "code": 500,
-            "error": "An error occurred while fetching reporting structure. " + str(e)
-        }), 500
+        return (
+            jsonify(
+                {
+                    "code": 500,
+                    "error": "An error occurred while fetching reporting structure. "
+                    + str(e),
+                }
+            ),
+            500,
+        )
 
 
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)

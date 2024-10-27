@@ -1,163 +1,230 @@
-<script setup>
+<script>
 import FullCalendar from '@fullcalendar/vue3';
 import interactionPlugin from '@fullcalendar/interaction';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
-import { ref, onMounted } from 'vue';
+import { useMainStore } from '@/store.js';
 
-const workColors = {
-  'WFH - AM': '#F48BA9',  
-  'WFH - PM': '#FFB6C1',  
-  'WFH - Full': '#BA55D3', 
-  Office: '#86CBED'        
-};
-
-const selectedTeam = ref('Engineering'); // Assumes the user is from the Engineering department
-
-// Event click handler
-const handleEventClick = (arg) => {
-  const d = new Date(arg.event.start);
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  clickedDateString.value = `${year}-${month}-${day}`;
-  clickedEventDetails.value = arg.event.extendedProps;
-
-  // Check if there are any staff names to display
-  const hasStaff = 
-    (clickedEventDetails.value.amCount > 0 && clickedEventDetails.value.staffNames.length > 0) ||
-    (clickedEventDetails.value.pmCount > 0 && clickedEventDetails.value.pmStaffNames.length > 0) ||
-    (clickedEventDetails.value.fullCount > 0 && clickedEventDetails.value.fullStaffNames.length > 0) ||
-    (clickedEventDetails.value.inOfficeCount = 0 && clickedEventDetails.value.inOfficeStaffNames.length > 0);
-  
-  if (hasStaff) {
-    showDialog.value = true;
-  }
-};
-
-const calendarOptions = ref({
-  plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
-  initialView: 'dayGridWeek',
-  height: '400px',
-  headerToolbar: {
-    left: 'prev,next today',
-    center: 'title',
-    right: 'dayGridWeek,dayGridDay',
+export default {
+  components: {
+    FullCalendar,
   },
-
-  events: [],
-  eventClick: handleEventClick,
-});
-
-const showDialog = ref(false);
-const clickedDateString = ref(null);
-const clickedEventDetails = ref(null);
-
-// Fetch team schedule
-const getTeamSchedule = async (staff_id) => {
-  try {
-    const response = await fetch(`http://127.0.0.1:5100/s_get_team_schedule/${staff_id}`);
-    if (!response.ok) throw new Error('Failed to fetch schedule');
-
-    const data = await response.json();
-    displayTeamSchedule(data);
-  } catch (error) {
-    console.error(error);
-  }
-};
-
-// Display team schedule on the calendar
-const displayTeamSchedule = (teamSchedule) => {
-  const formattedEvents = [];
-
-  for (const date in teamSchedule[selectedTeam.value]) {
-    if (date !== 'num_employee') {
-      const departmentStrength = teamSchedule[selectedTeam.value].num_employee;
-      const AMCount = teamSchedule[selectedTeam.value][date].AM.length;
-      const PMCount = teamSchedule[selectedTeam.value][date].PM.length;
-      const FullCount = teamSchedule[selectedTeam.value][date].Full.length;
-      const inOfficeCount = departmentStrength - AMCount - PMCount - FullCount;
-
-      // Create blocks for each time period
-      formattedEvents.push(
-        {
-          title: `WFH - AM: ${AMCount} people`,
-          start: date,
-          color: workColors['WFH - AM'],
-          extendedProps: { 
-            amCount: AMCount, 
-            staffNames: teamSchedule[selectedTeam.value][date].AM.map(staff => staff.name),
-          },
+  data() {
+    return {
+      workColors: {
+        'WFH - AM': '#F48BA9',
+        'WFH - PM': '#FFB6C1',
+        'WFH - Full': '#BA55D3',
+        Office: '#86CBED',
+      },
+      showDialog: false,
+      clickedDateString: null,
+      clickedEventDetails: null,
+      searchTerm: '',
+      calendarOptions: {
+        plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
+        initialView: 'dayGridWeek',
+        validRange: {
+          start: new Date(new Date().getFullYear(), new Date().getMonth() - 2, new Date().getDate()).toISOString().split("T")[0],
+          end: new Date(new Date().getFullYear(), new Date().getMonth() + 3, new Date().getDate()).toISOString().split("T")[0],
         },
-        {
-          title: `WFH - PM: ${PMCount} people`,
-          start: date,
-          color: workColors['WFH - PM'],
-          extendedProps: { 
-            pmCount: PMCount,
-            pmStaffNames: teamSchedule[selectedTeam.value][date].PM.map(staff => staff.name),
-          },
+        height: '400px',
+        headerToolbar: {
+          left: 'prev,next today',
+          center: 'title',
+          right: 'dayGridWeek,dayGridDay',
         },
-        {
-          title: `WFH - Full: ${FullCount} people`,
-          start: date,
-          color: workColors['WFH - Full'],
-          extendedProps: { 
-            fullCount: FullCount, 
-            fullStaffNames: teamSchedule[selectedTeam.value][date].Full.map(staff => staff.name),
-          },
-        },
-        {
-          title: `Office: ${inOfficeCount} people`,
-          start: date,
-          color: workColors.Office,
-          extendedProps: { 
-            inOfficeCount, 
-            inOfficeStaffNames: [], 
-            // inOfficeStaffNames: teamSchedule[selectedTeam.value][date].Office.map(staff => staff.name),
-          },
-        }
-      );
+        events: [],
+        eventClick: this.handleEventClick,
+      },
+    };
+  },
+  computed: {
+    user_store() {
+      return useMainStore();
+    },
+    selectedTeam() {
+      return this.user_store.user.department || null;
+    },
+    staff_id() {
+      return this.user_store.user.staff_id || null;
+    }, 
+    filteredStaffList(){
+        return this.filterStaffDetails(this.clickedEventDetails.staffDetails || []);
     }
+  },
+  methods: {
+    handleEventClick(arg) {
+      const d = new Date(arg.event.start);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      this.clickedDateString = `${year}-${month}-${day}`;
+      this.clickedEventDetails = arg.event.extendedProps;
+
+      const hasPeople =
+        this.clickedEventDetails.amCount > 0 ||
+        this.clickedEventDetails.pmCount > 0 ||
+        this.clickedEventDetails.fullCount > 0 ||
+        this.clickedEventDetails.inOfficeCount > 0;
+
+      this.showDialog = hasPeople;
+    },
+    async fetchAndDisplayData() {
+      try {
+        const employeeResponse = await fetch('http://127.0.0.1:5000/employee/get_all_employees_by_dept');
+        if (!employeeResponse.ok) throw new Error('Failed to fetch employee details');
+        const employeeData = await employeeResponse.json();
+
+        const scheduleResponse = await fetch(`http://127.0.0.1:5100/s_get_team_schedule/${this.staff_id}`);
+        if (!scheduleResponse.ok) throw new Error('Failed to fetch schedule');
+        const scheduleData = await scheduleResponse.json();
+
+        this.displayTeamSchedule(scheduleData, employeeData.data);
+      } catch (error) {
+        console.error(error);
+      }
+    },
+    displayTeamSchedule(teamSchedule, employeesByDept) {
+      const formattedEvents = [];
+      const team = this.selectedTeam;
+
+      for (const date in teamSchedule[team]) {
+        if (date !== 'num_employee') {
+          const departmentStrength = teamSchedule[team].num_employee;
+          const AMCount = teamSchedule[team][date].AM.length;
+          const PMCount = teamSchedule[team][date].PM.length;
+          console.log(teamSchedule[team][date].PM);
+          const FullCount = teamSchedule[team][date].Full.length;
+          const inOfficeCount = departmentStrength - AMCount - PMCount - FullCount;
+
+          const inOfficeStaffDetails= Object.values(employeesByDept[team] || {})
+            .map(staff => ({
+                name: staff.staff_name, 
+                staff_id: staff.staff_id, 
+                role: staff.role
+            }))
+            .filter(staff =>
+              !teamSchedule[team][date].AM.some(s => s.staff_id === staff.staff_id) &&
+              !teamSchedule[team][date].PM.some(s => s.staff_id === staff.staff_id) &&
+              !teamSchedule[team][date].Full.some(s => s.staff_id === staff.staff_id)
+            );
+
+         
+          formattedEvents.push(
+            {
+              title: `WFH - AM: ${AMCount} people`,
+              start: date,
+              color: this.workColors['WFH - AM'],
+              extendedProps: {
+                amCount: AMCount,
+                staffDetails: teamSchedule[team][date].AM,
+              },
+            },
+            {
+              title: `WFH - PM: ${PMCount} people`,
+              start: date,
+              color: this.workColors['WFH - PM'],
+              extendedProps: {
+                pmCount: PMCount,
+                staffDetails: teamSchedule[team][date].PM,
+              },
+            },
+            {
+              title: `WFH - Full: ${FullCount} people`,
+              start: date,
+              color: this.workColors['WFH - Full'],
+              extendedProps: {
+                fullCount: FullCount,
+                staffDetails: teamSchedule[team][date].Full,
+              },
+            },
+            {
+              title: `Office: ${inOfficeCount} people`,
+              start: date,
+              color: this.workColors.Office,
+              extendedProps: {
+                inOfficeCount,
+                staffDetails: inOfficeStaffDetails,
+              },
+            }
+          );
+        }
+      }
+
+      this.calendarOptions.events = formattedEvents;
+      console.log(this.calendarOptions.events)
+    },
+   
+
+
+    filterStaffDetails(staffList) {
+      return staffList.filter(staff =>
+        staff.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+        staff.staff_id.toString().includes(this.searchTerm) ||
+        staff.role.toLowerCase().includes(this.searchTerm.toLowerCase())
+      );
+    },
+  },
+  watch: {
+    // searchTerm() {
+    //   this.filteredAMStaffNames = this.filterStaffNames(this.clickedEventDetails?.staffNames || []);
+    //   this.filteredPMStaffNames = this.filterStaffNames(this.clickedEventDetails?.pmStaffNames || []);
+    //   this.filteredFullStaffNames = this.filterStaffNames(this.clickedEventDetails?.fullStaffNames || []);
+    //   this.filteredInOfficeStaffNames = this.filterStaffNames(this.clickedEventDetails?.inOfficeStaffNames || []);
+    // },
+    showDialog(value){
+        if (!value){
+            this.searchTerm = ''; // Clear the search bar 
+        }
+    }, 
+    user_store: {
+      handler() {
+        this.fetchAndDisplayData(); // Refetch data if user data changes
+      },
+      deep: true
+    }
+  },
+  mounted() {
+    this.fetchAndDisplayData();
   }
-
-  calendarOptions.value.events = formattedEvents;
 };
-
-// Fetch data on mount
-onMounted(() => {
-  const staff_id = 150488; // Assume Jacob Tan Staff_Id
-  getTeamSchedule(staff_id);
-});
 </script>
 
 <template>
   <div class="container-fluid d-flex mt-4">
     <section class="flex-grow-1">
       <FullCalendar :options="calendarOptions" />
-      <v-dialog v-model="showDialog" max-width="75%" >
+      <v-dialog v-model="showDialog" max-width="70%">
         <v-card>
           <v-card-title>Staff</v-card-title>
-          <v-card-text class="dialog-content">
-            <div v-if="clickedEventDetails.amCount">
-              <ul>
-                <li v-for="(name, index) in clickedEventDetails.staffNames" :key="index">{{ name }}</li>
-              </ul>
+          <v-card-text>
+            <div class="search-container">
+              <v-text-field
+                v-model="searchTerm"
+                label="Search"
+                outlined
+                dense
+                hide-details
+              ></v-text-field>
             </div>
-            <div v-if="clickedEventDetails.pmCount">
-              <ul>
-                <li v-for="(name, index) in clickedEventDetails.pmStaffNames" :key="index">{{ name }}</li>
-              </ul>
-            </div>
-            <div v-if="clickedEventDetails.fullCount">
-              <ul>
-                <li v-for="(name, index) in clickedEventDetails.fullStaffNames" :key="index">{{ name }}</li>
-              </ul>
-            </div>
-            <div v-if="clickedEventDetails.inOfficeCount">
-              <ul>
-                <li v-for="(name, index) in clickedEventDetails.inOfficeStaffNames" :key="index">{{ name }}</li>
-              </ul>
+            <div class="staff-table-container">
+                <v-table class="staff-table">
+                    <thead>
+                        <tr>
+                            <th>Staff Name</th>
+                            <th>Staff ID</th>
+                            <th>Role</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(staff, index) in filteredStaffList" :key="index">
+                            <td>{{ staff.name }}</td>
+                            <td>{{ staff.staff_id }}</td>
+                            <td>{{ staff.role}}</td>
+                        </tr>
+                    </tbody>
+                </v-table>
             </div>
           </v-card-text>
         </v-card>
@@ -175,8 +242,33 @@ onMounted(() => {
   padding: 0.25rem;
 }
 
-.dialog-content {
-  max-height: 300px;  /* Set maximum height */
-  overflow-y: auto;   /* Enable vertical scrolling */
+.search-container {
+  position: sticky;
+  top: 0;
+  background-color: white;
+  z-index: 1;
+  padding-bottom: 10px;
+}
+
+.staff-table-container {
+  max-height: 300px; 
+  overflow-y: auto; 
+  border-bottom: 2px solid #ddd;
+}
+
+.staff-table thead th {
+  position: sticky;
+  top: 0;
+  background-color: #f9f9f9; 
+  z-index: 2; /* Ensure it's above the content */
+  border-bottom: 2px solid #ddd;
+  padding: 10px;
+  text-align: left;
+}
+
+.staff-table tbody td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
 }
 </style>

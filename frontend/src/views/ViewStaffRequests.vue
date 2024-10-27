@@ -163,7 +163,6 @@ export default {
         // Format the data to the structure needed for the table
         formatData(user) {
             const staff_id = user.staff_id;
-            // TODO: to change this to m_retrieve_requests when DB is properly populated with requests
             fetch(`http://localhost:5101/m_retrieve_requests/${staff_id}`)
                 .then(response => {
                     if (!response.ok) {
