@@ -193,6 +193,12 @@ export default {
 
 <template>
   <div class="container-fluid d-flex mt-4">
+    <aside class="p-3 d-none d-lg-block bg-primary-subtle me-4 rounded w-auto">
+      <!-- Sidebar content goes here -->
+      <DatePicker v-model="selectedDate" inline class="mb-4" :minDate="datePicker.start" :maxDate="datePicker.end" />
+      <v-checkbox v-for="department in departments" :key="department" :value="department" :label="department"
+        :color="this.departmentColors[department]" v-model="selectedDepartments" hide-details></v-checkbox>
+    </aside>
     <section class="flex-grow-1">
       <FullCalendar :options="calendarOptions" />
       <v-dialog v-model="showDialog" max-width="70%">
