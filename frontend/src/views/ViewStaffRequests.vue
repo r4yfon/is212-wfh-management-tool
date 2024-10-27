@@ -1,6 +1,5 @@
 <script setup>
 import { useMainStore } from '@/store.js';
-
 </script>
 
 

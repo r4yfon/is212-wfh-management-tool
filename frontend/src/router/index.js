@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import WeeklyCalendar from "../views/FullCalendar.vue";
-import TeamSchedule from "@/views/TeamSchedule.vue";
+import TeamSchedule from "@/views/OrgTeamSchedule.vue";
 import { useMainStore } from "@/store";
 
 const router = createRouter({

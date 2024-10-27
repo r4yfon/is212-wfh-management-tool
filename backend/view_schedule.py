@@ -148,9 +148,6 @@ def view_weekly_schedule(staff_id, date_entered):
         return jsonify({"error": f"Failed to fetch requests: {str(e)}"}), 500
 
 
-
-
-
 @app.route("/o_get_org_schedule", methods=["GET"])
 def o_get_org_schedule():
     try:
@@ -163,55 +160,65 @@ def o_get_org_schedule():
         end_date = today + timedelta(days=90)
 
         # Generate all dates in the range
-        all_dates = [(start_date + timedelta(days=i)).strftime("%Y-%m-%d") for i in range((end_date - start_date).days + 1)]
-
+        all_dates = [
+            (start_date + timedelta(days=i)).strftime("%Y-%m-%d")
+            for i in range((end_date - start_date).days + 1)
+        ]
 
         # Query to count staff by department
-        num_employee = db.session.query(
-            Employee.dept,
-            func.count(Employee.staff_id).label('staff_count')
-        ).group_by(Employee.dept).all()
+        num_employee = (
+            db.session.query(
+                Employee.dept, func.count(Employee.staff_id).label("staff_count")
+            )
+            .group_by(Employee.dept)
+            .all()
+        )
 
         # Create a dictionary to store department data
         dept_dict = {}
 
         # Iterate over the results and populate the department dictionary
         for dept, staff_count in num_employee:
-            dept_dict[dept] = {
-                "num_employee": staff_count
-            }
+            dept_dict[dept] = {"num_employee": staff_count}
             # Initialize all dates for the department
             for date in all_dates:
-                dept_dict[dept][date] = {
-                    "AM": [],
-                    "PM": [],
-                    "Full": []
-                }
+                dept_dict[dept][date] = {"AM": [], "PM": [], "Full": []}
 
         # Perform a union join query to get all relevant data
-        results = db.session.query(
-            Request.staff_id,
-            Employee.staff_fname,
-            Employee.staff_lname,
-            Employee.dept,
-            Employee.position,
-            Employee.reporting_manager,
-            RequestDates.request_date,
-            RequestDates.request_shift,
-            RequestDates.request_status
-        ).join(Employee, Employee.staff_id == Request.staff_id) \
-        .join(RequestDates, Request.request_id == RequestDates.request_id) \
-        .all()
+        results = (
+            db.session.query(
+                Request.staff_id,
+                Employee.staff_fname,
+                Employee.staff_lname,
+                Employee.dept,
+                Employee.position,
+                Employee.reporting_manager,
+                RequestDates.request_date,
+                RequestDates.request_shift,
+                RequestDates.request_status,
+            )
+            .join(Employee, Employee.staff_id == Request.staff_id)
+            .join(RequestDates, Request.request_id == RequestDates.request_id)
+            .all()
+        )
 
         # Initialize the structure for each department
-        for staff_id, staff_fname, staff_lname, dept, position, reporting_manager, request_date, request_shift, request_status in results:
+        for (
+            staff_id,
+            staff_fname,
+            staff_lname,
+            dept,
+            position,
+            reporting_manager,
+            request_date,
+            request_shift,
+            request_status,
+        ) in results:
             request_date_str = request_date.strftime("%Y-%m-%d")
 
             # Initialize department if not already in dict
             if dept not in dept_dict:
                 dept_dict[dept] = {}
-
-
 
             # Add employee information to the correct shift if the request is approved
             if request_status == "Approved":
@@ -220,7 +227,7 @@ def o_get_org_schedule():
                     "name": f"{staff_fname} {staff_lname}",
                     "position": position,
                     "reporting_manager": reporting_manager,
-                    "request_status": request_status
+                    "request_status": request_status,
                 }
 
                 if request_shift == "AM" and request_date_str in dept_dict[dept]:
@@ -233,8 +240,15 @@ def o_get_org_schedule():
         return jsonify(dept_dict), 200  # Return 200 OK with the schedule
 
     except Exception as e:
-        return jsonify({"message": "An error occurred while retrieving the schedule.", "error": str(e)}), 500
-    
+        return (
+            jsonify(
+                {
+                    "message": "An error occurred while retrieving the schedule.",
+                    "error": str(e),
+                }
+            ),
+            500,
+        )
 
 
 @app.route("/m_get_team_schedule/<int:staff_id>", methods=["GET"])
@@ -242,23 +256,30 @@ def m_get_team_schedule(staff_id):
     try:
         # Get today's date
         today = datetime.today()
-        
+
         # Calculate the range of dates from 2 months before to 3 months after today
         start_date = today - timedelta(days=60)
         end_date = today + timedelta(days=90)
 
         # Generate all dates in the range
-        all_dates = [(start_date + timedelta(days=i)).strftime("%Y-%m-%d") for i in range((end_date - start_date).days + 1)]
+        all_dates = [
+            (start_date + timedelta(days=i)).strftime("%Y-%m-%d")
+            for i in range((end_date - start_date).days + 1)
+        ]
 
-        employee_details = invoke_http(employee_URL + "/get_details/" + str(staff_id), method="GET")
+        employee_details = invoke_http(
+            employee_URL + "/get_details/" + str(staff_id), method="GET"
+        )
         employee_dept = employee_details["data"]["dept"]
 
         # Query to count staff by department
-        num_employee = db.session.query(
-            Employee.dept,
-            func.count(Employee.staff_id).label('staff_count')
-        ).group_by(Employee.dept).all()
-
+        num_employee = (
+            db.session.query(
+                Employee.dept, func.count(Employee.staff_id).label("staff_count")
+            )
+            .group_by(Employee.dept)
+            .all()
+        )
 
         # Create a dictionary to store department data
         dept_dict = {}
@@ -266,17 +287,11 @@ def m_get_team_schedule(staff_id):
         # Iterate over the results and populate the department dictionary
         for dept, staff_count in num_employee:
             if dept == employee_dept:
-                dept_dict[dept] = {
-                    "num_employee": staff_count
-                }
+                dept_dict[dept] = {"num_employee": staff_count}
                 # Initialize all dates for the department
                 for date in all_dates:
-                    dept_dict[dept][date] = {
-                        "AM": [],
-                        "PM": [],
-                        "Full": []
-                    }
-        
+                    dept_dict[dept][date] = {"AM": [], "PM": [], "Full": []}
+
         response = invoke_http(employee_URL + "/get_all_employees", method="GET")
 
         def get_team_members(staff_id, visited=None, staff_details=None):
@@ -298,32 +313,47 @@ def m_get_team_schedule(staff_id):
                         "position": member["position"],
                     }
 
-                    staff_details.update(get_team_members(member["staff_id"], visited, staff_details))
+                    staff_details.update(
+                        get_team_members(member["staff_id"], visited, staff_details)
+                    )
 
             return staff_details
 
         all_team_members = get_team_members(staff_id)
 
         # Perform a union join query to get all relevant data
-        results = db.session.query(
-            Request.staff_id,
-            Employee.staff_fname,
-            Employee.staff_lname,
-            Employee.dept,
-            Employee.position,
-            Employee.reporting_manager,
-            RequestDates.request_date,
-            RequestDates.request_shift,
-            RequestDates.request_status
-        ).join(Employee, Employee.staff_id == Request.staff_id) \
-        .join(RequestDates, Request.request_id == RequestDates.request_id) \
-        .all()
+        results = (
+            db.session.query(
+                Request.staff_id,
+                Employee.staff_fname,
+                Employee.staff_lname,
+                Employee.dept,
+                Employee.position,
+                Employee.reporting_manager,
+                RequestDates.request_date,
+                RequestDates.request_shift,
+                RequestDates.request_status,
+            )
+            .join(Employee, Employee.staff_id == Request.staff_id)
+            .join(RequestDates, Request.request_id == RequestDates.request_id)
+            .all()
+        )
 
         # Initialize the structure for each department
-        for staff_id, staff_fname, staff_lname, dept, position, reporting_manager, request_date, request_shift, request_status in results:
+        for (
+            staff_id,
+            staff_fname,
+            staff_lname,
+            dept,
+            position,
+            reporting_manager,
+            request_date,
+            request_shift,
+            request_status,
+        ) in results:
             if staff_id in all_team_members:
                 request_date_str = request_date.strftime("%Y-%m-%d")
-                
+
                 # Initialize department if not already in dict
                 if dept not in dept_dict:
                     dept_dict[dept] = {}
@@ -335,22 +365,30 @@ def m_get_team_schedule(staff_id):
                         "name": f"{staff_fname} {staff_lname}",
                         "position": position,
                         "reporting_manager": reporting_manager,
-                        "request_status": request_status
+                        "request_status": request_status,
                     }
 
                     if request_shift == "AM" and request_date_str in dept_dict[dept]:
                         dept_dict[dept][request_date_str]["AM"].append(staff_schedule)
                     elif request_shift == "PM" and request_date_str in dept_dict[dept]:
                         dept_dict[dept][request_date_str]["PM"].append(staff_schedule)
-                    elif request_shift == "Full" and request_date_str in dept_dict[dept]:
+                    elif (
+                        request_shift == "Full" and request_date_str in dept_dict[dept]
+                    ):
                         dept_dict[dept][request_date_str]["Full"].append(staff_schedule)
 
         return jsonify(dept_dict), 200  # Return 200 OK with the schedule
 
     except Exception as e:
-        return jsonify({"message": "An error occurred while retrieving the schedule.", "error": str(e)}), 500
-    
-
+        return (
+            jsonify(
+                {
+                    "message": "An error occurred while retrieving the schedule.",
+                    "error": str(e),
+                }
+            ),
+            500,
+        )
 
 
 @app.route("/s_get_team_schedule/<int:staff_id>", methods=["GET"])
@@ -358,72 +396,89 @@ def s_get_team_schedule(staff_id):
     try:
         # Get today's date
         today = datetime.today()
-        
+
         # Calculate the range of dates from 2 months before to 3 months after today
         start_date = today - timedelta(days=60)
         end_date = today + timedelta(days=90)
 
         # Generate all dates in the range
-        all_dates = [(start_date + timedelta(days=i)).strftime("%Y-%m-%d") for i in range((end_date - start_date).days + 1)]
+        all_dates = [
+            (start_date + timedelta(days=i)).strftime("%Y-%m-%d")
+            for i in range((end_date - start_date).days + 1)
+        ]
 
-        employee_details = invoke_http(employee_URL + "/get_details/" + str(staff_id), method="GET")
+        employee_details = invoke_http(
+            employee_URL + "/get_details/" + str(staff_id), method="GET"
+        )
         employee_dept = employee_details["data"]["dept"]
         employee_position = employee_details["data"]["position"]
         employee_role = employee_details["data"]["role"]
 
         # Query to count staff by department
-        num_employee = db.session.query(
-            Employee.dept,
-            Employee.position,
-            Employee.role,
-            func.count(Employee.staff_id).label('staff_count')
-        ).filter(
-            Employee.dept == employee_dept,
-            Employee.position == employee_position,
-            Employee.role == employee_role
-        ).group_by(Employee.dept, Employee.position, Employee.role).all()
-
+        num_employee = (
+            db.session.query(
+                Employee.dept,
+                Employee.position,
+                Employee.role,
+                func.count(Employee.staff_id).label("staff_count"),
+            )
+            .filter(
+                Employee.dept == employee_dept,
+                Employee.position == employee_position,
+                Employee.role == employee_role,
+            )
+            .group_by(Employee.dept, Employee.position, Employee.role)
+            .all()
+        )
 
         # Create a dictionary to store department data
         dept_dict = {}
 
         # Iterate over the results and populate the department dictionary
         for dept, position, role, staff_count in num_employee:
-            dept_dict[dept] = {
-                "num_employee": staff_count
-            }
+            dept_dict[dept] = {"num_employee": staff_count}
             # Initialize all dates for the department
             for date in all_dates:
-                dept_dict[dept][date] = {
-                    "AM": [],
-                    "PM": [],
-                    "Full": []
-                }
-
+                dept_dict[dept][date] = {"AM": [], "PM": [], "Full": []}
 
         # Perform a union join query to get all relevant data
-        results = db.session.query(
-            Request.staff_id,
-            Employee.staff_fname,
-            Employee.staff_lname,
-            Employee.dept,
-            Employee.position,
-            Employee.reporting_manager,
-            RequestDates.request_date,
-            RequestDates.request_shift,
-            RequestDates.request_status
-        ).join(Employee, Employee.staff_id == Request.staff_id) \
-        .join(RequestDates, Request.request_id == RequestDates.request_id) \
-        .filter(RequestDates.request_status.in_(["Pending Approval", "Approved"]),
+        results = (
+            db.session.query(
+                Request.staff_id,
+                Employee.staff_fname,
+                Employee.staff_lname,
+                Employee.dept,
+                Employee.position,
+                Employee.reporting_manager,
+                RequestDates.request_date,
+                RequestDates.request_shift,
+                RequestDates.request_status,
+            )
+            .join(Employee, Employee.staff_id == Request.staff_id)
+            .join(RequestDates, Request.request_id == RequestDates.request_id)
+            .filter(
+                RequestDates.request_status.in_(["Pending Approval", "Approved"]),
                 Employee.position == employee_position,
-                Employee.role == employee_role) \
-        .all()
+                Employee.role == employee_role,
+            )
+            .all()
+        )
 
         # Initialize the structure for each department
-        for staff_id, staff_fname, staff_lname, dept, position, reporting_manager, request_date, request_shift, request_status in results:
+        for (
+            staff_id,
+            staff_fname,
+            staff_lname,
+            dept,
+            position,
+            reporting_manager,
+            request_date,
+            request_shift,
+            request_status,
+        ) in results:
 
             request_date_str = request_date.strftime("%Y-%m-%d")
-            
+
             # Initialize department if not already in dict
             if dept not in dept_dict:
                 dept_dict[dept] = {}
@@ -435,7 +490,7 @@ def s_get_team_schedule(staff_id):
                     "name": f"{staff_fname} {staff_lname}",
                     "role": position,
                     "reporting_manager": reporting_manager,
-                    "request_status": request_status
+                    "request_status": request_status,
                 }
 
                 if request_shift == "AM" and request_date_str in dept_dict[dept]:
@@ -448,8 +503,15 @@ def s_get_team_schedule(staff_id):
         return jsonify(dept_dict), 200  # Return 200 OK with the schedule
 
     except Exception as e:
-        return jsonify({"message": "An error occurred while retrieving the schedule.", "error": str(e)}), 500
-
+        return (
+            jsonify(
+                {
+                    "message": "An error occurred while retrieving the schedule.",
+                    "error": str(e),
+                }
+            ),
+            500,
+        )
 
 
 if __name__ == "__main__":
