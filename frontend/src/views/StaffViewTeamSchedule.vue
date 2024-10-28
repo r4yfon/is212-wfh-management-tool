@@ -4,10 +4,11 @@ import interactionPlugin from '@fullcalendar/interaction';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import { useMainStore } from '@/store.js';
+import DatePicker from 'primevue/datepicker';
 
 export default {
   components: {
-    FullCalendar,
+    FullCalendar, DatePicker
   },
   data() {
     return {
@@ -36,6 +37,11 @@ export default {
         },
         events: [],
         eventClick: this.handleEventClick,
+      },
+      selectedDate: null,
+      datePicker: {
+        start: new Date(new Date().getFullYear(), new Date().getMonth() - 2, new Date().getDate()),
+        end: new Date(new Date().getFullYear(), new Date().getMonth() + 3, new Date().getDate()),
       },
     };
   },
@@ -94,7 +100,7 @@ export default {
           const departmentStrength = teamSchedule[team].num_employee;
           const AMCount = teamSchedule[team][date].AM.length;
           const PMCount = teamSchedule[team][date].PM.length;
-          console.log(teamSchedule[team][date].PM);
+          // console.log(teamSchedule[team][date].PM);
           const FullCount = teamSchedule[team][date].Full.length;
           const inOfficeCount = departmentStrength - AMCount - PMCount - FullCount;
 
@@ -153,7 +159,7 @@ export default {
       }
 
       this.calendarOptions.events = formattedEvents;
-      console.log(this.calendarOptions.events)
+      // console.log(this.calendarOptions.events)
     },
 
 
@@ -196,8 +202,8 @@ export default {
     <aside class="p-3 d-none d-lg-block bg-primary-subtle me-4 rounded w-auto">
       <!-- Sidebar content goes here -->
       <DatePicker v-model="selectedDate" inline class="mb-4" :minDate="datePicker.start" :maxDate="datePicker.end" />
-      <v-checkbox v-for="department in departments" :key="department" :value="department" :label="department"
-        :color="this.departmentColors[department]" v-model="selectedDepartments" hide-details></v-checkbox>
+      <!-- <v-checkbox v-for="department in departments" :key="department" :value="department" :label="department"
+        :color="this.departmentColors[department]" v-model="selectedDepartments" hide-details></v-checkbox> -->
     </aside>
     <section class="flex-grow-1">
       <FullCalendar :options="calendarOptions" />

@@ -48,6 +48,17 @@ export default {
           role: 2
         },
         {
+          staff_id: 140879,
+          staff_fname: "Siti",
+          staff_lname: "Abdullah",
+          department: "Sales",
+          position: "Sales Manager",
+          country: "Singapore",
+          email: "Siti.Abdullah@allinone.com.sg",
+          reporting_manager: 140001,
+          role: 3
+        },
+        {
           staff_id: 130002,
           staff_fname: "Jack",
           staff_lname: "Sim",
@@ -69,18 +80,6 @@ export default {
         //   reporting_manager: 130002,
         //   role: 1
         // },
-        {
-          staff_id: 140879,
-          staff_fname: "Siti",
-          staff_lname: "Abdullah",
-          department: "Sales",
-          position: "Sales Manager",
-          country: "Singapore",
-          email: "Siti.Abdullah@allinone.com.sg",
-          reporting_manager: 140001,
-          role: 3
-        },
-
       ],
     }
   },
