@@ -281,17 +281,6 @@ def m_get_team_schedule(staff_id):
             .all()
         )
 
-        # Create a dictionary to store department data
-        dept_dict = {}
-
-        # Iterate over the results and populate the department dictionary
-        for dept, staff_count in num_employee:
-            if dept == employee_dept:
-                dept_dict[dept] = {"num_employee": staff_count}
-                # Initialize all dates for the department
-                for date in all_dates:
-                    dept_dict[dept][date] = {"AM": [], "PM": [], "Full": []}
-
         response = invoke_http(employee_URL + "/get_all_employees", method="GET")
 
         def get_team_members(staff_id, visited=None, staff_details=None):
@@ -338,6 +327,17 @@ def m_get_team_schedule(staff_id):
             .join(RequestDates, Request.request_id == RequestDates.request_id)
             .all()
         )
+
+        # Create a dictionary to store department data
+        dept_dict = {}
+
+        # Iterate over the results and populate the department dictionary
+        for dept, staff_count in num_employee:
+            if dept == employee_dept:
+                dept_dict[dept] = {"num_employee": len(all_team_members)}
+                # Initialize all dates for the department
+                for date in all_dates:
+                    dept_dict[dept][date] = {"AM": [], "PM": [], "Full": []}
 
         # Initialize the structure for each department
         for (
