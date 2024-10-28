@@ -8,6 +8,10 @@
     </aside>
 
     <section class="flex-grow-1">
+      <!-- <DirectorViewTeamSchedule v-if="role === 'director'" :calendarOptions="calendarOptions"
+        :handleEventClick="handleEventClick" :datePicker="datePicker" :employeesByDepartment="employeesByDepartment"
+        :userStore="userStore" /> -->
+
       <FullCalendar ref="fullCalendar" :options="calendarOptions" />
 
       <v-dialog v-model="showDialog" max-width="60%">
@@ -47,7 +51,7 @@ export default {
     }
   },
   components: {
-    FullCalendar, DatePicker, AgGridVue
+    FullCalendar, DatePicker, AgGridVue,
   },
   data() {
     return {
@@ -160,6 +164,54 @@ export default {
       this.selectedDepartments = [...this.departments];
     },
 
+    displayManagersUnderDirector(data) {
+      // TODO: fetch data from new api (WIP by yubin)
+      data = {
+        // director’s staff_id
+        "director_id": "123456",
+        "managers_and_teams": [
+          {
+            "manager_id": "140879",
+            "team_members": [
+              "141522",
+              "199292",
+              "193833",
+              // …
+            ]
+          },
+          {
+            "manager_id": "124534",
+            "team_members": [
+              "124534",
+              "199292",
+              "193833",
+              // …
+            ]
+          },
+          {
+            "manager_id": "193281",
+            "team_members": [
+              "193281",
+              "199292",
+              "193833",
+              // …
+            ]
+          }
+        ]
+      }
+      const managersAndTeams = data["managers_and_teams"];
+      console.log(this.employeesByDepartment)
+      managersAndTeams.forEach((team) => {
+        const managerId = team["manager_id"];
+        console.log(managerId);
+        console.log(this.employeesByDepartment[this.userStore.user.department][Number(managerId)]);
+        // const managerName = this.employeesByDepartment[this.userStore.user.department][Number(managerId)]["staff_name"];
+        const managerName = this.employeesByDepartment["Sales"][managerId]["staff_name"];
+        this.departments.push(managerName);
+        const teamMembers = team["team_members"];
+      })
+    },
+
     renderEventContent(arg) {
       const rate = Math.floor(arg.event.extendedProps.officeAttendanceRate);
       const rateClass = rate > 50 ? 'text-success-emphasis' : 'text-danger';
@@ -203,7 +255,8 @@ export default {
         })
         .then(data => {
           this.unformattedSchedule = data;
-          this.displayDepartments(data);
+          // this.displayDepartments(data);
+          this.displayManagersUnderDirector(data);
 
           let formatted_events = [];
           for (const department in data) {
@@ -313,6 +366,9 @@ export default {
           }
           this.calendarOptions.events = formatted_events;
         })
+    },
+
+    getManagersUnderDirector() {
     },
 
     handleEventClick(arg) {

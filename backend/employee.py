@@ -228,11 +228,15 @@ def get_all_employees_by_dept():
             "Engineering": {
                 "150488": {
                     "staff_name": "Jacob Tan",
-                    "role": "Junior Engineer"
+                    "role": "Junior Engineer",
+                    "staff_id": 150488,
+                    "reporting_manager": 150111
                 },
                 "104821": {
                     "staff_name": "James Teo",
-                    "role": "Junior Engineer"
+                    "role": "Junior Engineer",
+                    "staff_id": 104821,
+                    "reporting_manager": 150111
                 },
             },
             "Sales": { ... },
@@ -259,6 +263,7 @@ def get_all_employees_by_dept():
                 "staff_name": employee.staff_fname + " " + employee.staff_lname,
                 "role": employee.position,
                 "staff_id": employee.staff_id,
+                "reporting_manager": employee.reporting_manager,
             }
 
         return jsonify({"code": 200, "data": reporting_structure}), 200
