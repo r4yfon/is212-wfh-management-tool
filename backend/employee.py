@@ -153,6 +153,65 @@ def get_staff_by_manager(staff_id):
             ),
             500,
         )
+    
+
+# Retrieve details of employees under an employee/user
+@app.route("/employee/get_team/<int:staff_id>")
+def get_team(staff_id):
+    """
+    Get the list of employees who report to a specific manager based on staff_id
+    ---
+    Parameters:
+        staff_id (int): The manager's staff_id
+
+    Success response:
+        {
+            "director_id": 140001,
+            "managers_and_teams": [
+                {
+                    "manager_id": 140008,
+                    "team_members": [
+                        140008,
+                        140880
+                    ]
+                },
+                {
+                    "manager_id": 140103,
+                    "team_members": [
+                        140103,
+                        140893
+                    ]
+                },...
+            ]
+        }
+    """
+
+    try:
+        # Fetch employees where reporting_manager matches the provided staff_id
+        staff_list = Employee.query.filter_by(reporting_manager=staff_id).all()
+
+        output = {"director_id": staff_id, "managers_and_teams": []}
+
+        for manager in staff_list:
+            team = {"manager_id": manager.staff_id, "team_members": [manager.staff_id]}
+            member_list = Employee.query.filter_by(reporting_manager=manager.staff_id).all()
+            if len(member_list) > 0:
+                for member in member_list:
+                    team["team_members"].append(member.staff_id)
+            output["managers_and_teams"].append(team)
+
+        return jsonify(output), 200
+
+    except Exception as e:
+        return (
+            jsonify(
+                {
+                    "code": 500,
+                    "error": "An error occurred while fetching staff data. " + str(e),
+                }
+            ),
+            500,
+        )
 
 
 # Retrieve all employees
