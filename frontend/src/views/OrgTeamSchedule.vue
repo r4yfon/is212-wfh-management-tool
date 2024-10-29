@@ -3,15 +3,21 @@
     <aside class="p-3 d-none d-lg-block bg-primary-subtle me-4 rounded w-auto">
       <!-- Sidebar content goes here -->
       <DatePicker v-model="selectedDate" inline class="mb-4" :minDate="datePicker.start" :maxDate="datePicker.end" />
-      <v-checkbox v-for="department in departments" :key="department" :value="department" :label="department"
-        :color="this.departmentColors[department]" v-model="selectedDepartments" hide-details></v-checkbox>
+      <template v-if="role === 'director'">
+        <!-- {{ managersIdAndNames }}
+        {{ selectedManagers }} -->
+        <v-checkbox v-for="(key, value) in managersIdAndNames" :key="key" :value="value" :label="key"
+          v-model="selectedManagers" hide-details></v-checkbox>
+
+      </template>
+
+      <template v-else>
+        <v-checkbox v-for="department in departments" :key="department" :value="department" :label="department"
+          :color="this.departmentColors[department]" v-model="selectedDepartments" hide-details></v-checkbox>
+      </template>
     </aside>
 
     <section class="flex-grow-1">
-      <!-- <DirectorViewTeamSchedule v-if="role === 'director'" :calendarOptions="calendarOptions"
-        :handleEventClick="handleEventClick" :datePicker="datePicker" :employeesByDepartment="employeesByDepartment"
-        :userStore="userStore" /> -->
-
       <FullCalendar ref="fullCalendar" :options="calendarOptions" />
 
       <v-dialog v-model="showDialog" max-width="60%">
@@ -91,18 +97,22 @@ export default {
         Solutioning: '#A3E4D7'
       },
 
+      // datePicker
       datePicker: {
         start: new Date(new Date().getFullYear(), new Date().getMonth() - 2, new Date().getDate()),
         end: new Date(new Date().getFullYear(), new Date().getMonth() + 3, new Date().getDate()),
       },
+      selectedDate: new Date(),
 
+      // dialog
+      showDialog: false,
       agGridOptions: {
         columnHeaders: [
-          { headerName: "Staff Name", field: "staff_name", filter: true },
-          { headerName: "Staff ID", field: "staff_id", filter: true },
-          { headerName: "Role", field: "role", filter: true },
+          { headerName: "Staff Name", field: "staff_name", filter: true, suppressMovable: true },
+          { headerName: "Staff ID", field: "staff_id", filter: true, suppressMovable: true },
+          { headerName: "Role", field: "role", filter: true, suppressMovable: true },
           {
-            headerName: "WFH Status", valueGetter: this.scheduleValueGetter, filter: true, cellStyle: params => {
+            headerName: "WFH Status", valueGetter: this.scheduleValueGetter, filter: true, suppressMovable: true, cellStyle: params => {
               return params.value === 'In Office' ? { color: 'green' } : { color: 'red' };
             }
           }
@@ -115,26 +125,39 @@ export default {
           resizable: false,
         }
       },
+      clickedDateString: null,
 
-      selectedDate: new Date(),
-      showDialog: false,
+      // HRView
       departments: [],
       employeesByDepartment: {},
       selectedDepartments: [],
-      formattedEvents: {},
-      orgSchedule: {},
       unformattedSchedule: {},
+      formattedEventsByDepartment: {},
+      orgSchedule: {},
       scheduledData: {},
-      clickedDateString: null,
       clickedEventDepartment: null,
+
+      // directorView
+      managersIdAndNames: {},
+      managersUnderDirector: [],
+      selectedManagers: [],
+      formattedEventsByManager: {},
     };
   },
 
   mounted() {
     this.userStore = useMainStore();
     this.getEmployeeDetails();
+
+    // to reflect the current date in datePicker when "today" button is clicked
+    const todayButton = document.querySelector(".fc-today-button");
+    todayButton.addEventListener("click", this.handleTodayClick);
+
+    // this.getOrgSchedule();
+
     if (this.role === 'director') {
-      this.getOrgSchedule();
+      // this.getOrgSchedule();
+      this.displayManagersInSidebar();
     } else if (this.role === 'manager') {
       this.managerTeamSchedule();
     }
@@ -145,7 +168,7 @@ export default {
       handler(newDepartments) {
         this.calendarOptions.events = [];
         newDepartments.forEach(department => {
-          this.calendarOptions.events.push(...this.formattedEvents[department]);
+          this.calendarOptions.events.push(...this.formattedEventsByDepartment[department]);
         });
       },
       deep: true,
@@ -159,59 +182,22 @@ export default {
   },
 
   methods: {
-    displayDepartments(orgSchedule) {
-      this.departments = Object.keys(orgSchedule);
-      this.selectedDepartments = [...this.departments];
+    // FUNCTIONS USED BY ALL VIEWS
+    handleTodayClick() {
+      this.selectedDate = new Date();
     },
 
-    displayManagersUnderDirector(data) {
-      // TODO: fetch data from new api (WIP by yubin)
-      data = {
-        // director’s staff_id
-        "director_id": "123456",
-        "managers_and_teams": [
-          {
-            "manager_id": "140879",
-            "team_members": [
-              "141522",
-              "199292",
-              "193833",
-              // …
-            ]
-          },
-          {
-            "manager_id": "124534",
-            "team_members": [
-              "124534",
-              "199292",
-              "193833",
-              // …
-            ]
-          },
-          {
-            "manager_id": "193281",
-            "team_members": [
-              "193281",
-              "199292",
-              "193833",
-              // …
-            ]
-          }
-        ]
-      }
-      const managersAndTeams = data["managers_and_teams"];
-      console.log(this.employeesByDepartment)
-      managersAndTeams.forEach((team) => {
-        const managerId = team["manager_id"];
-        console.log(managerId);
-        console.log(this.employeesByDepartment[this.userStore.user.department][Number(managerId)]);
-        // const managerName = this.employeesByDepartment[this.userStore.user.department][Number(managerId)]["staff_name"];
-        const managerName = this.employeesByDepartment["Sales"][managerId]["staff_name"];
-        this.departments.push(managerName);
-        const teamMembers = team["team_members"];
-      })
+    handleEventClick(arg) {
+      const d = new Date(arg.event.start);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      this.clickedDateString = `${year}-${month}-${day}`;
+      this.showDialog = true;
+      this.clickedEventDepartment = arg.event.extendedProps.department;
     },
 
+    // to render content in the events in FullCalendar
     renderEventContent(arg) {
       const rate = Math.floor(arg.event.extendedProps.officeAttendanceRate);
       const rateClass = rate > 50 ? 'text-success-emphasis' : 'text-danger';
@@ -229,9 +215,9 @@ export default {
             `
         }
       }
-
     },
 
+    // get employees by department
     getEmployeeDetails() {
       fetch(`${url_paths.employee}/get_all_employees_by_dept`)
         .then(response => {
@@ -245,6 +231,69 @@ export default {
         })
     },
 
+    // FUNCTIONS USED BY DIRECTORVIEW
+    displayManagersInSidebar() {
+      fetch(`${url_paths.employee}/get_team/${this.userStore.user.staff_id}`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          return response.json();
+        })
+        .then(data => {
+          data["managers_and_teams"].forEach(team => {
+            this.managersIdAndNames[Number(team["manager_id"])] = this.employeesByDepartment[this.userStore.user.department][team["manager_id"]].staff_name;
+          })
+          this.selectedManagers = [...Object.keys(this.managersIdAndNames)];
+        })
+    },
+
+    getDirectorSchedule() {
+      // TODO: yubin's function
+      fetch(`${url_paths.view_schedule}/o_get_org_schedule`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          return response.json();
+        })
+        .then(data => {
+          let formatted_events = [];
+          for (const manager in data) {
+            const departmentStrength = data[manager]["num_employee"];
+            for (const date in data[manager]) {
+              if (date !== "num_employee") {
+                const manpowerInOffice = departmentStrength - data[manager][date]["AM"].length - data[manager][date]["PM"].length - data[manager][date]["Full"].length;
+                const officeAttendanceRate = Math.floor(manpowerInOffice / departmentStrength * 100);
+                const event = {
+                  title: `${manager}'s Team': ${manpowerInOffice} / ${departmentStrength} in office`,
+                  start: date,
+                  manager: manager,
+                  manpowerInOffice: manpowerInOffice,
+                  departmentStrength: departmentStrength,
+                  officeAttendanceRate: officeAttendanceRate,
+                  color: this.departmentColors[manager],
+                  textColor: "#000000",
+                };
+                formatted_events.push(event);
+              }
+            }
+            if (manager === "direct_subordinates") {
+              this.formattedEventsByManager[this.userStore.user.staff_id] = formatted_events;
+            } else {
+              this.formattedEventsByManager[manager] = formatted_events;
+            };
+            formatted_events = [];
+          }
+        })
+    },
+
+    // FUNCTIONS USED BY HRVIEW
+    displayDepartments(orgSchedule) {
+      this.departments = Object.keys(orgSchedule);
+      this.selectedDepartments = [...this.departments];
+    },
+
     getOrgSchedule() {
       fetch(`${url_paths.view_schedule}/o_get_org_schedule`)
         .then(response => {
@@ -255,8 +304,7 @@ export default {
         })
         .then(data => {
           this.unformattedSchedule = data;
-          // this.displayDepartments(data);
-          this.displayManagersUnderDirector(data);
+          this.displayDepartments(data);
 
           let formatted_events = [];
           for (const department in data) {
@@ -278,7 +326,7 @@ export default {
                 formatted_events.push(event);
               }
             }
-            this.formattedEvents[department] = formatted_events;
+            this.formattedEventsByDepartment[department] = formatted_events;
             formatted_events = [];
           }
         })
@@ -287,8 +335,6 @@ export default {
     // for the table in dialog for orgSchedule
     scheduleValueGetter(params) {
       const staff_id = params.data.staff_id;
-      // console.log(this.orgSchedule[this.clickedEventDepartment][this.clickedDateString]);
-
       const isInArray = (array, id) => array.some(item => item.staff_id === id);
 
       if (isInArray(this.unformattedSchedule[this.clickedEventDepartment][this.clickedDateString].AM, staff_id)) {
@@ -300,85 +346,6 @@ export default {
       } else {
         return 'In Office';
       }
-    },
-
-    managerTeamSchedule() {
-      const workShiftsTimes = {
-        AM: { start: 9, end: 13 },
-        PM: { start: 14, end: 18 },
-        Full: { start: 9, end: 18 },
-      };
-
-      fetch(`${url_paths.view_schedule}/m_get_team_schedule/${this.userStore.user.staff_id}`)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('Network response was not ok');
-          }
-          return response.json();
-        })
-        .then(data => {
-          this.unformattedSchedule = data;
-
-          let formatted_events = [];
-          for (const department in data) {
-            const departmentStrength = data[department]["num_employee"];
-            for (const date in data[department]) {
-              if (date !== "num_employee") {
-                const manpowerInOffice = departmentStrength - data[department][date]["AM"].length - data[department][date]["PM"].length - data[department][date]["Full"].length;
-                const officeAttendanceRate = Math.floor(manpowerInOffice / departmentStrength * 100);
-                const manpowerAllocation = (Object.entries(data[department][date]));
-
-                const eventYear = Number(date.slice(0, 4));
-                const eventMonthIndex = Number(date.slice(5, 7)) - 1;
-                const eventDate = Number(date.slice(8, 10));
-                manpowerAllocation.forEach((workShift) => {
-                  // console.log(workShift);
-                  const event = {
-                    title: `WFH - ${workShift[0]}: ${workShift[1].length} people`,
-                    start: new Date(eventYear, eventMonthIndex, eventDate, workShiftsTimes[workShift[0]].start),
-                    end: new Date(eventYear, eventMonthIndex, eventDate, workShiftsTimes[workShift[0]].end),
-                    department: department,
-                    manpowerInOffice: manpowerInOffice,
-                    departmentStrength: departmentStrength,
-                    officeAttendanceRate: officeAttendanceRate,
-                    color: this.departmentColors[department],
-                    textColor: "#000000",
-                  };
-                  // console.log(event)
-                  formatted_events.push(event);
-                });
-                const officeWorkers = {
-                  title: `Office: ${manpowerInOffice} people`,
-                  start: new Date(eventYear, eventMonthIndex, eventDate, workShiftsTimes.Full.start),
-                  end: new Date(eventYear, eventMonthIndex, eventDate, workShiftsTimes.Full.end),
-                  department: department,
-                  manpowerInOffice: manpowerInOffice,
-                  departmentStrength: departmentStrength,
-                  officeAttendanceRate: officeAttendanceRate,
-                  color: this.departmentColors[department],
-                  textColor: "#000000",
-                }
-                formatted_events.push(officeWorkers);
-              }
-              // formatted_events = [];
-
-            }
-          }
-          this.calendarOptions.events = formatted_events;
-        })
-    },
-
-    getManagersUnderDirector() {
-    },
-
-    handleEventClick(arg) {
-      const d = new Date(arg.event.start);
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      this.clickedDateString = `${year}-${month}-${day}`;
-      this.showDialog = true;
-      this.clickedEventDepartment = arg.event.extendedProps.department;
     },
   }
 }
