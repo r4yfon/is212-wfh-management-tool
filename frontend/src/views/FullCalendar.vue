@@ -105,11 +105,11 @@ export default {
   },
   methods: {
     handleDateClick(arg) {
-      console.log(`Date ${arg.dateStr} clicked`);
+      // console.log(`Date ${arg.dateStr} clicked`);
     },
     handleEventClick(arg) {
       // console.log(new Date(arg.event.start).toISOString().split("T")[0]);
-      console.log(`Event ${arg.event.title} clicked`);
+      // console.log(`Event ${arg.event.title} clicked`);
     },
     handleNextClick() {
       this.currentDate = new Date(this.currentDate).setDate(

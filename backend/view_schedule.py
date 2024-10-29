@@ -237,11 +237,11 @@ def m_get_team_schedule(staff_id):
                     }
                     # Recursive call to find team members under this member
                     get_team_members(member["staff_id"], data, visited, staff_details)
-                    
+
             return staff_details
-        
+
         all_team_members = get_team_members(staff_id, response["data"])
-        
+
         # Edit this code
         if position == "Director":
             subordinate_dict = {}
@@ -301,10 +301,6 @@ def m_get_team_schedule(staff_id):
 
                 # Return the team schedule nested under the manager's ID
                 return jsonify(team_schedule), 200
-
-
-
-
 
         else:
             # Initialize team schedule

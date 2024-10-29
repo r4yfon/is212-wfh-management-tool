@@ -32,8 +32,9 @@ const userStore = useMainStore();
           </RouterLink>
 
           <!-- manager view staff requests -->
-          <RouterLink v-if="userStore.user.role === 3" to="/viewstaffrequests"
-            class="btn d-none d-md-block align-content-center">
+          <RouterLink
+            v-if="userStore.user.role === 3 || (userStore.user.role === 1 && userStore.user.position === 'Director')"
+            to="/viewstaffrequests" class="btn d-none d-md-block align-content-center">
             View Staff Requests
           </RouterLink>
 
@@ -257,7 +258,7 @@ export default {
     validateAndConfirmApply() {
       if (this.validateInputs()) {
         this.loading = true;
-        console.log("newEvent", this.newEvent);
+        // console.log("newEvent", this.newEvent);
         if (
           this.requestType === "one-time"
         ) {
@@ -274,7 +275,7 @@ export default {
           })
             .then((response) => response.json())
             .then((data) => {
-              console.log("Success:", data);
+              // console.log("Success:", data);
             })
             .catch((error) => {
               console.error("Error:", error);
@@ -304,7 +305,7 @@ export default {
           })
             .then((response) => response.json())
             .then((data) => {
-              console.log("Success:", data);
+              // console.log("Success:", data);
             })
             .catch((error) => {
               console.error("Error:", error);

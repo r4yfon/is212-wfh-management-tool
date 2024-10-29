@@ -19,7 +19,7 @@ const router = createRouter({
     {
       path: "/requestslist",
       name: "requestslist",
-      component: () => import("../views/RequestsList.vue"),
+      component: () => import("../views/OwnRequests.vue"),
     },
     {
       path: "/viewstaffrequests",

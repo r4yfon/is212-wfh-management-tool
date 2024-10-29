@@ -26,7 +26,7 @@
             {{ clickedDateString }}: {{ clickedEventDepartment }}
           </v-card-title>
           <v-card-title v-else-if="role === 'director'">
-            {{ clickedDateString }}: {{ [clickedManagerId] }}'s team
+            {{ clickedDateString }}: {{ managersIdAndNames[clickedManagerId] }}'s team
           </v-card-title>
           <v-card-text>
             <ag-grid-vue :rowData="rowData" :defaultColDef="agGridOptions.defaultColDef"
@@ -231,6 +231,7 @@ export default {
           Number(employee.reporting_manager) === Number(this.clickedManagerId)
         );
       } else if (this.role === 'manager') {
+        this.clickedEventDepartment = arg.event.extendedProps.department;
         this.rowData = Object.values(this.employeesByDepartment[this.clickedEventDepartment]).filter(employee => employee.reporting_manager === this.userStore.user.staff_id);
       }
       this.showDialog = true;
@@ -245,6 +246,13 @@ export default {
           html: `
             ${arg.event.title}<br />
             Attendance rate in office: <span class="${rateClass}">${rate}%</span>
+            `
+        }
+      } else if (this.role === 'director') {
+        return {
+          html: `
+            ${arg.event.title}<br />
+            In office: ${arg.event.extendedProps.manpowerInOffice} / ${arg.event.extendedProps.teamStrength} (<span class="${rateClass}">${rate}%</span>)
             `
         }
       }
@@ -274,7 +282,7 @@ export default {
       const staff_id = params.data.staff_id;
       const isInArray = (array, id) => array.some(item => item.staff_id === id);
 
-      if (this.role === 'organisation') {
+      if (this.role === 'organisation' || this.role === 'manager') {
         if (isInArray(this.unformattedSchedule[this.clickedEventDepartment][this.clickedDateString].AM, staff_id)) {
           return 'WFH - AM';
         } else if (isInArray(this.unformattedSchedule[this.clickedEventDepartment][this.clickedDateString].PM, staff_id)) {
@@ -378,7 +386,7 @@ export default {
                 const officeAttendanceRate = Math.floor(manpowerInOffice / teamStrength * 100);
                 const managerName = this.managersIdAndNames[managerId];
                 const event = {
-                  title: `${managerName}'s Team': ${manpowerInOffice} / ${teamStrength} in office`,
+                  title: `${managerName}'s Team`,
                   start: date,
                   managerId: managerId,
                   manpowerInOffice: manpowerInOffice,
@@ -465,8 +473,9 @@ export default {
 </script>
 
 <style>
-.fc-h-event .fc-event-title {
+.fc-h-event {
   white-space: normal;
+  overflow: hidden;
 }
 
 .fc-event-main {

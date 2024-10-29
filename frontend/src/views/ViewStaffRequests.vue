@@ -163,7 +163,7 @@ export default {
         // Format the data to the structure needed for the table
         formatData(user) {
             const staff_id = user.staff_id;
-            fetch(`${url_paths.view_requests}m_retrieve_requests/${staff_id}`)
+            fetch(`${url_paths.view_requests}/m_retrieve_requests/${staff_id}`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
@@ -188,7 +188,7 @@ export default {
                         }))
 
                     );
-                    console.log(this.items);
+                    // console.log(this.items);
                 })
                 .catch(error => {
                     console.error('Error fetching requests:', error);

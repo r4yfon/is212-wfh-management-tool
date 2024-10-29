@@ -164,7 +164,7 @@ def create_request():
         # Create and commit the new request to get the request_id
         new_request = Request(
             staff_id=staff_id,
-            creation_date=datetime.utcnow().strftime("%Y-%m-%d"),
+            creation_date=datetime.strftime("%Y-%m-%d"),
             apply_reason=apply_reason,
         )
         db.session.add(new_request)

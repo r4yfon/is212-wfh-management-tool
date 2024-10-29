@@ -3,6 +3,7 @@
         <v-card flat>
             <v-card-title class="d-flex align-center pe-2">
                 My Requests
+                <v-icon icon="mdi-refresh" size="x-small" class="ms-2" @click="formatData(user)"></v-icon>
                 <v-spacer></v-spacer>
                 <v-text-field v-model="search" density="compact" label="Search" prepend-inner-icon="mdi-magnify"
                     variant="solo-filled" flat hide-details single-line></v-text-field>
@@ -41,7 +42,12 @@
                 </v-card-text>
                 <v-card-actions>
                     <v-btn @click="withdrawDialog = false" text>Cancel</v-btn>
-                    <v-btn @click="confirmWithdraw(selectedItem)" color="pink" text>Confirm</v-btn>
+                    <v-btn @click="confirmWithdraw(selectedItem)" color="pink" text>
+                        <span v-if="buttonIsLoading">
+                            <v-progress-circular indeterminate :size="15" :width="2" color="primary" class="me-1">
+                            </v-progress-circular>
+                        </span>
+                        Confirm</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -63,6 +69,7 @@ export default {
             withdrawReason: "",
             selectedItem: null,
             items: [],
+            buttonIsLoading: false,
             headers: [
                 { title: 'Request ID', value: 'request_id', key: "request_id" },
                 { title: 'Creation Date', value: 'creationdate', key: "creationdate" },
@@ -88,7 +95,7 @@ export default {
                 return response.json();
             })
             .then(() => {
-                console.log('Success');
+                // console.log('Success');
             })
             .catch(error => console.error('Error updating status:', error));
         this.formatData();
@@ -106,7 +113,7 @@ export default {
                 })
                 .then(data => {
                     const rawData = data["data"];
-                    console.log(data)
+                    // console.log(data)
                     this.items = rawData.flatMap((item) =>
                         item.wfh_dates.map((wfh) => ({
                             request_id: item.request_id,
@@ -184,12 +191,12 @@ export default {
                     return response.json();
                 })
                 .then(responseData => {
-                    console.log('Success:', responseData);
-                    location.reload();
+                    this.buttonIsLoading = true;
+                    // console.log('Success:', responseData);
+                    this.formatData();
                 })
+                .then(() => this.withdrawDialog = false)
                 .catch(error => console.error('Error updating status:', error));
-
-            this.withdrawDialog = false;
         }
 
     }
