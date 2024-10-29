@@ -119,7 +119,6 @@ def create_request():
                         "error": "Your selected range of dates are not within 2 months before and 3 months after the current date.",
                     }), 400,)
 
-        # TODO: check if staff already has a request for the same date
         try:
             response = requests.get(
                 f"{request_URL}/get_requests_by_staff_id/{staff_id}"
@@ -155,7 +154,7 @@ def create_request():
 
         check_date = input_validation.has_existing_request(
             requested_dates, request_dates)
-        
+
         if check_date != False:
             return (jsonify({
                         "code": 400,
