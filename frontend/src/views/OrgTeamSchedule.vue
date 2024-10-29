@@ -24,10 +24,9 @@
         <v-card>
           <v-card-title>{{ clickedDateString }}: {{ clickedEventDepartment }}</v-card-title>
           <v-card-text>
-            <ag-grid-vue :rowData="Object.values(employeesByDepartment[clickedEventDepartment])"
-              :defaultColDef="agGridOptions.defaultColDef" :columnDefs="agGridOptions.columnHeaders"
-              style="height: 800px" class="ag-theme-quartz"
-              :autoSizeStrategy="agGridOptions.autoSizeStrategy"></ag-grid-vue>
+            <ag-grid-vue :rowData="rowData" :defaultColDef="agGridOptions.defaultColDef"
+              :columnDefs="agGridOptions.columnHeaders" style="height: 100%;" class="ag-theme-quartz"
+              :domLayout="agGridOptions.domLayout" :autoSizeStrategy="agGridOptions.autoSizeStrategy"></ag-grid-vue>
 
           </v-card-text>
         </v-card>
@@ -123,9 +122,12 @@ export default {
         },
         defaultColDef: {
           resizable: false,
-        }
+        },
+        rowData: null,
+        domLayout: 'autoHeight',
       },
       clickedDateString: null,
+      clickedEventDepartment: null,
 
       // HRView
       departments: [],
@@ -135,7 +137,6 @@ export default {
       formattedEventsByDepartment: {},
       orgSchedule: {},
       scheduledData: {},
-      clickedEventDepartment: null,
 
       // directorView
       managersIdAndNames: {},
@@ -153,17 +154,27 @@ export default {
     const todayButton = document.querySelector(".fc-today-button");
     todayButton.addEventListener("click", this.handleTodayClick);
 
-    // this.getOrgSchedule();
 
     if (this.role === 'director') {
-      // this.getOrgSchedule();
-      this.displayManagersInSidebar();
+      // for HR and CEO
+      if (this.userStore.user.position !== 'Director') {
+        this.getOrgSchedule();
+      } else {
+        // for directors
+        this.displayManagersInSidebar();
+      }
     } else if (this.role === 'manager') {
       this.managerTeamSchedule();
     }
   },
 
   watch: {
+    selectedDate: {
+      handler(value) {
+        this.$refs.fullCalendar.getApi().gotoDate(value);
+      },
+    },
+
     selectedDepartments: {
       handler(newDepartments) {
         this.calendarOptions.events = [];
@@ -174,10 +185,13 @@ export default {
       deep: true,
     },
 
-    selectedDate: {
-      handler(value) {
-        this.$refs.fullCalendar.getApi().gotoDate(value);
-      },
+    selectedManagers: {
+      handler(newManagers) {
+        this.calendarOptions.events = [];
+        newManagers.forEach(manager => {
+          this.calendarOptions.events.push(...this.formattedEventsByManager[manager]);
+        });
+      }
     }
   },
 
@@ -195,6 +209,15 @@ export default {
       this.clickedDateString = `${year}-${month}-${day}`;
       this.showDialog = true;
       this.clickedEventDepartment = arg.event.extendedProps.department;
+      if (this.role === 'director') {
+        if (this.userStore.user.position !== 'Director') {
+          this.rowData = Object.values(this.employeesByDepartment[this.clickedEventDepartment]);
+        } else {
+          this.rowData = Object.values(this.employeesByDepartment[this.clickedEventDepartment]).filter(employee => employee.reporting_manager === this.reportingManagerId);
+        }
+      } else if (this.role === 'manager') {
+        this.rowData = Object.values(this.employeesByDepartment[this.userStore.user.department]).filter(employee => employee.reporting_manager === this.userStore.user.staff_id);
+      }
     },
 
     // to render content in the events in FullCalendar
@@ -346,6 +369,72 @@ export default {
       } else {
         return 'In Office';
       }
+    },
+
+    managerTeamSchedule() {
+      const workShiftsTimes = {
+        AM: { start: 9, end: 13 },
+        PM: { start: 14, end: 18 },
+        Full: { start: 9, end: 18 },
+      };
+
+      fetch(`${url_paths.view_schedule}/m_get_team_schedule/${this.userStore.user.staff_id}`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          return response.json();
+        })
+        .then(data => {
+          this.unformattedSchedule = data;
+
+          let formatted_events = [];
+          for (const department in data) {
+            const departmentStrength = data[department]["num_employee"];
+            for (const date in data[department]) {
+              if (date !== "num_employee") {
+                const manpowerInOffice = departmentStrength - data[department][date]["AM"].length - data[department][date]["PM"].length - data[department][date]["Full"].length;
+                const officeAttendanceRate = Math.floor(manpowerInOffice / departmentStrength * 100);
+                const manpowerAllocation = (Object.entries(data[department][date]));
+
+                const eventYear = Number(date.slice(0, 4));
+                const eventMonthIndex = Number(date.slice(5, 7)) - 1;
+                const eventDate = Number(date.slice(8, 10));
+                manpowerAllocation.forEach((workShift) => {
+                  // console.log(workShift);
+                  const event = {
+                    title: `WFH - ${workShift[0]}: ${workShift[1].length} people`,
+                    start: new Date(eventYear, eventMonthIndex, eventDate, workShiftsTimes[workShift[0]].start),
+                    end: new Date(eventYear, eventMonthIndex, eventDate, workShiftsTimes[workShift[0]].end),
+                    department: department,
+                    manpowerInOffice: manpowerInOffice,
+                    departmentStrength: departmentStrength,
+                    officeAttendanceRate: officeAttendanceRate,
+                    color: this.departmentColors[department],
+                    textColor: "#000000",
+                  };
+                  // console.log(event)
+                  formatted_events.push(event);
+                });
+                const officeWorkers = {
+                  title: `Office: ${manpowerInOffice} people`,
+                  start: new Date(eventYear, eventMonthIndex, eventDate, workShiftsTimes.Full.start),
+                  end: new Date(eventYear, eventMonthIndex, eventDate, workShiftsTimes.Full.end),
+                  department: department,
+                  manpowerInOffice: manpowerInOffice,
+                  departmentStrength: departmentStrength,
+                  officeAttendanceRate: officeAttendanceRate,
+                  color: this.departmentColors[department],
+                  textColor: "#000000",
+                }
+                formatted_events.push(officeWorkers);
+              }
+              // formatted_events = [];
+
+            }
+          }
+          this.calendarOptions.events = formatted_events;
+        })
     },
   }
 }
