@@ -96,6 +96,13 @@ export default {
         Solutioning: '#A3E4D7'
       },
 
+      workShiftColors: {
+        'AM': '#F48BA9',
+        'PM': '#FFB6C1',
+        'Full': '#BA55D3',
+        Office: '#86CBED',
+      },
+
       // datePicker
       datePicker: {
         start: new Date(new Date().getFullYear(), new Date().getMonth() - 2, new Date().getDate()),
@@ -410,7 +417,7 @@ export default {
                     manpowerInOffice: manpowerInOffice,
                     departmentStrength: departmentStrength,
                     officeAttendanceRate: officeAttendanceRate,
-                    color: this.departmentColors[department],
+                    color: this.workShiftColors[workShift[0]],
                     textColor: "#000000",
                   };
                   // console.log(event)
@@ -424,7 +431,7 @@ export default {
                   manpowerInOffice: manpowerInOffice,
                   departmentStrength: departmentStrength,
                   officeAttendanceRate: officeAttendanceRate,
-                  color: this.departmentColors[department],
+                  color: this.workShiftColors['Office'],
                   textColor: "#000000",
                 }
                 formatted_events.push(officeWorkers);
