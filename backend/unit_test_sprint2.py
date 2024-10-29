@@ -94,7 +94,7 @@ class TestGetStaffByManager(unittest.TestCase):
         # Define the expected response
         expected_response = {
             "code": 500,
-            "error": "An error occurred while fetching staff data. Database error"
+            "error": "An error occurred: Database error"
         }
 
         # Assert the response

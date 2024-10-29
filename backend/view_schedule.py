@@ -277,7 +277,9 @@ def s_get_team_schedule(staff_id):
         num_employee = db.session.query(Employee.dept, func.count(Employee.staff_id).label("staff_count")) \
                                 .filter(Employee.dept == employee_dept, Employee.position == employee_position,
                                         Employee.role == employee_role).group_by(Employee.dept).first()
-        dept_dict = initialize_dept_schedule(employee_dept, num_employee.staff_count, all_dates)
+
+        department, staff_count = num_employee
+        dept_dict = initialize_dept_schedule(department, staff_count, all_dates)
 
         # Query and process specific employee's schedule data
         results = fetch_schedule_data([RequestDates.request_status.in_(["Pending Approval", "Approved"]),
