@@ -156,9 +156,9 @@ def initialize_dept_schedule(dept, num_employees, all_dates):
     }
 
 # Helper function to add employee to department schedule
-def add_employee_to_schedule(dept_dict, dept, request_date_str, request_shift, staff_schedule):
-    if request_date_str in dept_dict[dept]:
-        dept_dict[dept][request_date_str][request_shift].append(staff_schedule)
+def add_employee_to_schedule(dept_dict, key, request_date_str, request_shift, staff_schedule):
+    if request_date_str in dept_dict[key]:
+        dept_dict[key][request_date_str][request_shift].append(staff_schedule)
 
 # Helper function to query and organize schedule data
 def fetch_schedule_data(filter_conditions):
@@ -212,6 +212,7 @@ def m_get_team_schedule(staff_id):
         all_dates = get_date_range()
         employee_details = invoke_http(employee_URL + f"/get_details/{staff_id}", method="GET")
         employee_dept = employee_details["data"]["dept"]
+        position = employee_details["data"]["position"]
 
         response = invoke_http(employee_URL + "/get_all_employees", method="GET")
 
@@ -240,24 +241,89 @@ def m_get_team_schedule(staff_id):
             return staff_details
         
         all_team_members = get_team_members(staff_id, response["data"])
+        
+        # Edit this code
+        if position == "Director":
+            subordinate_dict = {}
+            # Get the direct subordinates of the director
+            direct_subordinates = invoke_http(employee_URL + f"/get_staff/{staff_id}", method="GET")
 
-        # Initialize team schedule
-        dept_dict = initialize_dept_schedule(employee_dept, len(all_team_members), all_dates)
+            # For each subordinate under the director
+            if direct_subordinates["data"][0]["role"] == 3:
+                for subordinate in direct_subordinates["data"]:
+                    sub_id = subordinate["staff_id"]
+                    sub_dept = subordinate["dept"]
+                    sub_name = subordinate["staff_fname"] + subordinate["staff_lname"]
+                    sub_position = subordinate["position"]
 
-        # Query and process team schedule data
-        results = fetch_schedule_data([RequestDates.request_status.in_(["Pending Approval", "Approved"])])
-        for (staff_id, fname, lname, dept, position, manager, date, shift, status) in results:
-            if staff_id in all_team_members:
-                staff_schedule = {
-                    "staff_id": staff_id,
-                    "name": f"{fname} {lname}",
-                    "position": position,
-                    "reporting_manager": manager,
-                    "request_status": status,
-                }
-                add_employee_to_schedule(dept_dict, dept, date.strftime("%Y-%m-%d"), shift, staff_schedule)
+                    # Initialize the department schedule structure for this subordinate
+                    subordinate_schedule = initialize_dept_schedule(sub_dept, len(direct_subordinates["data"]), get_date_range())
 
-        return jsonify(dept_dict), 200
+                    # Fetch schedule data specifically for this subordinate
+                    schedule_data = fetch_schedule_data([
+                        Request.staff_id == sub_id,
+                        RequestDates.request_status.in_(["Pending Approval", "Approved"])
+                    ])
+
+                    # Populate the subordinate's schedule with dates and shifts
+                    for _, fname, lname, dept, position, manager, date, shift, status in schedule_data:
+                        staff_schedule = {
+                            "staff_id": sub_id,
+                            "name": f"{fname} {lname}",
+                            "position": position
+                        }
+                        add_employee_to_schedule(subordinate_schedule, dept, date.strftime("%Y-%m-%d"), shift, staff_schedule)
+
+                    # Add the subordinate's completed schedule to the overall dictionary
+                    subordinate_dict[sub_id] = subordinate_schedule[sub_dept]
+
+                return jsonify(subordinate_dict), 200
+
+            else:
+                # Initialize team schedule structure with staff_id as the only key
+                team_schedule = {staff_id: initialize_dept_schedule(employee_dept, len(all_team_members), all_dates)[employee_dept]}
+
+                # Query and process team schedule data
+                results = fetch_schedule_data([RequestDates.request_status.in_(["Pending Approval", "Approved"])])
+
+                # Populate the team schedule structure for each relevant team member
+                for (member_id, fname, lname, dept, position, manager, date, shift, status) in results:
+                    if member_id in all_team_members:
+                        staff_schedule = {
+                            "staff_id": member_id,
+                            "name": f"{fname} {lname}",
+                            "position": position,
+                            "reporting_manager": manager,
+                            "request_status": status,
+                        }
+                        # Add the team member's schedule to the manager's schedule dictionary
+                        add_employee_to_schedule(team_schedule, staff_id, date.strftime("%Y-%m-%d"), shift, staff_schedule)
+
+                # Return the team schedule nested under the manager's ID
+                return jsonify(team_schedule), 200
+
+
+
+
+
+        else:
+            # Initialize team schedule
+            dept_dict = initialize_dept_schedule(employee_dept, len(all_team_members), all_dates)
+
+            # Query and process team schedule data
+            results = fetch_schedule_data([RequestDates.request_status.in_(["Pending Approval", "Approved"])])
+            for (staff_id, fname, lname, dept, position, manager, date, shift, status) in results:
+                if staff_id in all_team_members:
+                    staff_schedule = {
+                        "staff_id": staff_id,
+                        "name": f"{fname} {lname}",
+                        "position": position,
+                        "reporting_manager": manager,
+                        "request_status": status,
+                    }
+                    add_employee_to_schedule(dept_dict, dept, date.strftime("%Y-%m-%d"), shift, staff_schedule)
+
+            return jsonify(dept_dict), 200
 
     except Exception as e:
         return jsonify({"message": "An error occurred while retrieving the schedule.", "error": str(e)}), 500
@@ -272,11 +338,12 @@ def s_get_team_schedule(staff_id):
         employee_dept = employee_details["data"]["dept"]
         employee_position = employee_details["data"]["position"]
         employee_role = employee_details["data"]["role"]
+        employee_reporting_manager = employee_details["data"]["reporting_manager"]
 
         # Initialize employee-specific schedule
         num_employee = db.session.query(Employee.dept, func.count(Employee.staff_id).label("staff_count")) \
                                 .filter(Employee.dept == employee_dept, Employee.position == employee_position,
-                                        Employee.role == employee_role).group_by(Employee.dept).first()
+                                        Employee.role == employee_role, Employee.reporting_manager == employee_reporting_manager).group_by(Employee.dept).first()
 
         department, staff_count = num_employee
         dept_dict = initialize_dept_schedule(department, staff_count, all_dates)
