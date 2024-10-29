@@ -43,10 +43,16 @@ const userStore = useMainStore();
             View Team Schedule
           </RouterLink>
 
-          <!-- managerViewTeamSchedule and HRViewOrganisationSchedule -->
-          <RouterLink class="btn d-none d-md-block align-content-center" v-if="userStore.user.role !== 2"
+          <!-- HR and director view schedule -->
+          <RouterLink class="btn d-none d-md-block align-content-center" v-if="userStore.user.role === 1"
             :to="`/team_schedule/${employeeRole[userStore.user.role]}`">
-            {{ userStore.user.role === 1 ? 'Organisation' : 'Manager' }} Schedule
+            {{ userStore.user.position === 'Director' ? 'Director' : 'Organisation' }} Schedule
+          </RouterLink>
+
+          <!-- manager view team schedule -->
+          <RouterLink class="btn d-none d-md-block align-content-center" v-if="userStore.user.role === 3"
+            :to="`/team_schedule/${employeeRole[userStore.user.role]}`">
+            Team Schedule
           </RouterLink>
 
           <v-btn @click="dialog = true" variant="outlined" text="Apply to WFH" class="btn"></v-btn>
