@@ -33,3 +33,6 @@ coverage
 *.sw?
 
 *.tsbuildinfo
+
+backend/*.env
+frontend/*.env
