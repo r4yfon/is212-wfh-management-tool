@@ -59,6 +59,17 @@ export default {
           role: 3
         },
         {
+          staff_id: 140001,
+          staff_fname: "Derek",
+          staff_lname: "Tan",
+          department: "Sales",
+          position: "Director",
+          country: "Singapore",
+          email: "Derek.Tan@allinone.com.sg",
+          reporting_manager: 130002,
+          role: 1
+        },
+        {
           staff_id: 130002,
           staff_fname: "Jack",
           staff_lname: "Sim",
