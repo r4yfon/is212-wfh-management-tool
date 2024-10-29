@@ -43,10 +43,16 @@ const userStore = useMainStore();
             View Team Schedule
           </RouterLink>
 
-          <!-- managerViewTeamSchedule and HRViewOrganisationSchedule -->
-          <RouterLink class="btn d-none d-md-block align-content-center" v-if="userStore.user.role !== 2"
+          <!-- HR and director view schedule -->
+          <RouterLink class="btn d-none d-md-block align-content-center" v-if="userStore.user.role === 1"
+            :to="`/team_schedule/${employeeRole[1][userStore.user.position]}`">
+            {{ userStore.user.position === 'Director' ? 'Director' : 'Organisation' }} Schedule
+          </RouterLink>
+
+          <!-- manager view team schedule -->
+          <RouterLink class="btn d-none d-md-block align-content-center" v-if="userStore.user.role === 3"
             :to="`/team_schedule/${employeeRole[userStore.user.role]}`">
-            {{ userStore.user.role === 1 ? 'Organisation' : 'Manager' }} Schedule
+            Team Schedule
           </RouterLink>
 
           <v-btn @click="dialog = true" variant="outlined" text="Apply to WFH" class="btn"></v-btn>
@@ -130,6 +136,8 @@ const userStore = useMainStore();
 </template>
 
 <script>
+import { url_paths } from "@/url_paths";
+
 export default {
   data() {
     return {
@@ -154,7 +162,11 @@ export default {
         reason: "",
       },
       employeeRole: {
-        1: "director",
+        1: {
+          "Director": "director",
+          "HR Team": "organisation",
+          "MD": "organisation",
+        },
         2: "staff",
         3: "manager",
       }
@@ -249,7 +261,7 @@ export default {
         if (
           this.requestType === "one-time"
         ) {
-          fetch("http://localhost:5001/request/create", {
+          fetch(`${url_paths.request}/create`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -280,7 +292,7 @@ export default {
             this.newEvent.endDate,
             this.newEvent.shift,
           );
-          fetch("http://localhost:5001/request/create", {
+          fetch(`${url_paths.request}/create`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({

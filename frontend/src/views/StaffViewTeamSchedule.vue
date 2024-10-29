@@ -38,7 +38,7 @@ export default {
         events: [],
         eventClick: this.handleEventClick,
       },
-      selectedDate: null,
+      selectedDate: new Date(),
       datePicker: {
         start: new Date(new Date().getFullYear(), new Date().getMonth() - 2, new Date().getDate()),
         end: new Date(new Date().getFullYear(), new Date().getMonth() + 3, new Date().getDate()),
@@ -189,6 +189,12 @@ export default {
         this.fetchAndDisplayData(); // Refetch data if user data changes
       },
       deep: true
+    },
+
+    selectedDate: {
+      handler(value) {
+        this.$refs.fullCalendar.getApi().gotoDate(value);
+      },
     }
   },
   mounted() {
@@ -206,7 +212,7 @@ export default {
         :color="this.departmentColors[department]" v-model="selectedDepartments" hide-details></v-checkbox> -->
     </aside>
     <section class="flex-grow-1">
-      <FullCalendar :options="calendarOptions" />
+      <FullCalendar ref="fullCalendar" :options="calendarOptions" />
       <v-dialog v-model="showDialog" max-width="70%">
         <v-card>
           <v-card-title>Staff</v-card-title>

@@ -93,6 +93,7 @@ import { useMainStore } from '@/store.js';
 
 <script>
 import ManagerActions from '@/components/ManagerActions.vue';
+import { url_paths } from '@/url_paths';
 export default {
     components: {
         ManagerActions
@@ -162,7 +163,7 @@ export default {
         // Format the data to the structure needed for the table
         formatData(user) {
             const staff_id = user.staff_id;
-            fetch(`http://localhost:5101/m_retrieve_requests/${staff_id}`)
+            fetch(`${url_paths.view_requests}m_retrieve_requests/${staff_id}`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Network response was not ok');

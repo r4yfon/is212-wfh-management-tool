@@ -25,17 +25,6 @@ export default {
   data() {
     return {
       users: [
-        // {
-        //   staff_id: 150488,
-        //   staff_fname: "Jacob",
-        //   staff_lname: "Tan",
-        //   department: "Engineering",
-        //   position: "Call Centre",
-        //   country: "Singapore",
-        //   email: "Jacob.Tan@allinone.com.sg",
-        //   reporting_manager: 151408,
-        //   role: 2,
-        // },
         {
           staff_id: 140937,
           staff_fname: "Sirirat",
@@ -59,6 +48,17 @@ export default {
           role: 3
         },
         {
+          staff_id: 140001,
+          staff_fname: "Derek",
+          staff_lname: "Tan",
+          department: "Sales",
+          position: "Director",
+          country: "Singapore",
+          email: "Derek.Tan@allinone.com.sg",
+          reporting_manager: 130002,
+          role: 1
+        },
+        {
           staff_id: 130002,
           staff_fname: "Jack",
           staff_lname: "Sim",
@@ -69,17 +69,6 @@ export default {
           reporting_manager: 130002,
           role: 1,
         },
-        // {
-        //   staff_id: 151408,
-        //   staff_fname: "Philip",
-        //   staff_lname: "Lee",
-        //   department: "Engineering",
-        //   position: "Director",
-        //   country: "Singapore",
-        //   email: "Philip.Lee@allinone.com.sg",
-        //   reporting_manager: 130002,
-        //   role: 1
-        // },
       ],
     }
   },
@@ -89,7 +78,9 @@ export default {
   methods: {
     selectUser(user) {
       const userStore = useMainStore();
-      userStore.updateUser(user);
+      if (user.staff_id !== userStore.user.staff_id) {
+        userStore.updateUser(user);
+      }
     }
   }
 }

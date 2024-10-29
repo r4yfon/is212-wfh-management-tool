@@ -3,25 +3,30 @@
     <aside class="p-3 d-none d-lg-block bg-primary-subtle me-4 rounded w-auto">
       <!-- Sidebar content goes here -->
       <DatePicker v-model="selectedDate" inline class="mb-4" :minDate="datePicker.start" :maxDate="datePicker.end" />
-      <v-checkbox v-for="department in departments" :key="department" :value="department" :label="department"
-        :color="this.departmentColors[department]" v-model="selectedDepartments" hide-details></v-checkbox>
+      <template v-if="role === 'director'">
+        <!-- {{ managersIdAndNames }}
+        {{ selectedManagers }} -->
+        <v-checkbox v-for="(key, value) in managersIdAndNames" :key="key" :value="value" :label="key"
+          v-model="selectedManagers" hide-details></v-checkbox>
+
+      </template>
+
+      <template v-else-if="role === 'organisation'">
+        <v-checkbox v-for="department in departments" :key="department" :value="department" :label="department"
+          :color="this.departmentColors[department]" v-model="selectedDepartments" hide-details></v-checkbox>
+      </template>
     </aside>
 
     <section class="flex-grow-1">
-      <!-- <DirectorViewTeamSchedule v-if="role === 'director'" :calendarOptions="calendarOptions"
-        :handleEventClick="handleEventClick" :datePicker="datePicker" :employeesByDepartment="employeesByDepartment"
-        :userStore="userStore" /> -->
-
       <FullCalendar ref="fullCalendar" :options="calendarOptions" />
 
       <v-dialog v-model="showDialog" max-width="60%">
         <v-card>
           <v-card-title>{{ clickedDateString }}: {{ clickedEventDepartment }}</v-card-title>
           <v-card-text>
-            <ag-grid-vue :rowData="Object.values(employeesByDepartment[clickedEventDepartment])"
-              :defaultColDef="agGridOptions.defaultColDef" :columnDefs="agGridOptions.columnHeaders"
-              style="height: 800px" class="ag-theme-quartz"
-              :autoSizeStrategy="agGridOptions.autoSizeStrategy"></ag-grid-vue>
+            <ag-grid-vue :rowData="rowData" :defaultColDef="agGridOptions.defaultColDef"
+              :columnDefs="agGridOptions.columnHeaders" style="height: 100%;" class="ag-theme-quartz"
+              :domLayout="agGridOptions.domLayout" :autoSizeStrategy="agGridOptions.autoSizeStrategy"></ag-grid-vue>
 
           </v-card-text>
         </v-card>
@@ -91,18 +96,29 @@ export default {
         Solutioning: '#A3E4D7'
       },
 
+      workShiftColors: {
+        'AM': '#F48BA9',
+        'PM': '#FFB6C1',
+        'Full': '#BA55D3',
+        Office: '#86CBED',
+      },
+
+      // datePicker
       datePicker: {
         start: new Date(new Date().getFullYear(), new Date().getMonth() - 2, new Date().getDate()),
         end: new Date(new Date().getFullYear(), new Date().getMonth() + 3, new Date().getDate()),
       },
+      selectedDate: new Date(),
 
+      // dialog
+      showDialog: false,
       agGridOptions: {
         columnHeaders: [
-          { headerName: "Staff Name", field: "staff_name", filter: true },
-          { headerName: "Staff ID", field: "staff_id", filter: true },
-          { headerName: "Role", field: "role", filter: true },
+          { headerName: "Staff Name", field: "staff_name", filter: true, suppressMovable: true },
+          { headerName: "Staff ID", field: "staff_id", filter: true, suppressMovable: true },
+          { headerName: "Role", field: "role", filter: true, suppressMovable: true },
           {
-            headerName: "WFH Status", valueGetter: this.scheduleValueGetter, filter: true, cellStyle: params => {
+            headerName: "WFH Status", valueGetter: this.scheduleValueGetter, filter: true, suppressMovable: true, cellStyle: params => {
               return params.value === 'In Office' ? { color: 'green' } : { color: 'red' };
             }
           }
@@ -113,109 +129,105 @@ export default {
         },
         defaultColDef: {
           resizable: false,
-        }
+        },
+        rowData: null,
+        domLayout: 'autoHeight',
       },
+      clickedDateString: null,
+      clickedEventDepartment: null,
 
-      selectedDate: new Date(),
-      showDialog: false,
+      unformattedSchedule: {},
+
+      // HRView
       departments: [],
       employeesByDepartment: {},
       selectedDepartments: [],
-      formattedEvents: {},
+      formattedEventsByDepartment: {},
       orgSchedule: {},
-      unformattedSchedule: {},
       scheduledData: {},
-      clickedDateString: null,
-      clickedEventDepartment: null,
+
+      // directorView
+      managersIdAndNames: {},
+      selectedManagers: [],
+      formattedEventsByManager: {},
     };
   },
 
   mounted() {
     this.userStore = useMainStore();
     this.getEmployeeDetails();
-    if (this.role === 'director') {
+
+    // to reflect the current date in datePicker when "today" button is clicked
+    const todayButton = document.querySelector(".fc-today-button");
+    todayButton.addEventListener("click", this.handleTodayClick);
+
+
+    if (this.role === 'organisation') {
       this.getOrgSchedule();
+    } else if (this.role === 'director') {
+      this.displayManagersInSidebar();
     } else if (this.role === 'manager') {
       this.managerTeamSchedule();
     }
+
   },
 
   watch: {
+    selectedDate: {
+      handler(value) {
+        this.$refs.fullCalendar.getApi().gotoDate(value);
+      },
+    },
+
     selectedDepartments: {
       handler(newDepartments) {
         this.calendarOptions.events = [];
         newDepartments.forEach(department => {
-          this.calendarOptions.events.push(...this.formattedEvents[department]);
+          this.calendarOptions.events.push(...this.formattedEventsByDepartment[department]);
         });
       },
       deep: true,
     },
 
-    selectedDate: {
-      handler(value) {
-        this.$refs.fullCalendar.getApi().gotoDate(value);
-      },
-    }
+    // selectedManagers: {
+    //   handler(newManagers) {
+    //     this.calendarOptions.events = [];
+    //     newManagers.forEach(manager => {
+    //       this.calendarOptions.events.push(...this.formattedEventsByManager[manager]);
+    //     });
+    //   }
+    // }
   },
 
   methods: {
-    displayDepartments(orgSchedule) {
-      this.departments = Object.keys(orgSchedule);
-      this.selectedDepartments = [...this.departments];
+    // FUNCTIONS USED BY ALL VIEWS
+    handleTodayClick() {
+      this.selectedDate = new Date();
     },
 
-    displayManagersUnderDirector(data) {
-      // TODO: fetch data from new api (WIP by yubin)
-      data = {
-        // director’s staff_id
-        "director_id": "123456",
-        "managers_and_teams": [
-          {
-            "manager_id": "140879",
-            "team_members": [
-              "141522",
-              "199292",
-              "193833",
-              // …
-            ]
-          },
-          {
-            "manager_id": "124534",
-            "team_members": [
-              "124534",
-              "199292",
-              "193833",
-              // …
-            ]
-          },
-          {
-            "manager_id": "193281",
-            "team_members": [
-              "193281",
-              "199292",
-              "193833",
-              // …
-            ]
-          }
-        ]
+    handleEventClick(arg) {
+      const d = new Date(arg.event.start);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      this.clickedDateString = `${year}-${month}-${day}`;
+      this.showDialog = true;
+      this.clickedEventDepartment = arg.event.extendedProps.department;
+      if (this.role === 'organisation') {
+        this.rowData = Object.values(this.employeesByDepartment[this.clickedEventDepartment]);
+      } else if (this.role === 'director') {
+        // TODO: implement dialog for directorView
+        return
+      } else if (this.role === 'manager') {
+        this.rowData = Object.values(this.employeesByDepartment[this.clickedEventDepartment]).filter(employee => employee.reporting_manager === this.userStore.user.staff_id);
       }
-      const managersAndTeams = data["managers_and_teams"];
-      console.log(this.employeesByDepartment)
-      managersAndTeams.forEach((team) => {
-        const managerId = team["manager_id"];
-        console.log(managerId);
-        console.log(this.employeesByDepartment[this.userStore.user.department][Number(managerId)]);
-        // const managerName = this.employeesByDepartment[this.userStore.user.department][Number(managerId)]["staff_name"];
-        const managerName = this.employeesByDepartment["Sales"][managerId]["staff_name"];
-        this.departments.push(managerName);
-        const teamMembers = team["team_members"];
-      })
     },
 
+    // to render content in the events in FullCalendar
     renderEventContent(arg) {
       const rate = Math.floor(arg.event.extendedProps.officeAttendanceRate);
       const rateClass = rate > 50 ? 'text-success-emphasis' : 'text-danger';
-      if (this.role === 'director') {
+      if (this.role === 'organisation') {
         return {
           html: `
             ${arg.event.title}<br />
@@ -229,9 +241,9 @@ export default {
             `
         }
       }
-
     },
 
+    // get employees by department
     getEmployeeDetails() {
       fetch(`${url_paths.employee}/get_all_employees_by_dept`)
         .then(response => {
@@ -245,6 +257,69 @@ export default {
         })
     },
 
+    // FUNCTIONS USED BY DIRECTORVIEW
+    displayManagersInSidebar() {
+      fetch(`${url_paths.employee}/get_team/${this.userStore.user.staff_id}`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          return response.json();
+        })
+        .then(data => {
+          data["managers_and_teams"].forEach(team => {
+            this.managersIdAndNames[Number(team["manager_id"])] = this.employeesByDepartment[this.userStore.user.department][team["manager_id"]].staff_name;
+          })
+          this.selectedManagers = [...Object.keys(this.managersIdAndNames)];
+        })
+    },
+
+    getDirectorSchedule() {
+      // TODO: yubin's function
+      fetch(`${url_paths.view_schedule}/o_get_org_schedule`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          return response.json();
+        })
+        .then(data => {
+          let formatted_events = [];
+          for (const manager in data) {
+            const departmentStrength = data[manager]["num_employee"];
+            for (const date in data[manager]) {
+              if (date !== "num_employee") {
+                const manpowerInOffice = departmentStrength - data[manager][date]["AM"].length - data[manager][date]["PM"].length - data[manager][date]["Full"].length;
+                const officeAttendanceRate = Math.floor(manpowerInOffice / departmentStrength * 100);
+                const event = {
+                  title: `${manager}'s Team': ${manpowerInOffice} / ${departmentStrength} in office`,
+                  start: date,
+                  manager: manager,
+                  manpowerInOffice: manpowerInOffice,
+                  departmentStrength: departmentStrength,
+                  officeAttendanceRate: officeAttendanceRate,
+                  color: this.departmentColors[manager],
+                  textColor: "#000000",
+                };
+                formatted_events.push(event);
+              }
+            }
+            if (manager === "direct_subordinates") {
+              this.formattedEventsByManager[this.userStore.user.staff_id] = formatted_events;
+            } else {
+              this.formattedEventsByManager[manager] = formatted_events;
+            };
+            formatted_events = [];
+          }
+        })
+    },
+
+    // FUNCTIONS USED BY HRVIEW
+    displayDepartments(orgSchedule) {
+      this.departments = Object.keys(orgSchedule);
+      this.selectedDepartments = [...this.departments];
+    },
+
     getOrgSchedule() {
       fetch(`${url_paths.view_schedule}/o_get_org_schedule`)
         .then(response => {
@@ -255,8 +330,7 @@ export default {
         })
         .then(data => {
           this.unformattedSchedule = data;
-          // this.displayDepartments(data);
-          this.displayManagersUnderDirector(data);
+          this.displayDepartments(data);
 
           let formatted_events = [];
           for (const department in data) {
@@ -278,7 +352,7 @@ export default {
                 formatted_events.push(event);
               }
             }
-            this.formattedEvents[department] = formatted_events;
+            this.formattedEventsByDepartment[department] = formatted_events;
             formatted_events = [];
           }
         })
@@ -287,8 +361,6 @@ export default {
     // for the table in dialog for orgSchedule
     scheduleValueGetter(params) {
       const staff_id = params.data.staff_id;
-      // console.log(this.orgSchedule[this.clickedEventDepartment][this.clickedDateString]);
-
       const isInArray = (array, id) => array.some(item => item.staff_id === id);
 
       if (isInArray(this.unformattedSchedule[this.clickedEventDepartment][this.clickedDateString].AM, staff_id)) {
@@ -341,8 +413,8 @@ export default {
                     manpowerInOffice: manpowerInOffice,
                     departmentStrength: departmentStrength,
                     officeAttendanceRate: officeAttendanceRate,
-                    color: this.departmentColors[department],
-                    textColor: "#000000",
+                    color: this.workShiftColors[workShift[0]],
+                    textColor: "#ffffff",
                   };
                   // console.log(event)
                   formatted_events.push(event);
@@ -355,8 +427,8 @@ export default {
                   manpowerInOffice: manpowerInOffice,
                   departmentStrength: departmentStrength,
                   officeAttendanceRate: officeAttendanceRate,
-                  color: this.departmentColors[department],
-                  textColor: "#000000",
+                  color: this.workShiftColors['Office'],
+                  textColor: "#ffffff",
                 }
                 formatted_events.push(officeWorkers);
               }
@@ -366,19 +438,6 @@ export default {
           }
           this.calendarOptions.events = formatted_events;
         })
-    },
-
-    getManagersUnderDirector() {
-    },
-
-    handleEventClick(arg) {
-      const d = new Date(arg.event.start);
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      this.clickedDateString = `${year}-${month}-${day}`;
-      this.showDialog = true;
-      this.clickedEventDepartment = arg.event.extendedProps.department;
     },
   }
 }
