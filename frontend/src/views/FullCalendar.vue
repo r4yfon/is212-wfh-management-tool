@@ -12,7 +12,7 @@ fetch(`http://localhost:5002/request_dates/auto_reject`, {
     return response.json();
   })
   .then(() => {
-    console.log('Success');
+    // console.log('Success');
   })
   .catch(error => console.error('Error updating status:', error));
 </script>
@@ -209,7 +209,7 @@ export default {
           }
 
           this.calendarOptions.events = this.events;
-          console.log(this.calendarOptions.events);
+          // console.log(this.calendarOptions.events);
         })
         .catch((error) => {
           console.error("Error fetching schedule data:", error);
