@@ -93,8 +93,8 @@
 
 <script>
 import { useMainStore } from "@/store";
+import { url_paths } from "@/url_paths";
 const userStore = useMainStore();
-const url_paths = userStore.paths;
 
 export default {
   name: "ManagerActions",
@@ -151,7 +151,7 @@ export default {
       if (newStatus === "Rescinded") {
         this.isLoading = true;
         const item_request_id = this.item.request_id;
-        fetch(`http://localhost:5002/request_dates/get_by_request_id/${item_request_id}`)
+        fetch(`${url_paths.request_dates}/get_by_request_id/${item_request_id}`)
           .then((response) => response.json())
           .then((data) => {
             console.log(data)
@@ -218,7 +218,7 @@ export default {
 
     approveRejectWithdraw(item) {
       this.buttonIsLoading = true;
-      fetch('http://localhost:5002/request_dates/change_all_status', {
+      fetch(`${url_paths.request_dates}/change_all_status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -246,7 +246,7 @@ export default {
     },
     rescind(item) {
       this.buttonIsLoading = true;
-      fetch('http://localhost:5002/request_dates/change_partial_status', {
+      fetch(`${url_paths.request_dates}/change_partial_status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'

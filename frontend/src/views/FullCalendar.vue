@@ -1,5 +1,7 @@
 <script setup>
-fetch(`http://localhost:5002/request_dates/auto_reject`, {
+import { url_paths } from "@/url_paths";
+
+fetch(`${url_paths.request_dates}/auto_reject`, {
   method: 'PUT',
   headers: {
     'Content-Type': 'application/json'
@@ -10,9 +12,6 @@ fetch(`http://localhost:5002/request_dates/auto_reject`, {
       throw new Error('Network response was not ok');
     }
     return response.json();
-  })
-  .then(() => {
-    // console.log('Success');
   })
   .catch(error => console.error('Error updating status:', error));
 </script>
@@ -88,41 +87,21 @@ export default {
         "Pending Withdrawal: WFH - PM": "pink",
         "Pending Withdrawal: WFH - Full": "pink",
       },
-      getTextColors: {
-        "WFH - AM": "#BA55D3",
-        "WFH - PM": "#BA55D3",
-        "WFH - Full": "#BA55D3",
-        Office: "#4169E1",
-        "Pending: WFH - AM": "#FF7F50",
-        "Pending: WFH - PM": "#FF7F50",
-        "Pending: WFH - Full": "#FF7F50",
-        "Pending Withdrawal: WFH - AM": "pink",
-        "Pending Withdrawal: WFH - PM": "pink",
-        "Pending Withdrawal: WFH - Full": "pink",
-      },
       scheduledData: {},
       currentDate: new Date(),
+      userStore: null,
     };
   },
   mounted() {
-    const userStore = useMainStore();
+    this.userStore = useMainStore();
     this.currentDate = new Date();
-    this.getWeeklySchedule(userStore.user);
-  },
-  computed: {
-    user_store() {
-      return useMainStore();
-    }
-  },
-  watch: {
-    "user_store.user": {
-      handler(newUser) {
-        this.events = [];
-        this.scheduledData = {};
-        this.getWeeklySchedule(newUser);
-      }
-
-    }
+    this.getWeeklySchedule(this.userStore.user);
+    const nextButton = document.querySelector(".fc-next-button");
+    nextButton.addEventListener("click", this.handleNextClick);
+    const prevButton = document.querySelector(".fc-prev-button");
+    prevButton.addEventListener("click", this.handlePrevClick);
+    const todayButton = document.querySelector(".fc-today-button");
+    todayButton.addEventListener("click", this.handleTodayClick);
   },
   methods: {
     handleDateClick(arg) {
@@ -138,9 +117,8 @@ export default {
       );
       const dateISO = new Date(this.currentDate).toISOString().split("T")[0];
       if (!(dateISO in this.scheduledData)) {
-        this.getWeeklySchedule(this.user_store.user);
+        this.getWeeklySchedule(this.userStore.user);
       }
-      console.log(`Next button clicked`);
     },
     handlePrevClick() {
       this.currentDate = new Date(this.currentDate).setDate(
@@ -148,28 +126,26 @@ export default {
       );
       const dateISO = new Date(this.currentDate).toISOString().split("T")[0];
       if (!(dateISO in this.scheduledData)) {
-        this.getWeeklySchedule(this.user_store.user);
+        this.getWeeklySchedule(this.userStore.user);
       }
-      console.log(`Prev button clicked`);
     },
     handleTodayClick() {
       this.currentDate = new Date();
       const dateISO = new Date(this.currentDate).toISOString().split("T")[0];
       if (!(dateISO in this.scheduledData)) {
-        this.getWeeklySchedule(this.user_store.user);
+        this.getWeeklySchedule(this.userStore.user);
       }
-      console.log(`Today button clicked`);
     },
-    eventDidMount(info) {
-      info.el.style.color = info.event.textColor; // Set text color directly
-    },
+    // eventDidMount(info) {
+    //   info.el.style.color = info.event.textColor; // Set text color directly
+    // },
     getWeeklySchedule(user) {
       const staff_id = user.staff_id;
       if ((!this.currentDate) instanceof Date) {
         this.currentDate = new Date();
       }
       fetch(
-        `http://localhost:5100/view_schedule/weekly/${staff_id}/${new Date(this.currentDate).toISOString().split("T")[0]}`,
+        `${url_paths.view_schedule}/view_schedule/weekly/${staff_id}/${new Date(this.currentDate).toISOString().split("T")[0]}`,
       )
         .then((response) => response.json())
         .then((data) => {
@@ -195,15 +171,13 @@ export default {
                     start: new Date(eventYear, eventMonthIndex, eventDate, times.start, 0),
                     end: new Date(eventYear, eventMonthIndex, eventDate, times.end, 0),
                     color: this.colors[eventTitle],
-                    textColor: this.getTextColors[eventTitle],
+                    textColor: this.colors[eventTitle],
                   };
                 }
 
                 if (event) {
                   this.events.push(event);
                 }
-
-                // console.log(this.events)
               });
             }
           }
@@ -218,49 +192,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.calendar-container {
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  max-height: 100vh;
-  /* Full viewport height */
-  box-sizing: border-box;
-  /* Include padding in total height/width */
-}
-
-.calendar {
-  width: 95%;
-  max-height: calc(100vh - 80px);
-  position: fixed;
-  top: 80px;
-  /* Position below the header */
-  left: 50%;
-  /* Center horizontally */
-  transform: translateX(-50%);
-}
-
-/* Hide scrollbars for Chrome and Safari */
-.calendar::-webkit-scrollbar {
-  display: none;
-  /* Safari and Chrome */
-}
-
-/* Hide scrollbars for Firefox */
-.calendar {
-  scrollbar-width: none;
-  /* Firefox */
-}
-
-/* Responsive styles for smaller screens */
-@media (max-width: 768px) {
-  .calendar {
-    width: 100%;
-    height: calc(100vh - 80px);
-    top: 80px;
-    left: 0;
-    transform: none;
-  }
-}
-</style>

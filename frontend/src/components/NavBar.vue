@@ -136,6 +136,8 @@ const userStore = useMainStore();
 </template>
 
 <script>
+import { url_paths } from "@/url_paths";
+
 export default {
   data() {
     return {
@@ -259,7 +261,7 @@ export default {
         if (
           this.requestType === "one-time"
         ) {
-          fetch("http://localhost:5001/request/create", {
+          fetch(`${url_paths.request}/create`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -290,7 +292,7 @@ export default {
             this.newEvent.endDate,
             this.newEvent.shift,
           );
-          fetch("http://localhost:5001/request/create", {
+          fetch(`${url_paths.request}/create`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
