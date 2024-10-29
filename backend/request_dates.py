@@ -91,9 +91,6 @@ def create_request_dates():
         else:
             request_status = "Pending Approval"
         
-        print(staff_id)
-        print(request_status)
-
         if not request_id or not request_dates:
             return jsonify({
                 "code": 400,
@@ -102,9 +99,6 @@ def create_request_dates():
 
         # Check if the (foreign key constraint) request_id exists
         try:
-            request_record = Request.query.filter_by(
-                request_id=request_id).first()
-
             new_request_dates = []
 
             # Create new request dates
@@ -298,9 +292,7 @@ def change_all_status():
         # Get request by request_id and change reject reason
         if new_status == "Rejected":
             original_request = Request.query.filter_by(request_id=request_id).first()
-            print(original_request)
             original_request.reject_reason = reason
-            print(original_request.reject_reason)
 
         # Commit the changes to the database
         db.session.commit()
