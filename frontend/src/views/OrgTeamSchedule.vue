@@ -5,14 +5,15 @@
       <DatePicker v-model="selectedDate" inline class="mb-4" :minDate="datePicker.start" :maxDate="datePicker.end" />
 
       <template v-if="role === 'director'">
+        <div class="fw-semibold">Managers under you</div>
         <v-checkbox v-for="(key, value, index) in managersIdAndNames" :key="key" :value="value" :label="key"
-          :color="calendarCheckboxColors['byManagers'][index]" v-model="selectedManagers" hide-details></v-checkbox>
-
+          :color="stylingColors['byManagers'][index]" v-model="selectedManagers" hide-details></v-checkbox>
       </template>
 
       <template v-else-if="role === 'organisation'">
         <v-checkbox v-for="department in departments" :key="department" :value="department" :label="department"
-          :color="this.departmentColors[department]" v-model="selectedDepartments" hide-details></v-checkbox>
+          :color="this.stylingColors['byDepartments'][department]" v-model="selectedDepartments"
+          hide-details></v-checkbox>
       </template>
     </aside>
 
@@ -21,17 +22,19 @@
 
       <v-dialog v-model="showDialog" max-width="60%">
         <v-card>
-          <v-card-title v-if="role === 'organisation'">{{ clickedDateString }}: {{ clickedEventDepartment
-            }}</v-card-title>
-          <v-card-title v-else-if="role === 'director'">{{ clickedDateString }}: {{ managersIdAndNames[clickedManagerId]
-            }}'s team</v-card-title>
+          <v-card-title v-if="role === 'organisation'">
+            {{ clickedDateString }}: {{ clickedEventDepartment }}
+          </v-card-title>
+          <v-card-title v-else-if="role === 'director'">
+            {{ clickedDateString }}: {{ [clickedManagerId] }}'s team
+          </v-card-title>
           <v-card-text>
             <ag-grid-vue :rowData="rowData" :defaultColDef="agGridOptions.defaultColDef"
               :columnDefs="agGridOptions.columnHeaders" style="height: 100%;" class="ag-theme-quartz"
-              :domLayout="agGridOptions.domLayout" :autoSizeStrategy="agGridOptions.autoSizeStrategy"></ag-grid-vue>
+              :domLayout="agGridOptions.domLayout" :autoSizeStrategy="agGridOptions.autoSizeStrategy">
+            </ag-grid-vue>
           </v-card-text>
         </v-card>
-
       </v-dialog>
     </section>
   </div>
@@ -44,9 +47,9 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import { url_paths } from '@/url_paths.js';
 import DatePicker from 'primevue/datepicker';
-import "ag-grid-community/styles/ag-grid.css"; // Mandatory CSS required by the Data Grid
-import "ag-grid-community/styles/ag-theme-quartz.css"; // Optional Theme applied to the Data Grid
-import { AgGridVue } from "ag-grid-vue3"; // Vue Data Grid Component
+import "ag-grid-community/styles/ag-grid.css";
+import "ag-grid-community/styles/ag-theme-quartz.css";
+import { AgGridVue } from "ag-grid-vue3";
 import { useMainStore } from '@/store';
 
 export default {
@@ -86,7 +89,8 @@ export default {
 
       userStore: null,
 
-      calendarCheckboxColors: {
+      // for calendar events, checkboxes
+      stylingColors: {
         byDepartments: {
           CEO: '#FFB3BA',
           Consultancy: '#FFDFBA',
@@ -108,24 +112,6 @@ export default {
           "#B5EAD7", "#FFDFD3", "#FFC3A0", "#FFDDC1", "#B39EB5",
           "#FDFD96", "#CFCFC4", "#A1CAF1", "#E0BBE4", "#FFDFE5"
         ]
-      },
-
-      departmentColors: {
-        CEO: '#FFB3BA',
-        Consultancy: '#FFDFBA',
-        Engineering: '#FFFFBA',
-        Finance: '#BAFFC9',
-        IT: '#BAE1FF',
-        HR: '#D7BAFF',
-        Sales: '#FFB3E6',
-        Solutioning: '#A3E4D7'
-      },
-
-      workShiftColors: {
-        'AM': '#F48BA9',
-        'PM': '#FFB6C1',
-        'Full': '#BA55D3',
-        Office: '#86CBED',
       },
 
       // datePicker
@@ -183,10 +169,9 @@ export default {
     this.userStore = useMainStore();
     this.getEmployeeDetails();
 
-    // to reflect the current date in datePicker when "today" button is clicked
+    // to reset datePicker when "today" button is clicked
     const todayButton = document.querySelector(".fc-today-button");
     todayButton.addEventListener("click", this.handleTodayClick);
-
 
     if (this.role === 'organisation') {
       this.getOrgSchedule();
@@ -195,7 +180,6 @@ export default {
     } else if (this.role === 'manager') {
       this.managerTeamSchedule();
     }
-
   },
 
   watch: {
@@ -263,12 +247,11 @@ export default {
             Attendance rate in office: <span class="${rateClass}">${rate}%</span>
             `
         }
-      } else {
-        return {
-          html: `
+      }
+      return {
+        html: `
               ${arg.event.title}
             `
-        }
       }
     },
 
@@ -286,8 +269,80 @@ export default {
         })
     },
 
-    // --------
+    // for the table in dialog for orgSchedule
+    scheduleValueGetter(params) {
+      const staff_id = params.data.staff_id;
+      const isInArray = (array, id) => array.some(item => item.staff_id === id);
 
+      if (this.role === 'organisation') {
+        if (isInArray(this.unformattedSchedule[this.clickedEventDepartment][this.clickedDateString].AM, staff_id)) {
+          return 'WFH - AM';
+        } else if (isInArray(this.unformattedSchedule[this.clickedEventDepartment][this.clickedDateString].PM, staff_id)) {
+          return 'WFH - PM';
+        } else if (isInArray(this.unformattedSchedule[this.clickedEventDepartment][this.clickedDateString].Full, staff_id)) {
+          return 'WFH - Full';
+        } else {
+          return 'In Office';
+        }
+      } else if (this.role === 'director') {
+        if (isInArray(this.unformattedSchedule[this.clickedManagerId][this.clickedDateString].AM, staff_id)) {
+          return 'WFH - AM';
+        } else if (isInArray(this.unformattedSchedule[this.clickedManagerId][this.clickedDateString].PM, staff_id)) {
+          return 'WFH - PM';
+        } else if (isInArray(this.unformattedSchedule[this.clickedManagerId][this.clickedDateString].Full, staff_id)) {
+          return 'WFH - Full';
+        } else {
+          return 'In Office';
+        }
+      }
+    },
+
+    // --------
+    // FUNCTIONS USED BY HRVIEW
+    displayDepartments(orgSchedule) {
+      this.departments = Object.keys(orgSchedule);
+      this.selectedDepartments = [...this.departments];
+    },
+
+    getOrgSchedule() {
+      fetch(`${url_paths.view_schedule}/o_get_org_schedule`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          return response.json();
+        })
+        .then(data => {
+          this.unformattedSchedule = data;
+          this.displayDepartments(data);
+
+          let formatted_events = [];
+          for (const department in data) {
+            const departmentStrength = data[department]["num_employee"];
+            for (const date in data[department]) {
+              if (date !== "num_employee") {
+                const manpowerInOffice = departmentStrength - data[department][date]["AM"].length - data[department][date]["PM"].length - data[department][date]["Full"].length;
+                const officeAttendanceRate = Math.floor(manpowerInOffice / departmentStrength * 100);
+                const event = {
+                  title: `${department}: ${manpowerInOffice} / ${departmentStrength} in office`,
+                  start: date,
+                  department: department,
+                  manpowerInOffice: manpowerInOffice,
+                  departmentStrength: departmentStrength,
+                  officeAttendanceRate: officeAttendanceRate,
+                  color: this.stylingColors['byDepartments'][department],
+                  textColor: "#000000",
+                };
+                formatted_events.push(event);
+              }
+            }
+            this.formattedEventsByDepartment[department] = formatted_events;
+            formatted_events = [];
+          }
+        })
+    },
+
+    // --------
     // FUNCTIONS USED BY DIRECTORVIEW
     displayManagersInSidebar(directorSchedule) {
       const managersIds = Object.keys(directorSchedule);
@@ -329,7 +384,7 @@ export default {
                   manpowerInOffice: manpowerInOffice,
                   teamStrength: teamStrength,
                   officeAttendanceRate: officeAttendanceRate,
-                  color: this.calendarCheckboxColors['byManagers'][colorIndex],
+                  color: this.stylingColors['byManagers'][colorIndex],
                   textColor: "#000000",
                 };
                 formatted_events.push(event);
@@ -343,79 +398,7 @@ export default {
     },
 
     // --------
-
-    // FUNCTIONS USED BY HRVIEW
-    displayDepartments(orgSchedule) {
-      this.departments = Object.keys(orgSchedule);
-      this.selectedDepartments = [...this.departments];
-    },
-
-    getOrgSchedule() {
-      fetch(`${url_paths.view_schedule}/o_get_org_schedule`)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('Network response was not ok');
-          }
-          return response.json();
-        })
-        .then(data => {
-          this.unformattedSchedule = data;
-          this.displayDepartments(data);
-
-          let formatted_events = [];
-          for (const department in data) {
-            const departmentStrength = data[department]["num_employee"];
-            for (const date in data[department]) {
-              if (date !== "num_employee") {
-                const manpowerInOffice = departmentStrength - data[department][date]["AM"].length - data[department][date]["PM"].length - data[department][date]["Full"].length;
-                const officeAttendanceRate = Math.floor(manpowerInOffice / departmentStrength * 100);
-                const event = {
-                  title: `${department}: ${manpowerInOffice} / ${departmentStrength} in office`,
-                  start: date,
-                  department: department,
-                  manpowerInOffice: manpowerInOffice,
-                  departmentStrength: departmentStrength,
-                  officeAttendanceRate: officeAttendanceRate,
-                  color: this.departmentColors[department],
-                  textColor: "#000000",
-                };
-                formatted_events.push(event);
-              }
-            }
-            this.formattedEventsByDepartment[department] = formatted_events;
-            formatted_events = [];
-          }
-        })
-    },
-
-    // for the table in dialog for orgSchedule
-    scheduleValueGetter(params) {
-      const staff_id = params.data.staff_id;
-      const isInArray = (array, id) => array.some(item => item.staff_id === id);
-
-      if (this.role === 'organisation') {
-        if (isInArray(this.unformattedSchedule[this.clickedEventDepartment][this.clickedDateString].AM, staff_id)) {
-          return 'WFH - AM';
-        } else if (isInArray(this.unformattedSchedule[this.clickedEventDepartment][this.clickedDateString].PM, staff_id)) {
-          return 'WFH - PM';
-        } else if (isInArray(this.unformattedSchedule[this.clickedEventDepartment][this.clickedDateString].Full, staff_id)) {
-          return 'WFH - Full';
-        } else {
-          return 'In Office';
-        }
-      } else if (this.role === 'director') {
-        if (isInArray(this.unformattedSchedule[this.clickedManagerId][this.clickedDateString].AM, staff_id)) {
-          return 'WFH - AM';
-        } else if (isInArray(this.unformattedSchedule[this.clickedManagerId][this.clickedDateString].PM, staff_id)) {
-          return 'WFH - PM';
-        } else if (isInArray(this.unformattedSchedule[this.clickedManagerId][this.clickedDateString].Full, staff_id)) {
-          return 'WFH - Full';
-        } else {
-          return 'In Office';
-        }
-      }
-    },
-
+    // FUNCTIONS FOR MANAGERVIEW
     managerTeamSchedule() {
       const workShiftsTimes = {
         AM: { start: 9, end: 13 },
@@ -446,7 +429,6 @@ export default {
                 const eventMonthIndex = Number(date.slice(5, 7)) - 1;
                 const eventDate = Number(date.slice(8, 10));
                 manpowerAllocation.forEach((workShift) => {
-                  // console.log(workShift);
                   const event = {
                     title: `WFH - ${workShift[0]}: ${workShift[1].length} people`,
                     start: new Date(eventYear, eventMonthIndex, eventDate, workShiftsTimes[workShift[0]].start),
@@ -455,10 +437,9 @@ export default {
                     manpowerInOffice: manpowerInOffice,
                     departmentStrength: departmentStrength,
                     officeAttendanceRate: officeAttendanceRate,
-                    color: this.workShiftColors[workShift[0]],
+                    color: this.stylingColors['byWorkShifts'][workShift[0]],
                     textColor: "#ffffff",
                   };
-                  // console.log(event)
                   formatted_events.push(event);
                 });
                 const officeWorkers = {
@@ -469,13 +450,11 @@ export default {
                   manpowerInOffice: manpowerInOffice,
                   departmentStrength: departmentStrength,
                   officeAttendanceRate: officeAttendanceRate,
-                  color: this.workShiftColors['Office'],
+                  color: this.stylingColors['byWorkShifts']['Office'],
                   textColor: "#ffffff",
                 }
                 formatted_events.push(officeWorkers);
               }
-              // formatted_events = [];
-
             }
           }
           this.calendarOptions.events = formatted_events;
