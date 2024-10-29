@@ -45,7 +45,7 @@ const userStore = useMainStore();
 
           <!-- HR and director view schedule -->
           <RouterLink class="btn d-none d-md-block align-content-center" v-if="userStore.user.role === 1"
-            :to="`/team_schedule/${employeeRole[userStore.user.role]}`">
+            :to="`/team_schedule/${employeeRole[1][userStore.user.position]}`">
             {{ userStore.user.position === 'Director' ? 'Director' : 'Organisation' }} Schedule
           </RouterLink>
 
@@ -160,7 +160,11 @@ export default {
         reason: "",
       },
       employeeRole: {
-        1: "director",
+        1: {
+          "Director": "director",
+          "HR Team": "organisation",
+          "MD": "organisation",
+        },
         2: "staff",
         3: "manager",
       }

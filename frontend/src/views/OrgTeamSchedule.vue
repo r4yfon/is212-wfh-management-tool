@@ -11,7 +11,7 @@
 
       </template>
 
-      <template v-else>
+      <template v-else-if="role === 'organisation'">
         <v-checkbox v-for="department in departments" :key="department" :value="department" :label="department"
           :color="this.departmentColors[department]" v-model="selectedDepartments" hide-details></v-checkbox>
       </template>
@@ -136,18 +136,18 @@ export default {
       clickedDateString: null,
       clickedEventDepartment: null,
 
+      unformattedSchedule: {},
+
       // HRView
       departments: [],
       employeesByDepartment: {},
       selectedDepartments: [],
-      unformattedSchedule: {},
       formattedEventsByDepartment: {},
       orgSchedule: {},
       scheduledData: {},
 
       // directorView
       managersIdAndNames: {},
-      managersUnderDirector: [],
       selectedManagers: [],
       formattedEventsByManager: {},
     };
@@ -162,17 +162,14 @@ export default {
     todayButton.addEventListener("click", this.handleTodayClick);
 
 
-    if (this.role === 'director') {
-      // for HR and CEO
-      if (this.userStore.user.position !== 'Director') {
-        this.getOrgSchedule();
-      } else {
-        // for directors
-        this.displayManagersInSidebar();
-      }
+    if (this.role === 'organisation') {
+      this.getOrgSchedule();
+    } else if (this.role === 'director') {
+      this.displayManagersInSidebar();
     } else if (this.role === 'manager') {
       this.managerTeamSchedule();
     }
+
   },
 
   watch: {
@@ -192,14 +189,14 @@ export default {
       deep: true,
     },
 
-    selectedManagers: {
-      handler(newManagers) {
-        this.calendarOptions.events = [];
-        newManagers.forEach(manager => {
-          this.calendarOptions.events.push(...this.formattedEventsByManager[manager]);
-        });
-      }
-    }
+    // selectedManagers: {
+    //   handler(newManagers) {
+    //     this.calendarOptions.events = [];
+    //     newManagers.forEach(manager => {
+    //       this.calendarOptions.events.push(...this.formattedEventsByManager[manager]);
+    //     });
+    //   }
+    // }
   },
 
   methods: {
@@ -216,14 +213,13 @@ export default {
       this.clickedDateString = `${year}-${month}-${day}`;
       this.showDialog = true;
       this.clickedEventDepartment = arg.event.extendedProps.department;
-      if (this.role === 'director') {
-        if (this.userStore.user.position !== 'Director') {
-          this.rowData = Object.values(this.employeesByDepartment[this.clickedEventDepartment]);
-        } else {
-          this.rowData = Object.values(this.employeesByDepartment[this.clickedEventDepartment]).filter(employee => employee.reporting_manager === this.reportingManagerId);
-        }
+      if (this.role === 'organisation') {
+        this.rowData = Object.values(this.employeesByDepartment[this.clickedEventDepartment]);
+      } else if (this.role === 'director') {
+        // TODO: implement dialog for directorView
+        return
       } else if (this.role === 'manager') {
-        this.rowData = Object.values(this.employeesByDepartment[this.userStore.user.department]).filter(employee => employee.reporting_manager === this.userStore.user.staff_id);
+        this.rowData = Object.values(this.employeesByDepartment[this.clickedEventDepartment]).filter(employee => employee.reporting_manager === this.userStore.user.staff_id);
       }
     },
 
@@ -231,7 +227,7 @@ export default {
     renderEventContent(arg) {
       const rate = Math.floor(arg.event.extendedProps.officeAttendanceRate);
       const rateClass = rate > 50 ? 'text-success-emphasis' : 'text-danger';
-      if (this.role === 'director') {
+      if (this.role === 'organisation') {
         return {
           html: `
             ${arg.event.title}<br />
@@ -418,7 +414,7 @@ export default {
                     departmentStrength: departmentStrength,
                     officeAttendanceRate: officeAttendanceRate,
                     color: this.workShiftColors[workShift[0]],
-                    textColor: "#000000",
+                    textColor: "#ffffff",
                   };
                   // console.log(event)
                   formatted_events.push(event);
@@ -432,7 +428,7 @@ export default {
                   departmentStrength: departmentStrength,
                   officeAttendanceRate: officeAttendanceRate,
                   color: this.workShiftColors['Office'],
-                  textColor: "#000000",
+                  textColor: "#ffffff",
                 }
                 formatted_events.push(officeWorkers);
               }
