@@ -114,6 +114,7 @@ def s_retrieve_requests(s_staff_id):
         }), 500
 
 
+
 @app.route("/m_retrieve_requests/<int:m_staff_id>", methods=['GET']) 
 def m_retrieve_requests(m_staff_id):
     """
@@ -174,9 +175,9 @@ def m_retrieve_requests(m_staff_id):
             RequestDates.rescind_reason,
             RequestDates.withdraw_reason
         ).join(Request, Employee.staff_id == Request.staff_id) \
-         .join(RequestDates, Request.request_id == RequestDates.request_id) \
-         .filter(Employee.reporting_manager == m_staff_id) \
-         .all()
+        .join(RequestDates, Request.request_id == RequestDates.request_id) \
+        .filter(Employee.reporting_manager == m_staff_id) \
+        .all()
 
         # Organizing the results
         request_dict_map = {}
