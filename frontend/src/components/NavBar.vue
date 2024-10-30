@@ -274,9 +274,9 @@ export default {
             }),
           })
             .then((response) => response.json())
-            .then((data) => {
-              // console.log("Success:", data);
-            })
+            // .then((data) => {
+            // console.log("Success:", data);
+            // })
             .catch((error) => {
               console.error("Error:", error);
             })
@@ -304,9 +304,9 @@ export default {
             }),
           })
             .then((response) => response.json())
-            .then((data) => {
-              // console.log("Success:", data);
-            })
+            // .then((data) => {
+            // console.log("Success:", data);
+            // })
             .catch((error) => {
               console.error("Error:", error);
             })
