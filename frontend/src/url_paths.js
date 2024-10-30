@@ -1,9 +1,11 @@
 export const url_paths = {
-  employee: "http://localhost:5000/employee",
-  request: "http://localhost:5001/request",
-  request_dates: "http://localhost:5002/request_dates",
-  status_log: "http://localhost:5003/status_log",
-  view_schedule: "http://localhost:5100",
-  view_requests: "http://localhost:5101",
-  reject_requests: "http://localhost:5102/reject_request",
+  employee: import.meta.env.VITE_EMPLOYEE_API_URL,
+  request: import.meta.env.VITE_REQUEST_API_URL,
+  request_dates: import.meta.env.VITE_REQUEST_DATES_API_URL,
+  status_log: import.meta.env.VITE_STATUS_LOG_API_URL,
+  view_schedule: import.meta.env.VITE_VIEW_SCHEDULE_API_URL,
+  view_requests: import.meta.env.VITE_VIEW_REQUESTS_API_URL,
+  reject_requests: import.meta.env.VITE_REJECT_REQUESTS_API_URL,
 };
+
+

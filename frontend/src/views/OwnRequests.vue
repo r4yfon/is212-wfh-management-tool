@@ -3,6 +3,7 @@
         <v-card flat>
             <v-card-title class="d-flex align-center pe-2">
                 My Requests
+                <v-icon icon="mdi-refresh" size="x-small" class="ms-2" @click="formatData(user)"></v-icon>
                 <v-spacer></v-spacer>
                 <v-text-field v-model="search" density="compact" label="Search" prepend-inner-icon="mdi-magnify"
                     variant="solo-filled" flat hide-details single-line></v-text-field>
@@ -41,7 +42,12 @@
                 </v-card-text>
                 <v-card-actions>
                     <v-btn @click="withdrawDialog = false" text>Cancel</v-btn>
-                    <v-btn @click="confirmWithdraw(selectedItem)" color="pink" text>Confirm</v-btn>
+                    <v-btn @click="confirmWithdraw(selectedItem)" color="pink" text>
+                        <span v-if="buttonIsLoading">
+                            <v-progress-circular indeterminate :size="15" :width="2" color="primary" class="me-1">
+                            </v-progress-circular>
+                        </span>
+                        Confirm</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -52,6 +58,7 @@
 
 <script>
 import { useMainStore } from '@/store';
+import { url_paths } from '@/url_paths';
 const userStore = useMainStore();
 
 export default {
@@ -62,6 +69,7 @@ export default {
             withdrawReason: "",
             selectedItem: null,
             items: [],
+            buttonIsLoading: false,
             headers: [
                 { title: 'Request ID', value: 'request_id', key: "request_id" },
                 { title: 'Creation Date', value: 'creationdate', key: "creationdate" },
@@ -73,8 +81,8 @@ export default {
             ]
         };
     },
-    created() {
-        fetch(`http://localhost:5002/request_dates/auto_reject`, {
+    mounted() {
+        fetch(`${url_paths.request_dates}/auto_reject`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'
@@ -87,7 +95,7 @@ export default {
                 return response.json();
             })
             .then(() => {
-                console.log('Success');
+                // console.log('Success');
             })
             .catch(error => console.error('Error updating status:', error));
         this.formatData();
@@ -96,7 +104,7 @@ export default {
         // Format the data to the structure needed for the table
         formatData() {
             // #####################################################################################
-            fetch(`http://localhost:5101/s_retrieve_requests/${userStore.user.staff_id}`)
+            fetch(`${url_paths.view_requests}/s_retrieve_requests/${userStore.user.staff_id}`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
@@ -105,7 +113,7 @@ export default {
                 })
                 .then(data => {
                     const rawData = data["data"];
-                    console.log(data)
+                    // console.log(data)
                     this.items = rawData.flatMap((item) =>
                         item.wfh_dates.map((wfh) => ({
                             request_id: item.request_id,
@@ -169,7 +177,7 @@ export default {
                 "shift": item.shift
             };
 
-            fetch(`http://localhost:5002/request_dates/change_partial_status`, {
+            fetch(`${url_paths.request_dates}/change_partial_status`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
@@ -183,60 +191,14 @@ export default {
                     return response.json();
                 })
                 .then(responseData => {
-                    console.log('Success:', responseData);
-                    location.reload();
+                    this.buttonIsLoading = true;
+                    // console.log('Success:', responseData);
+                    this.formatData();
                 })
+                .then(() => this.withdrawDialog = false)
                 .catch(error => console.error('Error updating status:', error));
-
-            this.withdrawDialog = false;
         }
 
     }
 };
 </script>
-
-
-<style scoped>
-.requests-container {
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    box-sizing: border-box;
-    width: 95%;
-    max-height: calc(100vh - 80px);
-    position: fixed;
-    top: 80px;
-    /* Position below the header */
-    left: 50%;
-    /* Center horizontally */
-    transform: translateX(-50%);
-    /* Include padding in total height/width */
-    overflow-y: auto;
-    /* Allow vertical scrolling for overflow */
-    bottom: 40px;
-}
-
-
-/* Hide scrollbars for Chrome and Safari */
-.requests::-webkit-scrollbar {
-    display: none;
-    /* Safari and Chrome */
-}
-
-/* Hide scrollbars for Firefox */
-.requests {
-    scrollbar-width: none;
-    /* Firefox */
-}
-
-/* Responsive styles for smaller screens */
-@media (max-width: 768px) {
-    .requests {
-        width: 100%;
-        height: calc(100vh - 80px);
-        top: 80px;
-        left: 0;
-        transform: none;
-    }
-}
-</style>

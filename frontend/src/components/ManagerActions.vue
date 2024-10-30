@@ -93,8 +93,8 @@
 
 <script>
 import { useMainStore } from "@/store";
+import { url_paths } from "@/url_paths";
 const userStore = useMainStore();
-const url_paths = userStore.paths;
 
 export default {
   name: "ManagerActions",
@@ -134,7 +134,7 @@ export default {
         fetch(`${url_paths.view_schedule}/get_wfh_status/${userStore.user.department}`)
           .then(response => response.json())
           .then(data => {
-            console.log(data);
+            // console.log(data);
             this.num_employees_in_dept = data.num_employee_in_dept;
             this.dept_wfh_schedule = data.data;
           })
@@ -143,7 +143,7 @@ export default {
           .then(data => {
             // console.log(data[0].data);
             this.request_dates = data[0].data.map(item => item.request_date);
-            console.log(this.request_dates)
+            // console.log(this.request_dates)
             this.isLoading = false;
           });
       }
@@ -151,17 +151,17 @@ export default {
       if (newStatus === "Rescinded") {
         this.isLoading = true;
         const item_request_id = this.item.request_id;
-        fetch(`http://localhost:5002/request_dates/get_by_request_id/${item_request_id}`)
+        fetch(`${url_paths.request_dates}/get_by_request_id/${item_request_id}`)
           .then((response) => response.json())
           .then((data) => {
-            console.log(data)
+            // console.log(data)
             this.rescindableRequests = data[0].data.filter(request => request.request_status !== "Rescinded");
             this.alreadyRescinded = data[0].data.filter(request => request.request_status === "Rescinded");
             // this.selectedRequestsToRescind = data[0].data.filter(request => request.request_status === "Approved");
             this.isLoading = false;
-            console.log("alreadyRescinded", this.alreadyRescinded)
+            // console.log("alreadyRescinded", this.alreadyRescinded)
             // console.log("selectedRequestsToRescind", this.selectedRequestsToRescind)
-            console.log("rescindableRequests", this.rescindableRequests)
+            // console.log("rescindableRequests", this.rescindableRequests)
           })
       }
     },
@@ -218,7 +218,7 @@ export default {
 
     approveRejectWithdraw(item) {
       this.buttonIsLoading = true;
-      fetch('http://localhost:5002/request_dates/change_all_status', {
+      fetch(`${url_paths.request_dates}/change_all_status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -236,7 +236,7 @@ export default {
           return response.json();
         })
         .then(responseData => {
-          console.log('Success:', responseData);
+          // console.log('Success:', responseData);
           this.buttonIsLoading = false;
           this.newStatus = '';
           this.$emit('refresh-data');
@@ -246,7 +246,7 @@ export default {
     },
     rescind(item) {
       this.buttonIsLoading = true;
-      fetch('http://localhost:5002/request_dates/change_partial_status', {
+      fetch(`${url_paths.request_dates}/change_partial_status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -261,7 +261,7 @@ export default {
       })
         .then(response => response.json())
         .then(data => {
-          console.log('Success:', data);
+          // console.log('Success:', data);
           this.buttonIsLoading = false;
           this.$emit('refresh-data');
           this.closeDialog();

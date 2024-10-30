@@ -20,30 +20,6 @@ request_dates_URL = environ.get(
     'request_dates_URL') or "http://localhost:5002/request_dates"
 
 
-# # Staff view own requests
-# @app.route("/s_retrieve_requests/<int:s_staff_id>", methods=['GET'])
-# def s_retrieve_requests(s_staff_id):
-#     # Get all requests made by the staff_id
-#     response = invoke_http("http://localhost:5001/request/get_requests_by_staff_id/" + str(s_staff_id), method='GET')
-
-#     # Ensure the response contains a 'data' field before processing
-#     if "data" in response and isinstance(response["data"], list):
-#         for request in response["data"]:
-#             request_id = request["request_id"]
-            
-#             # Construct the URL using the request_id
-#             url = f"{request_dates_URL}/get_by_request_id/{request_id}"
-            
-#             # Make the invoke_http call to get request dates
-#             request_dates_response = invoke_http(url, method='GET')
-            
-#             # Add the request_dates_response to the request as a new field
-#             request["wfh_dates"] = request_dates_response
-    
-#     # Return the modified response including the request_dates
-#     return jsonify(response)
-
-
 # Staff view own requests
 @app.route("/s_retrieve_requests/<int:s_staff_id>", methods=['GET'])
 def s_retrieve_requests(s_staff_id):
@@ -139,7 +115,6 @@ def s_retrieve_requests(s_staff_id):
 
 
 
-
 @app.route("/m_retrieve_requests/<int:m_staff_id>", methods=['GET']) 
 def m_retrieve_requests(m_staff_id):
     """
@@ -200,9 +175,9 @@ def m_retrieve_requests(m_staff_id):
             RequestDates.rescind_reason,
             RequestDates.withdraw_reason
         ).join(Request, Employee.staff_id == Request.staff_id) \
-         .join(RequestDates, Request.request_id == RequestDates.request_id) \
-         .filter(Employee.reporting_manager == m_staff_id) \
-         .all()
+        .join(RequestDates, Request.request_id == RequestDates.request_id) \
+        .filter(Employee.reporting_manager == m_staff_id) \
+        .all()
 
         # Organizing the results
         request_dict_map = {}

@@ -5,10 +5,11 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import { useMainStore } from '@/store.js';
 import DatePicker from 'primevue/datepicker';
+import { url_paths } from '@/url_paths';
 
 export default {
   components: {
-    FullCalendar,
+    FullCalendar, DatePicker
   },
   data() {
     return {
@@ -40,6 +41,7 @@ export default {
         events: [],
         eventClick: this.handleEventClick,
       },
+      selectedDate: new Date(),
       datePicker: {
         start: new Date(new Date().getFullYear(), new Date().getMonth() - 2, new Date().getDate()),
         end: new Date(new Date().getFullYear(), new Date().getMonth() + 3, new Date().getDate()),
@@ -79,14 +81,15 @@ export default {
     },
     async fetchAndDisplayData() {
       try {
-        const employeeResponse = await fetch('http://127.0.0.1:5000/employee/get_all_employees_by_dept');
+        const employeeResponse = await fetch(`${url_paths.employee}/get_all_employees_by_dept`);
         if (!employeeResponse.ok) throw new Error('Failed to fetch employee details');
         const employeeData = await employeeResponse.json();
 
-        const scheduleResponse = await fetch(`http://127.0.0.1:5100/s_get_team_schedule/${this.staff_id}`);
+        const scheduleResponse = await fetch(`${url_paths.view_schedule}/s_get_team_schedule/${this.staff_id}`);
         if (!scheduleResponse.ok) throw new Error('Failed to fetch schedule');
         const scheduleData = await scheduleResponse.json();
 
+        // console.log(employeeData.data)
         this.displayTeamSchedule(scheduleData, employeeData.data);
       } catch (error) {
         console.error(error);
@@ -96,16 +99,19 @@ export default {
       const formattedEvents = [];
       const team = this.selectedTeam;
 
+      const teamMembers = Object.values(employeesByDept[team]).filter(member => member.reporting_manager === this.user_store.user.reporting_manager);
+      // console.log(teamMembers)
+
       for (const date in teamSchedule[team]) {
         if (date !== 'num_employee') {
           const departmentStrength = teamSchedule[team].num_employee;
           const AMCount = teamSchedule[team][date].AM.length;
           const PMCount = teamSchedule[team][date].PM.length;
-          console.log(teamSchedule[team][date].PM);
+          // console.log(teamSchedule[team][date].PM);
           const FullCount = teamSchedule[team][date].Full.length;
           const inOfficeCount = departmentStrength - AMCount - PMCount - FullCount;
 
-          const inOfficeStaffDetails = Object.values(employeesByDept[team] || {})
+          const inOfficeStaffDetails = teamMembers
             .map(staff => ({
               name: staff.staff_name,
               staff_id: staff.staff_id,
@@ -117,50 +123,8 @@ export default {
               !teamSchedule[team][date].Full.some(s => s.staff_id === staff.staff_id)
             );
 
-
-      //     formattedEvents.push(
-      //       {
-      //         title: `WFH - AM: ${AMCount} people`,
-      //         start: date,
-      //         color: this.workColors['WFH - AM'],
-      //         extendedProps: {
-      //           amCount: AMCount,
-      //           staffDetails: teamSchedule[team][date].AM,
-      //         },
-      //       },
-      //       {
-      //         title: `WFH - PM: ${PMCount} people`,
-      //         start: date,
-      //         color: this.workColors['WFH - PM'],
-      //         extendedProps: {
-      //           pmCount: PMCount,
-      //           staffDetails: teamSchedule[team][date].PM,
-      //         },
-      //       },
-      //       {
-      //         title: `WFH - Full: ${FullCount} people`,
-      //         start: date,
-      //         color: this.workColors['WFH - Full'],
-      //         extendedProps: {
-      //           fullCount: FullCount,
-      //           staffDetails: teamSchedule[team][date].Full,
-      //         },
-      //       },
-      //       {
-      //         title: `Office: ${inOfficeCount} people`,
-      //         start: date,
-      //         color: this.workColors.Office,
-      //         extendedProps: {
-      //           inOfficeCount,
-      //           staffDetails: inOfficeStaffDetails,
-      //         },
-      //       }
-      //     );
-      //   }
-      // }
-
-      if (this.selectedWorkTypes.includes('WFH - AM')) {
-            formattedEvents.push({
+          formattedEvents.push(
+            {
               title: `WFH - AM: ${AMCount} people`,
               start: date,
               color: this.workColors['WFH - AM'],
@@ -211,10 +175,8 @@ export default {
 
 
       this.calendarOptions.events = formattedEvents;
-      console.log(this.calendarOptions.events)
+      // console.log(this.calendarOptions.events)
     },
-
-
 
     filterStaffDetails(staffList) {
       return staffList.filter(staff =>
@@ -241,6 +203,12 @@ export default {
         this.fetchAndDisplayData(); // Refetch data if user data changes
       },
       deep: true
+    },
+
+    selectedDate: {
+      handler(value) {
+        this.$refs.fullCalendar.getApi().gotoDate(value);
+      },
     }
   },
   mounted() {
@@ -254,21 +222,12 @@ export default {
     <aside class="p-3 d-none d-lg-block bg-primary-subtle me-4 rounded w-auto">
       <!-- Sidebar with DatePicker and Work Types Checkboxes -->
       <DatePicker v-model="selectedDate" inline class="mb-4" :minDate="datePicker.start" :maxDate="datePicker.end" />
-
-      <!-- Work Type Checkboxes -->
-      <v-checkbox
-        v-for="(color, workType) in workColors"
-        :key="workType"
-        :value="workType"
-        :label="workType"
-        :style="{ color }"
-        v-model="selectedWorkTypes"
-        hide-details
-      />
+      <!-- <v-checkbox v-for="department in departments" :key="department" :value="department" :label="department"
+        :color="this.departmentColors[department]" v-model="selectedDepartments" hide-details></v-checkbox> -->
     </aside>
     <section class="flex-grow-1">
-      <FullCalendar :options="calendarOptions" />
-      <v-dialog v-model="showDialog" max-width="70%">
+      <FullCalendar ref="fullCalendar" :options="calendarOptions" />
+      <v-dialog v-if="showDialog" max-width="70%">
         <v-card>
           <v-card-title>Staff</v-card-title>
           <v-card-text>
@@ -320,7 +279,6 @@ export default {
 .staff-table-container {
   max-height: 300px;
   overflow-y: auto;
-  border-bottom: 2px solid #ddd;
 }
 
 .staff-table thead th {
