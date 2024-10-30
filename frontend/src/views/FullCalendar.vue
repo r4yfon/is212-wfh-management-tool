@@ -17,8 +17,15 @@ fetch(`${url_paths.request_dates}/auto_reject`, {
 </script>
 
 <template>
-  <div class="container-fluid">
-    <FullCalendar :options="calendarOptions" class="mt-4" />
+  <div class="container-fluid d-flex mt-4">
+
+    <aside class="p-3 d-none d-lg-block bg-primary-subtle me-4 rounded w-auto">
+      <!-- Sidebar content goes here -->
+      <DatePicker v-model="selectedDate" inline class="mb-4" :minDate="datePicker.start" :maxDate="datePicker.end" />
+    </aside>
+    <div class="flex-grow-1">
+      <FullCalendar ref="fullCalendar" :options="calendarOptions" />
+    </div>
   </div>
 </template>
 
@@ -27,6 +34,7 @@ import FullCalendar from "@fullcalendar/vue3";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import timeGridPlugin from "@fullcalendar/timegrid";
+import DatePicker from "primevue/datepicker";
 import { useMainStore } from '@/store.js';
 
 // for mapping event's duration
@@ -46,7 +54,7 @@ const timeMapping = {
 
 export default {
   components: {
-    FullCalendar, // make the <FullCalendar> tag available
+    FullCalendar, DatePicker
   },
   data() {
     return {
@@ -87,14 +95,21 @@ export default {
         "Pending Withdrawal: WFH - PM": "pink",
         "Pending Withdrawal: WFH - Full": "pink",
       },
+
+      datePicker: {
+        start: new Date(new Date().getFullYear(), new Date().getMonth() - 2, new Date().getDate()),
+        end: new Date(new Date().getFullYear(), new Date().getMonth() + 3, new Date().getDate()),
+      },
+
+      selectedDate: new Date(),
       scheduledData: {},
       currentDate: new Date(),
       userStore: null,
     };
   },
+
   mounted() {
     this.userStore = useMainStore();
-    this.currentDate = new Date();
     this.getWeeklySchedule(this.userStore.user);
     const nextButton = document.querySelector(".fc-next-button");
     nextButton.addEventListener("click", this.handleNextClick);
@@ -103,14 +118,19 @@ export default {
     const todayButton = document.querySelector(".fc-today-button");
     todayButton.addEventListener("click", this.handleTodayClick);
   },
+
+  watch: {
+    selectedDate: {
+      handler(value) {
+        // console.log(value)
+        this.$refs.fullCalendar.getApi().gotoDate(value);
+        this.currentDate = value.toISOString().split("T")[0];
+        this.getWeeklySchedule(this.userStore.user);
+      },
+    },
+  },
+
   methods: {
-    handleDateClick(arg) {
-      // console.log(`Date ${arg.dateStr} clicked`);
-    },
-    handleEventClick(arg) {
-      // console.log(new Date(arg.event.start).toISOString().split("T")[0]);
-      // console.log(`Event ${arg.event.title} clicked`);
-    },
     handleNextClick() {
       this.currentDate = new Date(this.currentDate).setDate(
         new Date(this.currentDate).getDate() + 7,
@@ -136,9 +156,6 @@ export default {
         this.getWeeklySchedule(this.userStore.user);
       }
     },
-    // eventDidMount(info) {
-    //   info.el.style.color = info.event.textColor; // Set text color directly
-    // },
     getWeeklySchedule(user) {
       const staff_id = user.staff_id;
       if ((!this.currentDate) instanceof Date) {
@@ -151,13 +168,11 @@ export default {
         .then((data) => {
           const retrievedData = data.data;
 
-          // this.events = [];
-
           for (let day in retrievedData) {
-            const dateString = day; // e.g. '2024-10-05'
+            const dateString = day;
             if (!(dateString in this.scheduledData)) {
               this.scheduledData[dateString] = retrievedData[dateString];
-              const eventTitles = retrievedData[dateString]; // Get Home or Office from schedule data
+              const eventTitles = retrievedData[dateString];
               eventTitles.forEach((eventTitle) => {
                 let event;
                 const times = timeMapping[eventTitle];
@@ -181,9 +196,7 @@ export default {
               });
             }
           }
-
           this.calendarOptions.events = this.events;
-          // console.log(this.calendarOptions.events);
         })
         .catch((error) => {
           console.error("Error fetching schedule data:", error);
