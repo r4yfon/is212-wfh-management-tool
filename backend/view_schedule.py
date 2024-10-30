@@ -177,7 +177,29 @@ def fetch_schedule_data(filter_conditions):
     .filter(*filter_conditions) \
     .all()
 
+# Recursive function to get all team members for a given manager
+def get_team_members(staff_id, data, visited=None, staff_details=None):
+    if visited is None:
+        visited = set()
+    if staff_details is None:
+        staff_details = {}
 
+    if staff_id in visited:
+        return staff_details
+
+    visited.add(staff_id)
+
+    for member in data:
+        if member["reporting_manager"] == staff_id:
+            staff_details[member["staff_id"]] = {
+                "staff_name": member["staff_name"],
+                "dept": member["dept"],
+                "position": member["position"],
+            }
+            # Recursive call to find team members under this member
+            get_team_members(member["staff_id"], data, visited, staff_details)
+
+    return staff_details
 
 # Endpoint to retrieve organizational schedule
 @app.route("/o_get_org_schedule", methods=["GET"])
@@ -215,30 +237,6 @@ def m_get_team_schedule(staff_id):
         position = employee_details["data"]["position"]
 
         response = invoke_http(employee_URL + "/get_all_employees", method="GET")
-
-        # Recursive function to get all team members for a given manager
-        def get_team_members(staff_id, data, visited=None, staff_details=None):
-            if visited is None:
-                visited = set()
-            if staff_details is None:
-                staff_details = {}
-
-            if staff_id in visited:
-                return staff_details
-
-            visited.add(staff_id)
-
-            for member in data:
-                if member["reporting_manager"] == staff_id:
-                    staff_details[member["staff_id"]] = {
-                        "staff_name": member["staff_name"],
-                        "dept": member["dept"],
-                        "position": member["position"],
-                    }
-                    # Recursive call to find team members under this member
-                    get_team_members(member["staff_id"], data, visited, staff_details)
-
-            return staff_details
 
         all_team_members = get_team_members(staff_id, response["data"])
 
@@ -415,29 +413,58 @@ def get_wfh_status():
             "num_employee_in_dept": num_employee_in_dept,  # Include the count of employees in the response
         }
     )
+
 # Retrieve wfh count and total by department
-@app.route("/get_wfh_status/<string:department>", methods=["GET"])
-def get_wfh_status_by_dept(department):
+@app.route("/get_wfh_status_by_team/<int:staff_id>", methods=["GET"])
+def get_wfh_status_by_team(staff_id):
+    response = invoke_http(employee_URL + "/get_all_employees", method="GET")
+    # Recursive function to get all team members for a given manager
+    def get_team_members(staff_id, data, visited=None, staff_details=None):
+        if visited is None:
+            visited = set()
+        if staff_details is None:
+            staff_details = {}
+
+        if staff_id in visited:
+            return staff_details
+
+        visited.add(staff_id)
+
+        for member in data:
+            if member["reporting_manager"] == staff_id:
+                staff_details[member["staff_id"]] = {
+                    "staff_name": member["staff_name"],
+                    "dept": member["dept"],
+                    "position": member["position"],
+                }
+                # Recursive call to find team members under this member
+                get_team_members(member["staff_id"], data, visited, staff_details)
+
+        return staff_details
+    all_team_members = get_team_members(staff_id, response["data"])
+
     results = (
         db.session.query(Employee.staff_id, RequestDates.request_date)
         .join(Request, Request.request_id == RequestDates.request_id)
         .join(Employee, Employee.staff_id == Request.staff_id)
-        .filter(Employee.dept == department)
+        .filter(RequestDates.request_status == "Approved")
         .all()
     )
-    num_employee_in_dept = (
-        db.session.query(Employee.staff_id).filter(Employee.dept == department).count()
-    )  # Count the number of employees in the department
+
+    num_employee_in_dept = len(all_team_members)
+    
     status = {}
     for result in results:
         date_str = result[1].isoformat()  # Convert date to string in YYYY-MM-DD format
         staff_id = result[0]  # staff_id
-        if date_str not in status:
-            status[date_str] = [staff_id]  # Initialize the list with the first staff_id
-        elif staff_id not in status[date_str]:
-            status[date_str].append(
-                staff_id
-            )  # Add staff_id to the existing list for this date
+        if staff_id in all_team_members.keys():
+            if date_str not in status:
+                status[date_str] = [staff_id]  # Initialize the list with the first staff_id
+            elif staff_id not in status[date_str]:
+                status[date_str].append(
+                    staff_id
+                )  # Add staff_id to the existing list for this date
+
     from datetime import datetime, timedelta
     from dateutil.relativedelta import relativedelta
     def get_date_ranges():
@@ -459,6 +486,7 @@ def get_wfh_status_by_dept(department):
                     future_date.strftime("%Y-%m-%d")
                 )  # Format to YYYY-MM-DD
         return date_list
+    
     date_list = get_date_ranges()
     for date in date_list:
         if date not in status:
