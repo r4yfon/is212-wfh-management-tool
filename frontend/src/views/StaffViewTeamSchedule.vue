@@ -23,8 +23,6 @@ export default {
       clickedDateString: null,
       clickedEventDetails: null,
       searchTerm: '',
-      selectedDate: new Date(),
-      selectedWorkTypes: [],
       calendarOptions: {
         plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
         initialView: 'dayGridWeek',
@@ -132,11 +130,8 @@ export default {
                 amCount: AMCount,
                 staffDetails: teamSchedule[team][date].AM,
               },
-            });
-          }
-
-          if (this.selectedWorkTypes.includes('WFH - PM')) {
-            formattedEvents.push({
+            },
+            {
               title: `WFH - PM: ${PMCount} people`,
               start: date,
               color: this.workColors['WFH - PM'],
@@ -144,11 +139,8 @@ export default {
                 pmCount: PMCount,
                 staffDetails: teamSchedule[team][date].PM,
               },
-            });
-          }
-
-          if (this.selectedWorkTypes.includes('WFH - Full')) {
-            formattedEvents.push({
+            },
+            {
               title: `WFH - Full: ${FullCount} people`,
               start: date,
               color: this.workColors['WFH - Full'],
@@ -156,11 +148,8 @@ export default {
                 fullCount: FullCount,
                 staffDetails: teamSchedule[team][date].Full,
               },
-            });
-          }
-
-          if (this.selectedWorkTypes.includes('Office')) {
-            formattedEvents.push({
+            },
+            {
               title: `Office: ${inOfficeCount} people`,
               start: date,
               color: this.workColors.Office,
@@ -168,11 +157,10 @@ export default {
                 inOfficeCount,
                 staffDetails: inOfficeStaffDetails,
               },
-            });
-          }
+            }
+          );
         }
       }
-
 
       this.calendarOptions.events = formattedEvents;
       // console.log(this.calendarOptions.events)
@@ -220,7 +208,7 @@ export default {
 <template>
   <div class="container-fluid d-flex mt-4">
     <aside class="p-3 d-none d-lg-block bg-primary-subtle me-4 rounded w-auto">
-      <!-- Sidebar with DatePicker and Work Types Checkboxes -->
+      <!-- Sidebar content goes here -->
       <DatePicker v-model="selectedDate" inline class="mb-4" :minDate="datePicker.start" :maxDate="datePicker.end" />
       <!-- <v-checkbox v-for="department in departments" :key="department" :value="department" :label="department"
         :color="this.departmentColors[department]" v-model="selectedDepartments" hide-details></v-checkbox> -->
