@@ -4,6 +4,7 @@ import interactionPlugin from '@fullcalendar/interaction';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import { useMainStore } from '@/store.js';
+import DatePicker from 'primevue/datepicker';
 
 export default {
   components: {
@@ -21,6 +22,8 @@ export default {
       clickedDateString: null,
       clickedEventDetails: null,
       searchTerm: '',
+      selectedDate: new Date(),
+      selectedWorkTypes: [],
       calendarOptions: {
         plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
         initialView: 'dayGridWeek',
@@ -36,6 +39,10 @@ export default {
         },
         events: [],
         eventClick: this.handleEventClick,
+      },
+      datePicker: {
+        start: new Date(new Date().getFullYear(), new Date().getMonth() - 2, new Date().getDate()),
+        end: new Date(new Date().getFullYear(), new Date().getMonth() + 3, new Date().getDate()),
       },
     };
   },
@@ -111,8 +118,49 @@ export default {
             );
 
 
-          formattedEvents.push(
-            {
+      //     formattedEvents.push(
+      //       {
+      //         title: `WFH - AM: ${AMCount} people`,
+      //         start: date,
+      //         color: this.workColors['WFH - AM'],
+      //         extendedProps: {
+      //           amCount: AMCount,
+      //           staffDetails: teamSchedule[team][date].AM,
+      //         },
+      //       },
+      //       {
+      //         title: `WFH - PM: ${PMCount} people`,
+      //         start: date,
+      //         color: this.workColors['WFH - PM'],
+      //         extendedProps: {
+      //           pmCount: PMCount,
+      //           staffDetails: teamSchedule[team][date].PM,
+      //         },
+      //       },
+      //       {
+      //         title: `WFH - Full: ${FullCount} people`,
+      //         start: date,
+      //         color: this.workColors['WFH - Full'],
+      //         extendedProps: {
+      //           fullCount: FullCount,
+      //           staffDetails: teamSchedule[team][date].Full,
+      //         },
+      //       },
+      //       {
+      //         title: `Office: ${inOfficeCount} people`,
+      //         start: date,
+      //         color: this.workColors.Office,
+      //         extendedProps: {
+      //           inOfficeCount,
+      //           staffDetails: inOfficeStaffDetails,
+      //         },
+      //       }
+      //     );
+      //   }
+      // }
+
+      if (this.selectedWorkTypes.includes('WFH - AM')) {
+            formattedEvents.push({
               title: `WFH - AM: ${AMCount} people`,
               start: date,
               color: this.workColors['WFH - AM'],
@@ -120,8 +168,11 @@ export default {
                 amCount: AMCount,
                 staffDetails: teamSchedule[team][date].AM,
               },
-            },
-            {
+            });
+          }
+
+          if (this.selectedWorkTypes.includes('WFH - PM')) {
+            formattedEvents.push({
               title: `WFH - PM: ${PMCount} people`,
               start: date,
               color: this.workColors['WFH - PM'],
@@ -129,8 +180,11 @@ export default {
                 pmCount: PMCount,
                 staffDetails: teamSchedule[team][date].PM,
               },
-            },
-            {
+            });
+          }
+
+          if (this.selectedWorkTypes.includes('WFH - Full')) {
+            formattedEvents.push({
               title: `WFH - Full: ${FullCount} people`,
               start: date,
               color: this.workColors['WFH - Full'],
@@ -138,8 +192,11 @@ export default {
                 fullCount: FullCount,
                 staffDetails: teamSchedule[team][date].Full,
               },
-            },
-            {
+            });
+          }
+
+          if (this.selectedWorkTypes.includes('Office')) {
+            formattedEvents.push({
               title: `Office: ${inOfficeCount} people`,
               start: date,
               color: this.workColors.Office,
@@ -147,10 +204,11 @@ export default {
                 inOfficeCount,
                 staffDetails: inOfficeStaffDetails,
               },
-            }
-          );
+            });
+          }
         }
       }
+
 
       this.calendarOptions.events = formattedEvents;
       console.log(this.calendarOptions.events)
@@ -194,10 +252,19 @@ export default {
 <template>
   <div class="container-fluid d-flex mt-4">
     <aside class="p-3 d-none d-lg-block bg-primary-subtle me-4 rounded w-auto">
-      <!-- Sidebar content goes here -->
+      <!-- Sidebar with DatePicker and Work Types Checkboxes -->
       <DatePicker v-model="selectedDate" inline class="mb-4" :minDate="datePicker.start" :maxDate="datePicker.end" />
-      <v-checkbox v-for="department in departments" :key="department" :value="department" :label="department"
-        :color="this.departmentColors[department]" v-model="selectedDepartments" hide-details></v-checkbox>
+
+      <!-- Work Type Checkboxes -->
+      <v-checkbox
+        v-for="(color, workType) in workColors"
+        :key="workType"
+        :value="workType"
+        :label="workType"
+        :style="{ color }"
+        v-model="selectedWorkTypes"
+        hide-details
+      />
     </aside>
     <section class="flex-grow-1">
       <FullCalendar :options="calendarOptions" />
