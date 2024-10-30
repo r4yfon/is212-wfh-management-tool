@@ -53,7 +53,8 @@
         <p>By approving this request,</p>
         <div v-for="request_date in this.request_dates" :key="request_date" class="mb-3">
           <p>
-            {{ request_date }}: {{ dept_wfh_schedule[request_date]?.length || 1 }}/{{ this.num_employees_in_dept + 1 }}
+            {{ request_date }}: {{ dept_wfh_schedule[request_date].length + 1 }}/{{ this.num_employees_in_dept
+            }}
             employees in the department will be WFH.
           </p>
           <p
@@ -120,32 +121,37 @@ export default {
   props: {
     item: Object,
   },
+
   emits: ['refresh-data'],
+
+  computed: {
+    attendance_in_office(request_date) {
+      return ((1 - ((this.dept_wfh_schedule[request_date].length + 1) / this.num_employees_in_dept)) * 100).toFixed(2);
+    },
+  },
+
   methods: {
     openDialog(newStatus) {
       this.dialogOpened = true;
-      if (newStatus) {
-        this.newStatus = newStatus
-      }
+      this.newStatus = newStatus;
 
       if (newStatus === "Approved") {
         const item_request_id = this.item.request_id;
         this.isLoading = true;
-        fetch(`${url_paths.view_schedule}/get_wfh_status/${userStore.user.department}`)
+        fetch(`${url_paths.view_schedule}/get_wfh_status_by_team/${userStore.user.staff_id}`)
           .then(response => response.json())
           .then(data => {
-            // console.log(data);
             this.num_employees_in_dept = data.num_employee_in_dept;
             this.dept_wfh_schedule = data.data;
           })
-        fetch(`${url_paths.request_dates}/get_by_request_id/${item_request_id}`)
-          .then(response => response.json())
-          .then(data => {
-            // console.log(data[0].data);
-            this.request_dates = data[0].data.map(item => item.request_date);
-            // console.log(this.request_dates)
-            this.isLoading = false;
-          });
+          .then(() => {
+            fetch(`${url_paths.request_dates}/get_by_request_id/${item_request_id}`)
+              .then(response => response.json())
+              .then(data => {
+                this.request_dates = data[0].data.map(item => item.request_date);
+                this.isLoading = false;
+              });
+          })
       }
 
       if (newStatus === "Rescinded") {
@@ -154,14 +160,9 @@ export default {
         fetch(`${url_paths.request_dates}/get_by_request_id/${item_request_id}`)
           .then((response) => response.json())
           .then((data) => {
-            // console.log(data)
             this.rescindableRequests = data[0].data.filter(request => request.request_status !== "Rescinded");
             this.alreadyRescinded = data[0].data.filter(request => request.request_status === "Rescinded");
-            // this.selectedRequestsToRescind = data[0].data.filter(request => request.request_status === "Approved");
             this.isLoading = false;
-            // console.log("alreadyRescinded", this.alreadyRescinded)
-            // console.log("selectedRequestsToRescind", this.selectedRequestsToRescind)
-            // console.log("rescindableRequests", this.rescindableRequests)
           })
       }
     },
@@ -172,11 +173,6 @@ export default {
       this.errorMessages.reason = [];
       this.dialogOpened = false;
     },
-
-    attendance_in_office(request_date) {
-      return (100 - (this.dept_wfh_schedule[request_date]?.length / this.num_employees_in_dept * 100)).toFixed(2);
-    },
-
 
     noErrorMessages() {
       return Object.values(this.errorMessages).every(arr => arr.length === 0);
@@ -239,9 +235,6 @@ export default {
           this.closeDialog();
           return response.json();
         })
-        // .then(responseData => {
-        // console.log('Success:', responseData);
-        // })
         .catch(error => console.error('Error updating status:', error));
     },
     rescind(item) {

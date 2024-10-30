@@ -263,7 +263,7 @@ def m_get_team_schedule(staff_id):
                         Employee.reporting_manager == sub_id,
                         RequestDates.request_status.in_(["Pending Approval", "Approved"])
                     ])
-                    
+
                     # Populate the subordinate's schedule with dates and shifts
                     for id, fname, lname, dept, position, manager, date, shift, status in schedule_data:
                         staff_schedule = {
@@ -271,9 +271,9 @@ def m_get_team_schedule(staff_id):
                             "name": f"{fname} {lname}",
                             "position": position
                         }
-                        
+
                         add_employee_to_schedule(subordinate_schedule, dept, date.strftime("%Y-%m-%d"), shift, staff_schedule)
-                    
+
                     # Add the subordinate's completed schedule to the overall dictionary
                     subordinate_dict[sub_id] = subordinate_schedule[sub_dept]
 
@@ -452,7 +452,7 @@ def get_wfh_status_by_team(staff_id):
     )
 
     num_employee_in_dept = len(all_team_members)
-    
+
     status = {}
     for result in results:
         date_str = result[1].isoformat()  # Convert date to string in YYYY-MM-DD format
@@ -486,7 +486,7 @@ def get_wfh_status_by_team(staff_id):
                     future_date.strftime("%Y-%m-%d")
                 )  # Format to YYYY-MM-DD
         return date_list
-    
+
     date_list = get_date_ranges()
     for date in date_list:
         if date not in status:

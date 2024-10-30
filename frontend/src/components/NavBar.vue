@@ -314,17 +314,17 @@ export default {
               this.loading = false;
               setTimeout(200);
               this.dialog = false;
+              this.newEvent.date = "";
+              this.newEvent.endDate = "";
+              this.newEvent.shift = "";
+              this.newEvent.reason = "";
+              this.newEvent.requestType = "one-time";
+              this.newEvent.recurrence = "";
             });
         } else {
           // alert("Please fill in all required fields and try again.");
           this.loading = false;
         }
-        this.newEvent.date = "";
-        this.newEvent.endDate = "";
-        this.newEvent.shift = "";
-        this.newEvent.reason = "";
-        this.newEvent.requestType = "one-time";
-        this.newEvent.recurrence = "";
       }
     }
   }
