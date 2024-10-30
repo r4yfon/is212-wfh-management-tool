@@ -233,15 +233,15 @@ export default {
           if (!response.ok) {
             throw new Error('Network response was not ok');
           }
-          return response.json();
-        })
-        .then(responseData => {
-          // console.log('Success:', responseData);
           this.buttonIsLoading = false;
           this.newStatus = '';
           this.$emit('refresh-data');
           this.closeDialog();
+          return response.json();
         })
+        // .then(responseData => {
+        // console.log('Success:', responseData);
+        // })
         .catch(error => console.error('Error updating status:', error));
     },
     rescind(item) {
@@ -259,9 +259,7 @@ export default {
           "reason": this.reason,
         })
       })
-        .then(response => response.json())
-        .then(data => {
-          // console.log('Success:', data);
+        .then(() => {
           this.buttonIsLoading = false;
           this.$emit('refresh-data');
           this.closeDialog();

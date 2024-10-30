@@ -11,6 +11,7 @@
       </template>
 
       <template v-else-if="role === 'organisation'">
+        <div class="fw-semibold">Departments</div>
         <v-checkbox v-for="department in departments" :key="department" :value="department" :label="department"
           :color="this.stylingColors['byDepartments'][department]" v-model="selectedDepartments"
           hide-details></v-checkbox>
@@ -130,7 +131,7 @@ export default {
           { headerName: "Role", field: "role", filter: true, suppressMovable: true },
           {
             headerName: "WFH Status", valueGetter: this.scheduleValueGetter, filter: true, suppressMovable: true, cellStyle: params => {
-              return params.value === 'In Office' ? { color: 'green' } : { color: 'red' };
+              return params.value[0] === 'In Office' ? { color: 'green' } : { color: 'red' };
             }
           }
         ],
@@ -221,9 +222,11 @@ export default {
       const month = String(d.getMonth() + 1).padStart(2, '0');
       const day = String(d.getDate()).padStart(2, '0');
       this.clickedDateString = `${year}-${month}-${day}`;
+
       if (this.role === 'organisation') {
         this.clickedEventDepartment = arg.event.extendedProps.department;
         this.rowData = Object.values(this.employeesByDepartment[this.clickedEventDepartment]);
+        // console.log(this.rowData.length);
       } else if (this.role === 'director') {
         const managerDepartment = this.userStore.user.department;
         this.clickedManagerId = arg.event.extendedProps.managerId;
@@ -245,7 +248,7 @@ export default {
         return {
           html: `
             ${arg.event.title}<br />
-            Attendance rate in office: <span class="${rateClass}">${rate}%</span>
+            In office: <span class="${rateClass}">${rate}%</span>
             `
         }
       } else if (this.role === 'director') {
@@ -277,31 +280,35 @@ export default {
         })
     },
 
-    // for the table in dialog for orgSchedule
+    // for WFH status in ag-grid in dialog
     scheduleValueGetter(params) {
       const staff_id = params.data.staff_id;
       const isInArray = (array, id) => array.some(item => item.staff_id === id);
 
+      let statuses = [];
+
       if (this.role === 'organisation' || this.role === 'manager') {
-        if (isInArray(this.unformattedSchedule[this.clickedEventDepartment][this.clickedDateString].AM, staff_id)) {
-          return 'WFH - AM';
-        } else if (isInArray(this.unformattedSchedule[this.clickedEventDepartment][this.clickedDateString].PM, staff_id)) {
-          return 'WFH - PM';
-        } else if (isInArray(this.unformattedSchedule[this.clickedEventDepartment][this.clickedDateString].Full, staff_id)) {
-          return 'WFH - Full';
-        } else {
-          return 'In Office';
+        if (isInArray(this.unformattedSchedule[this.clickedEventDepartment][this.clickedDateString]["AM"], staff_id)) {
+          statuses.push('WFH - AM');
+        } if (isInArray(this.unformattedSchedule[this.clickedEventDepartment][this.clickedDateString]["PM"], staff_id)) {
+          statuses.push('WFH - PM');
+        } if (isInArray(this.unformattedSchedule[this.clickedEventDepartment][this.clickedDateString]["Full"], staff_id)) {
+          statuses.push('WFH - Full');
+        } if (statuses.length === 0) {
+          statuses.push('In Office');
         }
+        return statuses;
       } else if (this.role === 'director') {
         if (isInArray(this.unformattedSchedule[this.clickedManagerId][this.clickedDateString].AM, staff_id)) {
-          return 'WFH - AM';
-        } else if (isInArray(this.unformattedSchedule[this.clickedManagerId][this.clickedDateString].PM, staff_id)) {
-          return 'WFH - PM';
-        } else if (isInArray(this.unformattedSchedule[this.clickedManagerId][this.clickedDateString].Full, staff_id)) {
-          return 'WFH - Full';
-        } else {
-          return 'In Office';
+          statuses.push('WFH - AM');
+        } if (isInArray(this.unformattedSchedule[this.clickedManagerId][this.clickedDateString].PM, staff_id)) {
+          statuses.push('WFH - PM');
+        } if (isInArray(this.unformattedSchedule[this.clickedManagerId][this.clickedDateString].Full, staff_id)) {
+          statuses.push('WFH - Full');
+        } if (statuses.length === 0) {
+          statuses.push('In Office');
         }
+        return statuses;
       }
     },
 
@@ -329,10 +336,26 @@ export default {
             const departmentStrength = data[department]["num_employee"];
             for (const date in data[department]) {
               if (date !== "num_employee") {
-                const manpowerInOffice = departmentStrength - data[department][date]["AM"].length - data[department][date]["PM"].length - data[department][date]["Full"].length;
+                // Create a map to track unique employees by their staff_id
+                const uniqueEmployees = new Map();
+
+                // Helper function to add employees to the map
+                const addUniqueEmployees = (shift) => {
+                  data[department][date][shift].forEach(employee => {
+                    uniqueEmployees.set(employee.staff_id, employee);
+                  });
+                };
+
+                // Add employees from all shifts
+                addUniqueEmployees("AM");
+                addUniqueEmployees("PM");
+                addUniqueEmployees("Full");
+
+                // Calculate manpower in office
+                const manpowerInOffice = departmentStrength - uniqueEmployees.size;
                 const officeAttendanceRate = Math.floor(manpowerInOffice / departmentStrength * 100);
                 const event = {
-                  title: `${department}: ${manpowerInOffice} / ${departmentStrength} in office`,
+                  title: `${department}: ${manpowerInOffice} / ${departmentStrength}`,
                   start: date,
                   department: department,
                   manpowerInOffice: manpowerInOffice,
@@ -382,7 +405,21 @@ export default {
             const teamStrength = data[managerId]["num_employee"];
             for (const date in data[managerId]) {
               if (date !== "num_employee") {
-                const manpowerInOffice = teamStrength - data[managerId][date]["AM"].length - data[managerId][date]["PM"].length - data[managerId][date]["Full"].length;
+                // Create a map to track unique employees by their staff_id
+                const uniqueEmployees = new Map();
+
+                // Helper function to add employees to the map
+                const addUniqueEmployees = (shift) => {
+                  data[managerId][date][shift].forEach(employee => {
+                    uniqueEmployees.set(employee.staff_id, employee);
+                  });
+                };
+
+                // Add employees from all shifts
+                addUniqueEmployees("AM");
+                addUniqueEmployees("PM");
+                addUniqueEmployees("Full");
+                const manpowerInOffice = teamStrength - uniqueEmployees.size;
                 const officeAttendanceRate = Math.floor(manpowerInOffice / teamStrength * 100);
                 const managerName = this.managersIdAndNames[managerId];
                 const event = {
@@ -429,7 +466,21 @@ export default {
             const departmentStrength = data[department]["num_employee"];
             for (const date in data[department]) {
               if (date !== "num_employee") {
-                const manpowerInOffice = departmentStrength - data[department][date]["AM"].length - data[department][date]["PM"].length - data[department][date]["Full"].length;
+                // Create a map to track unique employees by their staff_id
+                const uniqueEmployees = new Map();
+
+                // Helper function to add employees to the map
+                const addUniqueEmployees = (shift) => {
+                  data[department][date][shift].forEach(employee => {
+                    uniqueEmployees.set(employee.staff_id, employee);
+                  });
+                };
+
+                // Add employees from all shifts
+                addUniqueEmployees("AM");
+                addUniqueEmployees("PM");
+                addUniqueEmployees("Full");
+                const manpowerInOffice = departmentStrength - uniqueEmployees.size;
                 const officeAttendanceRate = Math.floor(manpowerInOffice / departmentStrength * 100);
                 const manpowerAllocation = (Object.entries(data[department][date]));
 
