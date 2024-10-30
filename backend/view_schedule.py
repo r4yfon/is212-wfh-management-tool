@@ -256,8 +256,10 @@ def m_get_team_schedule(staff_id):
                     sub_name = subordinate["staff_fname"] + subordinate["staff_lname"]
                     sub_position = subordinate["position"]
 
+                    all_team_members = get_team_members(sub_id, response["data"])
                     # Initialize the department schedule structure for this subordinate
-                    subordinate_schedule = initialize_dept_schedule(sub_dept, len(direct_subordinates["data"]), get_date_range())
+                    subordinate_schedule = initialize_dept_schedule(sub_dept, len(all_team_members), get_date_range())
+
 
                     # Fetch schedule data specifically for this subordinate
                     schedule_data = fetch_schedule_data([
@@ -357,6 +359,118 @@ def s_get_team_schedule(staff_id):
     except Exception as e:
         return jsonify({"message": "An error occurred while retrieving the schedule.", "error": str(e)}), 500
 
+
+# Retrieve wfh count and total by department
+@app.route("/get_wfh_status", methods=["GET"])
+def get_wfh_status():
+    results = (
+        db.session.query(Employee.staff_id, RequestDates.request_date)
+        .join(Request, Request.request_id == RequestDates.request_id)
+        .join(Employee, Employee.staff_id == Request.staff_id)
+        .all()
+    )
+    num_employee_in_dept = db.session.query(
+        Employee.staff_id
+    ).count()  # Count the number of employees in the department
+    status = {}
+    for result in results:
+        date_str = result[1].isoformat()  # Convert date to string in YYYY-MM-DD format
+        staff_id = result[0]  # staff_id
+        if date_str not in status:
+            status[date_str] = [staff_id]  # Initialize the list with the first staff_id
+        elif staff_id not in status[date_str]:
+            status[date_str].append(
+                staff_id
+            )  # Add staff_id to the existing list for this date
+    from datetime import datetime, timedelta
+    from dateutil.relativedelta import relativedelta
+    def get_date_ranges():
+        today = datetime.today().date()  # Get today's date as a date object
+        # Calculate the start date for 2 months ago
+        start_date_past = today - relativedelta(months=2)
+        # Calculate the end date for 3 months in the future
+        end_date_future = today + relativedelta(months=3)
+        # Generate list of past 2 months dates
+        date_list = []
+        for i in range(60):  # Approximately 60 days in 2 months
+            past_date = start_date_past + timedelta(days=i)
+            date_list.append(past_date.strftime("%Y-%m-%d"))  # Format to YYYY-MM-DD
+        # Generate list of next 3 months dates
+        for i in range(90):  # Approximately 90 days in 3 months
+            future_date = today + timedelta(days=i)
+            if future_date > today:  # Only include future dates
+                date_list.append(
+                    future_date.strftime("%Y-%m-%d")
+                )  # Format to YYYY-MM-DD
+        return date_list
+    date_list = get_date_ranges()
+    for date in date_list:
+        if date not in status:
+            status[date] = []
+    # Return the result as JSON with employee count included
+    return jsonify(
+        {
+            "code": 200,
+            "data": status,
+            "num_employee_in_dept": num_employee_in_dept,  # Include the count of employees in the response
+        }
+    )
+# Retrieve wfh count and total by department
+@app.route("/get_wfh_status/<string:department>", methods=["GET"])
+def get_wfh_status_by_dept(department):
+    results = (
+        db.session.query(Employee.staff_id, RequestDates.request_date)
+        .join(Request, Request.request_id == RequestDates.request_id)
+        .join(Employee, Employee.staff_id == Request.staff_id)
+        .filter(Employee.dept == department)
+        .all()
+    )
+    num_employee_in_dept = (
+        db.session.query(Employee.staff_id).filter(Employee.dept == department).count()
+    )  # Count the number of employees in the department
+    status = {}
+    for result in results:
+        date_str = result[1].isoformat()  # Convert date to string in YYYY-MM-DD format
+        staff_id = result[0]  # staff_id
+        if date_str not in status:
+            status[date_str] = [staff_id]  # Initialize the list with the first staff_id
+        elif staff_id not in status[date_str]:
+            status[date_str].append(
+                staff_id
+            )  # Add staff_id to the existing list for this date
+    from datetime import datetime, timedelta
+    from dateutil.relativedelta import relativedelta
+    def get_date_ranges():
+        today = datetime.today().date()  # Get today's date as a date object
+        # Calculate the start date for 2 months ago
+        start_date_past = today - relativedelta(months=2)
+        # Calculate the end date for 3 months in the future
+        end_date_future = today + relativedelta(months=3)
+        # Generate list of past 2 months dates
+        date_list = []
+        for i in range(60):  # Approximately 60 days in 2 months
+            past_date = start_date_past + timedelta(days=i)
+            date_list.append(past_date.strftime("%Y-%m-%d"))  # Format to YYYY-MM-DD
+        # Generate list of next 3 months dates
+        for i in range(90):  # Approximately 90 days in 3 months
+            future_date = today + timedelta(days=i)
+            if future_date > today:  # Only include future dates
+                date_list.append(
+                    future_date.strftime("%Y-%m-%d")
+                )  # Format to YYYY-MM-DD
+        return date_list
+    date_list = get_date_ranges()
+    for date in date_list:
+        if date not in status:
+            status[date] = []
+    # Return the result as JSON with employee count included
+    return jsonify(
+        {
+            "code": 200,
+            "data": status,
+            "num_employee_in_dept": num_employee_in_dept,  # Include the count of employees in the response
+        }
+    )
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5100, debug=True)

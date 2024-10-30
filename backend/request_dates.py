@@ -85,7 +85,7 @@ def create_request_dates():
         request_id = data.get('request_id')
         request_dates = data.get('request_dates')
         staff_id = data.get('staff_id')
-
+        print(staff_id)
         if staff_id == 130002:
             request_status = "Approved"
         else:
