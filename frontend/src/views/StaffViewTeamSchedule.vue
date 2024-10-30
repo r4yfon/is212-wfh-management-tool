@@ -75,8 +75,11 @@ export default {
         this.clickedEventDetails.fullCount > 0 ||
         this.clickedEventDetails.inOfficeCount > 0;
 
+      console.log(hasPeople)
+
       this.showDialog = hasPeople;
     },
+
     async fetchAndDisplayData() {
       try {
         const employeeResponse = await fetch(`${url_paths.employee}/get_all_employees_by_dept`);
@@ -154,7 +157,7 @@ export default {
               start: date,
               color: this.workColors.Office,
               extendedProps: {
-                inOfficeCount,
+                inOfficeCount: inOfficeCount,
                 staffDetails: inOfficeStaffDetails,
               },
             }
@@ -210,12 +213,10 @@ export default {
     <aside class="p-3 d-none d-lg-block bg-primary-subtle me-4 rounded w-auto">
       <!-- Sidebar content goes here -->
       <DatePicker v-model="selectedDate" inline class="mb-4" :minDate="datePicker.start" :maxDate="datePicker.end" />
-      <!-- <v-checkbox v-for="department in departments" :key="department" :value="department" :label="department"
-        :color="this.departmentColors[department]" v-model="selectedDepartments" hide-details></v-checkbox> -->
     </aside>
     <section class="flex-grow-1">
       <FullCalendar ref="fullCalendar" :options="calendarOptions" />
-      <v-dialog v-if="showDialog" max-width="70%">
+      <v-dialog v-model="showDialog" max-width="70%">
         <v-card>
           <v-card-title>Staff</v-card-title>
           <v-card-text>
