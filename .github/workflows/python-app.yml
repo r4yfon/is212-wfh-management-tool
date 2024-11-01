@@ -66,5 +66,4 @@ jobs:
 
     - name: Run unit tests in verbose mode
       run: |
-        pytest backend/unit_test_sprint2.py -v
-        pytest backend/unit_test_sprint3.py -v
+        pytest backend/unit_test_sprint2.py backend/unit_test_sprint3.py -v --cache-clear
