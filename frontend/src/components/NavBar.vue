@@ -22,7 +22,7 @@ const userStore = useMainStore();
         <div class="d-none d-lg-flex ms-md-3">
 
           <!-- staff view their own schedule -->
-          <RouterLink to="/weeklycalendar" class="btn d-none d-md-block align-content-center">
+          <RouterLink to="/" class="btn d-none d-md-block align-content-center">
             View Schedule
           </RouterLink>
 
@@ -117,18 +117,36 @@ const userStore = useMainStore();
         <!-- dropdown menu for mobile -->
         <div class="d-lg-none w-100" id="mobile-menu" v-show="isMenuOpen">
           <div class="d-flex flex-column">
-            <v-btn class="justify-content-start" href="/weeklycalendar" @click="toggleMenu" variant="plain">View
-              Schedule</v-btn>
+            <v-btn class="justify-content-start" href="/" @click="toggleMenu" variant="plain">
+              View Schedule
+            </v-btn>
+
             <v-btn class="justify-content-start" href="/requestslist" @click="toggleMenu" variant="plain">
-              My Requests</v-btn>
+              My Requests
+            </v-btn>
+
             <v-btn v-if="userStore.user.role != 2" class="justify-content-start" href="/viewstaffrequests"
-              @click="toggleMenu" variant="plain">View
-              Staff Requests</v-btn>
-            <v-btn class="justify-content-start" href="/staffweeklyschedule" @click="toggleMenu" variant="plain">View
-              Team Schedule</v-btn>
-            <v-btn v-if="userStore.user.role != 2" class="justify-content-start" href="/org_schedule"
-              @click="toggleMenu" variant="plain">Organisation Schedule</v-btn>
-            <v-btn class="justify-content-start" @click="dialog = true" variant="plain">Apply to WFH</v-btn>
+              @click="toggleMenu" variant="plain">
+              View Staff Requests
+            </v-btn>
+
+            <v-btn class="justify-content-start" href="/staffweeklyschedule" @click="toggleMenu" variant="plain">
+              View Team Schedule
+            </v-btn>
+
+            <v-btn v-if="userStore.user.role === 1" class="justify-content-start"
+              :href="`/team_schedule/${employeeRole[1][userStore.user.position]}`" @click="toggleMenu" variant="plain">
+              {{ userStore.user.position === 'Director' ? 'Director' : 'Organisation' }} Schedule
+            </v-btn>
+
+            <v-btn v-if="userStore.user.role === 3" class="justify-content-start"
+              :href="`/team_schedule/${employeeRole[userStore.user.role]}`" @click="toggleMenu" variant="plain">
+              Team Schedule
+            </v-btn>
+
+            <v-btn class="justify-content-start" @click="dialog = true" variant="plain">
+              Apply to WFH
+            </v-btn>
           </div>
         </div>
       </v-row>

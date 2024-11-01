@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
-import WeeklyCalendar from "../views/FullCalendar.vue";
+import OwnSchedule from "../views/OwnSchedule.vue";
 import TeamSchedule from "@/views/OrgTeamSchedule.vue";
 import { useMainStore } from "@/store";
 
@@ -9,12 +9,7 @@ const router = createRouter({
     {
       path: "/",
       name: "home",
-      component: WeeklyCalendar,
-    },
-    {
-      path: "/weeklycalendar",
-      name: "weeklycalendar",
-      component: WeeklyCalendar,
+      component: OwnSchedule,
     },
     {
       path: "/requestslist",
@@ -41,17 +36,14 @@ const router = createRouter({
 });
 
 const allowedRoles = {
-  "/weeklycalendar": [1, 2, 3],
   "/staffweeklyschedule": [2],
-  "/requestslist": [1, 2, 3],
   "/viewstaffrequests": [1, 3],
-  "/org_schedule": [1],
   "/team_schedule/director": [1],
   "/team_schedule/organisation": [1],
   "/team_schedule/manager": [3],
 };
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const store = useMainStore();
   const userRole = store.user.role;
   const userPosition = store.user.position;

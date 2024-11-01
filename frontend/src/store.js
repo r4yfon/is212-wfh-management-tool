@@ -21,7 +21,7 @@ export const useMainStore = defineStore("main", {
   actions: {
     updateUser(user) {
       this.user = user;
-      location.reload();
+      location.assign("/");
     },
   },
 });
