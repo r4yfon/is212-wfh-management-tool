@@ -1,20 +1,16 @@
-from flask import Flask, request, jsonify, Blueprint
-from flask_sqlalchemy import SQLAlchemy
+from flask import request, jsonify, Blueprint
 from invokes import invoke_http
 from flask_cors import CORS
 from os import environ
-from run import db
 
 app = Blueprint("reject_requests", __name__)
-# app.config.from_object("config.Config")
-# db = SQLAlchemy(app)
 CORS(app)
 
-request_URL = environ.get("request_URL") or "http://localhost:5001/request"
+request_URL = environ.get("REQUEST_URL") or "http://localhost:5001/request"
 request_dates_URL = (
-    environ.get("request_dates_URL") or "http://localhost:5002/request_dates"
+    environ.get("REQUEST_DATES_URL") or "http://localhost:5002/request_dates"
 )
-status_log_URL = environ.get("request_dates_URL") or "http://localhost:5003/status_log"
+status_log_URL = environ.get("STATUS_LOG_URL") or "http://localhost:5003/status_log"
 
 
 @app.route("/")

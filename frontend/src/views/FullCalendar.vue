@@ -162,7 +162,7 @@ export default {
         this.currentDate = new Date();
       }
       fetch(
-        `${url_paths.view_schedule}/view_schedule/weekly/${staff_id}/${new Date(this.currentDate).toISOString().split("T")[0]}`,
+        `${url_paths.view_schedule}/weekly/${staff_id}/${new Date(this.currentDate).toISOString().split("T")[0]}`,
       )
         .then((response) => response.json())
         .then((data) => {

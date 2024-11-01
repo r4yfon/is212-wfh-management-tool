@@ -1,9 +1,7 @@
-from flask import Flask, request, jsonify, Blueprint
-from flask_sqlalchemy import SQLAlchemy
+from flask import request, jsonify, Blueprint
 import input_validation
 from os import environ
 import requests
-from employee import Employee
 from flask_cors import CORS
 from invokes import invoke_http
 from datetime import datetime
@@ -11,10 +9,6 @@ from run import db
 
 
 app = Blueprint("request", __name__)
-# app.config.from_object("config.Config")
-
-# db = SQLAlchemy(app)
-# db.init_app(app)
 CORS(app)
 
 
@@ -46,11 +40,11 @@ class Request(db.Model):
         }
 
 
-request_URL = environ.get("request_URL") or "http://localhost:5001/request"
+request_URL = environ.get("REQUEST_URL") or "http://localhost:5001/request"
 request_dates_URL = (
-    environ.get("request_dates_URL") or "http://localhost:5002/request_dates"
+    environ.get("REQUEST_DATES_URL") or "http://localhost:5002/request_dates"
 )
-status_log_URL = environ.get("status_log_URL") or "http://localhost:5003/status_log"
+status_log_URL = environ.get("STATUS_LOG_URL") or "http://localhost:5003/status_log"
 
 
 @app.route("/")

@@ -1,11 +1,8 @@
-from flask import Flask, request, jsonify, Blueprint
-from flask_sqlalchemy import SQLAlchemy
+from flask import jsonify, Blueprint
 from flask_cors import CORS
 from run import db
 
 app = Blueprint("employee", __name__)
-# app.config.from_object("config.Config")
-# db = SQLAlchemy(app)
 CORS(app)
 
 

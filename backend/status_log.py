@@ -1,19 +1,10 @@
-from flask import Flask, request, jsonify, Blueprint
-from flask_sqlalchemy import SQLAlchemy
-import input_validation
-from os import environ
-import requests
-from request import Request
+from flask import request, jsonify, Blueprint
 from flask_cors import CORS
 from datetime import datetime
 from run import db
 
 
 app = Blueprint("status_log", __name__)
-# app.config.from_object("config.Config")
-
-# db = SQLAlchemy(app)
-# db.init_app(app)
 CORS(app)
 
 

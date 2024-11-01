@@ -1,6 +1,5 @@
-from flask import Flask, request, jsonify, Blueprint
+from flask import jsonify, Blueprint
 import requests
-from flask_sqlalchemy import SQLAlchemy
 from os import environ
 from datetime import datetime, timedelta
 from request import Request
@@ -14,14 +13,12 @@ from sqlalchemy import func
 from run import db
 
 app = Blueprint("view_schedule", __name__)
-# app.config.from_object("config.Config")
-# db = SQLAlchemy(app)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-employee_URL = environ.get("employee_URL") or "http://localhost:5000/employee"
-request_URL = environ.get("request_URL") or "http://localhost:5001/request"
+employee_URL = environ.get("EMPLOYEE_URL") or "http://localhost:5000/employee"
+request_URL = environ.get("REQUEST_URL") or "http://localhost:5001/request"
 request_dates_URL = (
-    environ.get("request_dates_URL") or "http://localhost:5002/request_dates"
+    environ.get("REQUEST_DATES_URL") or "http://localhost:5002/request_dates"
 )
 
 
