@@ -15,7 +15,7 @@ const userStore = useMainStore();
         <v-btn class="d-lg-none" icon="mdi-menu" variant="plain" @click="toggleMenu"></v-btn>
 
         <RouterLink to="/">
-          <img src="@/assets/logo.svg" alt="Vue Logo" height="32" />
+          <img src="@/assets/logo.webp" alt="Vue Logo" height="32" />
         </RouterLink>
 
         <!-- buttons for desktop -->

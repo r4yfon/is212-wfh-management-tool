@@ -29,6 +29,9 @@
           <v-card-title v-else-if="role === 'director'">
             {{ clickedDateString }}: {{ managersIdAndNames[clickedManagerId] }}'s team
           </v-card-title>
+          <v-card-title v-else-if="role === 'manager'">
+            {{ clickedDateString }}
+          </v-card-title>
           <v-card-text>
             <ag-grid-vue :rowData="rowData" :defaultColDef="agGridOptions.defaultColDef"
               :columnDefs="agGridOptions.columnHeaders" style="height: 100%;" class="ag-theme-quartz"
