@@ -1,27 +1,32 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Blueprint
 from flask_sqlalchemy import SQLAlchemy
 from invokes import invoke_http
 from flask_cors import CORS
 from os import environ
-from employee import db, Employee
-from request import db, Request
-from request_dates import db, RequestDates
+from employee import Employee
+from request import Request
+from request_dates import RequestDates
+from run import db
 
-app = Flask(__name__)
-app.config.from_object('config.Config')
-db = SQLAlchemy(app)
+app = Blueprint("view_requests", __name__)
+# app.config.from_object("config.Config")
+# db = SQLAlchemy(app)
 CORS(app)
 
-employee_URL = environ.get(
-    'employee_URL') or "http://localhost:5000/employee"
-request_URL = environ.get(
-    'request_URL') or "http://localhost:5001/request"
-request_dates_URL = environ.get(
-    'request_dates_URL') or "http://localhost:5002/request_dates"
+employee_URL = environ.get("employee_URL") or "http://localhost:5000/employee"
+request_URL = environ.get("request_URL") or "http://localhost:5001/request"
+request_dates_URL = (
+    environ.get("request_dates_URL") or "http://localhost:5002/request_dates"
+)
+
+
+@app.route("/")
+def hello():
+    return "This is view_requests.py"
 
 
 # Staff view own requests
-@app.route("/s_retrieve_requests/<int:s_staff_id>", methods=['GET'])
+@app.route("/s_retrieve_requests/<int:s_staff_id>", methods=["GET"])
 def s_retrieve_requests(s_staff_id):
     """
     Parameters:
@@ -67,7 +72,12 @@ def s_retrieve_requests(s_staff_id):
     """
     try:
         # Perform an inner join between Request and RequestDates tables where staff_id matches
-        results = db.session.query(Request, RequestDates).join(RequestDates, Request.request_id == RequestDates.request_id).filter(Request.staff_id == s_staff_id).all()
+        results = (
+            db.session.query(Request, RequestDates)
+            .join(RequestDates, Request.request_id == RequestDates.request_id)
+            .filter(Request.staff_id == s_staff_id)
+            .all()
+        )
 
         # Prepare response data
         request_list = []
@@ -81,7 +91,7 @@ def s_retrieve_requests(s_staff_id):
                     "creation_date": request.creation_date.isoformat(),
                     "apply_reason": request.apply_reason,
                     "reject_reason": request.reject_reason,
-                    "wfh_dates": []
+                    "wfh_dates": [],
                 }
                 request_dict_map[request.request_id] = request_dict
                 request_list.append(request_dict)
@@ -95,27 +105,28 @@ def s_retrieve_requests(s_staff_id):
                 "request_shift": request_date.request_shift,
                 "request_status": request_date.request_status,
                 "rescind_reason": request_date.rescind_reason,
-                "withdraw_reason": request_date.withdraw_reason
+                "withdraw_reason": request_date.withdraw_reason,
             }
 
             # Append the date to the list of dates for this request
             request_dict["wfh_dates"].append(request_date_dict)
 
         # Return the data in JSON format
-        return jsonify({
-            "code": 200,
-            "data": request_list
-        }), 200
+        return jsonify({"code": 200, "data": request_list}), 200
 
     except Exception as e:
-        return jsonify({
-            "code": 500,
-            "error": f"An error occurred while retrieving requests for staff_id {s_staff_id}: {e}"
-        }), 500
+        return (
+            jsonify(
+                {
+                    "code": 500,
+                    "error": f"An error occurred while retrieving requests for staff_id {s_staff_id}: {e}",
+                }
+            ),
+            500,
+        )
 
 
-
-@app.route("/m_retrieve_requests/<int:m_staff_id>", methods=['GET']) 
+@app.route("/m_retrieve_requests/<int:m_staff_id>", methods=["GET"])
 def m_retrieve_requests(m_staff_id):
     """
     Success response:
@@ -160,24 +171,27 @@ def m_retrieve_requests(m_staff_id):
     """
     try:
         # Query Employee, Request, and RequestDates
-        results = db.session.query(
-            Employee.staff_id,
-            Employee.staff_fname,
-            Employee.staff_lname,
-            Request.request_id,
-            Request.creation_date,
-            Request.apply_reason,
-            Request.reject_reason,
-            RequestDates.request_date_id,
-            RequestDates.request_date,
-            RequestDates.request_shift,
-            RequestDates.request_status,
-            RequestDates.rescind_reason,
-            RequestDates.withdraw_reason
-        ).join(Request, Employee.staff_id == Request.staff_id) \
-        .join(RequestDates, Request.request_id == RequestDates.request_id) \
-        .filter(Employee.reporting_manager == m_staff_id) \
-        .all()
+        results = (
+            db.session.query(
+                Employee.staff_id,
+                Employee.staff_fname,
+                Employee.staff_lname,
+                Request.request_id,
+                Request.creation_date,
+                Request.apply_reason,
+                Request.reject_reason,
+                RequestDates.request_date_id,
+                RequestDates.request_date,
+                RequestDates.request_shift,
+                RequestDates.request_status,
+                RequestDates.rescind_reason,
+                RequestDates.withdraw_reason,
+            )
+            .join(Request, Employee.staff_id == Request.staff_id)
+            .join(RequestDates, Request.request_id == RequestDates.request_id)
+            .filter(Employee.reporting_manager == m_staff_id)
+            .all()
+        )
 
         # Organizing the results
         request_dict_map = {}
@@ -206,7 +220,7 @@ def m_retrieve_requests(m_staff_id):
                     "creation_date": creation_date,
                     "apply_reason": apply_reason,
                     "reject_reason": reject_reason,
-                    "wfh_dates": []
+                    "wfh_dates": [],
                 }
                 request_dict_map[request_id] = request_dict
                 request_list.append(request_dict)
@@ -220,24 +234,26 @@ def m_retrieve_requests(m_staff_id):
                 "request_shift": request_shift,
                 "request_status": request_status,
                 "rescind_reason": rescind_reason,
-                "withdraw_reason": withdraw_reason
+                "withdraw_reason": withdraw_reason,
             }
 
             # Append the date to the list of dates for this request
             request_dict["wfh_dates"].append(request_date_dict)
 
         # Return the data in JSON format
-        return jsonify({
-            "code": 200,
-            "data": request_list
-        }), 200
+        return jsonify({"code": 200, "data": request_list}), 200
 
     except Exception as e:
-        return jsonify({
-            "code": 500,
-            "error": f"An error occurred while retrieving requests for manager staff_id {m_staff_id}: {e}"
-        }), 500
+        return (
+            jsonify(
+                {
+                    "code": 500,
+                    "error": f"An error occurred while retrieving requests for manager staff_id {m_staff_id}: {e}",
+                }
+            ),
+            500,
+        )
 
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5101, debug=True)
+# if __name__ == "__main__":
+#     app.run()

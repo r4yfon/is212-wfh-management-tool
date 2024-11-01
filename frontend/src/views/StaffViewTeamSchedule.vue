@@ -75,7 +75,7 @@ export default {
         this.clickedEventDetails.fullCount > 0 ||
         this.clickedEventDetails.inOfficeCount > 0;
 
-      console.log(hasPeople)
+      // console.log(hasPeople)
 
       this.showDialog = hasPeople;
     },

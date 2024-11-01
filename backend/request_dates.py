@@ -1,31 +1,41 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Blueprint
 from flask_sqlalchemy import SQLAlchemy
-from request import db, Request
+from request import Request
 from flask_cors import CORS
 from invokes import invoke_http
 from os import environ
+from run import db
 
-app = Flask(__name__)
-app.config.from_object('config.Config')
+app = Blueprint("request_dates", __name__)
+# app.config.from_object("config.Config")
 # db = SQLAlchemy(app)
-db.init_app(app)
-CORS(app)
+# db.init_app(app)
+# CORS(app)
 
 
 class RequestDates(db.Model):
     __tablename__ = "request_dates"
 
-    request_date_id = db.Column(
-        db.Integer, primary_key=True, autoincrement=True)
-    request_id = db.Column(db.Integer, db.ForeignKey(
-        'request.request_id'), nullable=False)
+    request_date_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    request_id = db.Column(
+        db.Integer, db.ForeignKey("request.request_id"), nullable=False
+    )
     request_date = db.Column(db.Date, nullable=False)
     request_shift = db.Column(db.String(5), nullable=False)
     request_status = db.Column(db.String(20), nullable=False)
     rescind_reason = db.Column(db.String(100), nullable=True)
     withdraw_reason = db.Column(db.String(100), nullable=True)
 
-    def __init__(self, request_id, request_date, request_shift, request_date_id=None, request_status="Pending Approval", withdraw_reason=None, rescind_reason=None):
+    def __init__(
+        self,
+        request_id,
+        request_date,
+        request_shift,
+        request_date_id=None,
+        request_status="Pending Approval",
+        withdraw_reason=None,
+        rescind_reason=None,
+    ):
         self.request_date_id = request_date_id
         self.request_id = request_id
         self.request_date = request_date
@@ -45,13 +55,18 @@ class RequestDates(db.Model):
             "rescind_reason": self.rescind_reason,
         }
 
+
 request_URL = environ.get("request_URL") or "http://localhost:5001/request"
-status_log_URL = environ.get(
-    'status_log_URL') or "http://localhost:5003/status_log"
+status_log_URL = environ.get("status_log_URL") or "http://localhost:5003/status_log"
+
+
+@app.route("/")
+def hello():
+    return "This is request_dates.py"
 
 
 # Create
-@app.route('/request_dates/create', methods=['POST'])
+@app.route("/create", methods=["POST"])
 def create_request_dates():
     """
     Create a new request date
@@ -82,20 +97,25 @@ def create_request_dates():
     """
     try:
         data = request.get_json()
-        request_id = data.get('request_id')
-        request_dates = data.get('request_dates')
-        staff_id = data.get('staff_id')
+        request_id = data.get("request_id")
+        request_dates = data.get("request_dates")
+        staff_id = data.get("staff_id")
         print(staff_id)
         if staff_id == 130002:
             request_status = "Approved"
         else:
             request_status = "Pending Approval"
-        
+
         if not request_id or not request_dates:
-            return jsonify({
-                "code": 400,
-                "message": "Request ID or request dates not provided."
-            }), 400
+            return (
+                jsonify(
+                    {
+                        "code": 400,
+                        "message": "Request ID or request dates not provided.",
+                    }
+                ),
+                400,
+            )
 
         # Check if the (foreign key constraint) request_id exists
         try:
@@ -108,35 +128,52 @@ def create_request_dates():
                         request_id=request_id,
                         request_date=request_date,
                         request_shift=request_shift,
-                        request_status=request_status
+                        request_status=request_status,
                     )
                     db.session.add(new_request_date)
                     new_request_dates.append(new_request_date)
 
             db.session.commit()
 
-            return jsonify({
-                "code": 200,
-                "message": "Request dates created successfully.",
-                "data": [request_date.json() for request_date in new_request_dates]
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "code": 200,
+                        "message": "Request dates created successfully.",
+                        "data": [
+                            request_date.json() for request_date in new_request_dates
+                        ],
+                    }
+                ),
+                200,
+            )
 
         except Exception as e:
             # if not request_record:
-            return jsonify({
-                "code": 404,
-                "message": f"No request found for request ID {request_id}: {e}"
-            }), 404
+            return (
+                jsonify(
+                    {
+                        "code": 404,
+                        "message": f"No request found for request ID {request_id}: {e}",
+                    }
+                ),
+                404,
+            )
 
     except Exception as e:
-        return jsonify({
-            "code": 500,
-            "error": "An error occurred while creating the request dates. " + str(e)
-        }),
+        return (
+            jsonify(
+                {
+                    "code": 500,
+                    "error": "An error occurred while creating the request dates. "
+                    + str(e),
+                }
+            ),
+        )
 
 
 # Retrieve
-@app.route('/request_dates/get_by_request_id/<int:request_id>')
+@app.route("/get_by_request_id/<int:request_id>")
 def get_request_dates(request_id):
     """
     Get request dates by request ID
@@ -159,22 +196,22 @@ def get_request_dates(request_id):
         }
     """
     try:
-        request_dates = RequestDates.query.filter_by(
-            request_id=request_id).all()
+        request_dates = RequestDates.query.filter_by(request_id=request_id).all()
         return jsonify(
             {
                 "code": 200,
-                "data": [request_date.json() for request_date in request_dates]
-            }, 200
+                "data": [request_date.json() for request_date in request_dates],
+            },
+            200,
         )
     except Exception as e:
-        return jsonify({
-            "code": 404,
-            "error": "Request dates not found. " + str(e)
-        }), 404
+        return (
+            jsonify({"code": 404, "error": "Request dates not found. " + str(e)}),
+            404,
+        )
 
 
-@app.route('/request_dates/get_by_request_ids', methods=['POST'])
+@app.route("/get_by_request_ids", methods=["POST"])
 def get_request_dates_in_batch():
     """
     Get request dates by multiple request IDs in a list
@@ -206,31 +243,32 @@ def get_request_dates_in_batch():
     """
 
     try:
-        request_id_list = request.json.get('request_ids', [])
+        request_id_list = request.json.get("request_ids", [])
         if not request_id_list:
-            return jsonify({
-                "code": 400,
-                "message": "No request IDs provided."
-            }), 400
+            return jsonify({"code": 400, "message": "No request IDs provided."}), 400
 
         # Get all the request dates for the given request_ids
         request_dates = RequestDates.query.filter(
-            RequestDates.request_id.in_(request_id_list)).all()
-        return jsonify(
-            {
-                "code": 200,
-                "data": [request_date.json() for request_date in request_dates]
-            }
-        ), 200
+            RequestDates.request_id.in_(request_id_list)
+        ).all()
+        return (
+            jsonify(
+                {
+                    "code": 200,
+                    "data": [request_date.json() for request_date in request_dates],
+                }
+            ),
+            200,
+        )
     except Exception as e:
-        return jsonify({
-            "code": 404,
-            "error": "Request dates not found. " + str(e)
-        }), 404
+        return (
+            jsonify({"code": 404, "error": "Request dates not found. " + str(e)}),
+            404,
+        )
 
 
 # Change status to all the records that belongs to the same request_id
-@app.route('/request_dates/change_all_status', methods=['PUT'])
+@app.route("/change_all_status", methods=["PUT"])
 def change_all_status():
     """
     Parameters:
@@ -261,33 +299,38 @@ def change_all_status():
     """
     try:
         # Get request data
-        request_id = request.json.get('request_id')
-        new_status = request.json.get('status')
-        reason = request.json.get('reason')
+        request_id = request.json.get("request_id")
+        new_status = request.json.get("status")
+        reason = request.json.get("reason")
 
         # Check if the necessary data is provided
         if not request_id or not new_status:
-            return jsonify({
-                "code": 400,
-                "message": "Request ID or status not provided."
-            }), 400
-    
+            return (
+                jsonify({"code": 400, "message": "Request ID or status not provided."}),
+                400,
+            )
 
         # Query the request dates by request_id
-        request_dates = RequestDates.query.filter_by(
-            request_id=request_id).all()
+        request_dates = RequestDates.query.filter_by(request_id=request_id).all()
 
         if not request_dates:
-            return jsonify({
-                "code": 404,
-                "message": f"No request dates found for request ID {request_id}."
-            }), 404
+            return (
+                jsonify(
+                    {
+                        "code": 404,
+                        "message": f"No request dates found for request ID {request_id}.",
+                    }
+                ),
+                404,
+            )
 
         # Update the Request_Status for each record
         for request_date in request_dates:
-            if request_date.request_status != "Withdrawn" and request_date.request_status != "Pending Withdrawal":
+            if (
+                request_date.request_status != "Withdrawn"
+                and request_date.request_status != "Pending Withdrawal"
+            ):
                 request_date.request_status = new_status
-
 
         # Get request by request_id and change reject reason
         if new_status == "Rejected":
@@ -300,26 +343,37 @@ def change_all_status():
         log_data = {
             "request_id": request_id,
             "action": "Request has been " + new_status.lower(),
-            "reason": reason
+            "reason": reason,
         }
 
-        invoke_http(status_log_URL + "/add_event", json=log_data, method='POST')
+        invoke_http(status_log_URL + "/add_event", json=log_data, method="POST")
 
-        return jsonify({
-            "code": 200,
-            "message": f"Request status for request ID {request_id} updated to {new_status}.",
-            "data": [request_date.json() for request_date in request_dates]
-        }), 200
+        return (
+            jsonify(
+                {
+                    "code": 200,
+                    "message": f"Request status for request ID {request_id} updated to {new_status}.",
+                    "data": [request_date.json() for request_date in request_dates],
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
-        return jsonify({
-            "code": 500,
-            "error": "An error occurred while updating the request status. " + str(e)
-        }), 500
+        return (
+            jsonify(
+                {
+                    "code": 500,
+                    "error": "An error occurred while updating the request status. "
+                    + str(e),
+                }
+            ),
+            500,
+        )
 
 
 # Withdraw or rescind some of the dates in a request
-@app.route('/request_dates/change_partial_status', methods=['PUT'])
+@app.route("/change_partial_status", methods=["PUT"])
 def change_partial_status():
     """
     Parameters:
@@ -352,31 +406,41 @@ def change_partial_status():
     """
     try:
         # Get request data from JSON body
-        request_id = request.json.get('request_id')
-        new_status = request.json.get('status')
-        reason = request.json.get('reason')
-        dates = request.json.get('dates')
-        shift = request.json.get('shift')
+        request_id = request.json.get("request_id")
+        new_status = request.json.get("status")
+        reason = request.json.get("reason")
+        dates = request.json.get("dates")
+        shift = request.json.get("shift")
 
         # Check if all necessary data is provided
         if not request_id or not new_status or not dates:
-            return jsonify({
-                "code": 400,
-                "message": "Request ID, status, and dates must be provided."
-            }), 400
+            return (
+                jsonify(
+                    {
+                        "code": 400,
+                        "message": "Request ID, status, and dates must be provided.",
+                    }
+                ),
+                400,
+            )
 
         # Query the request dates that match the request_id and are in the provided dates list
         request_dates = RequestDates.query.filter(
             RequestDates.request_id == request_id,
             RequestDates.request_date.in_(dates),
-            RequestDates.request_shift == shift
+            RequestDates.request_shift == shift,
         ).all()
 
         if not request_dates:
-            return jsonify({
-                "code": 404,
-                "message": f"No request dates found for request ID {request_id} and provided dates."
-            }), 404
+            return (
+                jsonify(
+                    {
+                        "code": 404,
+                        "message": f"No request dates found for request ID {request_id} and provided dates.",
+                    }
+                ),
+                404,
+            )
 
         # Update the Request_Status and Reason for each matching record
         for request_date in request_dates:
@@ -385,17 +449,24 @@ def change_partial_status():
             # Update the reason based on the status
             if new_status == "Rescinded":
                 if not reason:
-                    return jsonify({
-                        "code": 400,
-                        "message": "Rescind reason must be provided."
-                    }), 400
+                    return (
+                        jsonify(
+                            {"code": 400, "message": "Rescind reason must be provided."}
+                        ),
+                        400,
+                    )
                 request_date.rescind_reason = reason
             elif new_status == "Withdrawn" or new_status == "Pending Withdrawal":
                 if not reason:
-                    return jsonify({
-                        "code": 400,
-                        "message": "Withdraw reason must be provided."
-                    }), 400
+                    return (
+                        jsonify(
+                            {
+                                "code": 400,
+                                "message": "Withdraw reason must be provided.",
+                            }
+                        ),
+                        400,
+                    )
                 request_date.withdraw_reason = reason
 
         # Commit the changes to the database
@@ -407,26 +478,36 @@ def change_partial_status():
         log_data = {
             "request_id": request_id,
             "action": dates[0] + " : " + new_status,
-            "reason": reason
+            "reason": reason,
         }
 
-        invoke_http(status_log_URL + "/add_event", json=log_data, method='POST')
+        invoke_http(status_log_URL + "/add_event", json=log_data, method="POST")
 
-        return jsonify({
-            "code": 200,
-            "message": f"Request status for request ID {request_id} updated to {new_status} for the provided dates.",
-            "data": updated_dates
-        }), 200
+        return (
+            jsonify(
+                {
+                    "code": 200,
+                    "message": f"Request status for request ID {request_id} updated to {new_status} for the provided dates.",
+                    "data": updated_dates,
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
-        return jsonify({
-            "code": 500,
-            "error": f"An error occurred while updating the request status: {str(e)}"
-        }), 500
+        return (
+            jsonify(
+                {
+                    "code": 500,
+                    "error": f"An error occurred while updating the request status: {str(e)}",
+                }
+            ),
+            500,
+        )
 
 
 # get staff's pending and approved pending withdrawal requests
-@app.route('/request_dates/get_staff_request/<int:request_id>')
+@app.route("/get_staff_request/<int:request_id>")
 def get_staff_request(request_id):
     """
     Get request dates by request ID
@@ -450,118 +531,59 @@ def get_staff_request(request_id):
     """
     try:
         request_dates = RequestDates.query.filter(
-            (RequestDates.request_id == request_id) &
-            (RequestDates.request_status.in_(
-                ["Pending Approval", "Pending Withdrawal"]))
+            (RequestDates.request_id == request_id)
+            & (
+                RequestDates.request_status.in_(
+                    ["Pending Approval", "Pending Withdrawal"]
+                )
+            )
         ).all()
 
         if not request_dates:
-            return jsonify({
-                "code": 404,
-                "error": "No request dates found with the specified status."
-            }), 404
+            return (
+                jsonify(
+                    {
+                        "code": 404,
+                        "error": "No request dates found with the specified status.",
+                    }
+                ),
+                404,
+            )
 
         return jsonify(
             {
                 "code": 200,
-                "data": [request_date.json() for request_date in request_dates]
-            }, 200
+                "data": [request_date.json() for request_date in request_dates],
+            },
+            200,
         )
     except Exception as e:
-        return jsonify({
-            "code": 500,
-            "error": "An error occurred while retrieving request dates. " + str(e)
-        }), 500
+        return (
+            jsonify(
+                {
+                    "code": 500,
+                    "error": "An error occurred while retrieving request dates. "
+                    + str(e),
+                }
+            ),
+            500,
+        )
 
 
-# Auto reject requests that are more than 2 months ago
-# @app.route('/request_dates/auto_reject', methods=['PUT'])
-# def auto_reject():
-#     """
-#     No parameters needed
-
-#     Success Response
-#         {
-#         "message": "2 requests have been updated to Rejected",
-#         "updated_requests": [
-#             {
-#                 "id": 101,
-#                 "request_date": "2024-07-01",
-#                 "new_status": "Rejected"
-#             },
-#             {
-#                 "id": 102,
-#                 "request_date": "2024-06-28",
-#                 "new_status": "Rejected"
-#             }
-#         ]
-#     }
-#     """
-#     from datetime import datetime, timedelta
-#     # Get today's date
-#     today = datetime.today()
-    
-#     # Calculate the date 2 months ago from today
-#     two_months_ago = today - timedelta(days=60)
-    
-#     # Query all records with status 'Pending'
-#     pending_requests = RequestDates.query.filter_by(request_status='Pending Approval').all()
-    
-#     updated_requests = []
-    
-#     # Iterate through pending requests and check the request_date
-#     for request in pending_requests:
-#         if request.request_date < two_months_ago.date():
-#             # Update the status to 'Rejected'
-#             request.request_status = 'Rejected'
-#             updated_requests.append(request)
-
-#             data = {"request_id": request.request_id, "reason": "1 or more date(s) have been auto-rejected by the system", "status": "Rejected"}
-#             update_reason_response = invoke_http(
-#                 request_URL + "/update_reason", json=data, method="PUT"
-#             )
-
-#             if update_reason_response.get("code") != 200:
-#                 return jsonify(
-#                     {
-#                         "code": update_reason_response.get("code", 500),
-#                         "message": update_reason_response.get(
-#                             "message", "Failed to update reason for request."
-#                         ),
-#                     }
-#                 ), update_reason_response.get("code", 500)
-
-#             log_data = {
-#                 "request_id": request.request_id,
-#                 "action": str(request.request_date) + " has been auto rejected by system",
-#                 "reason": "Auto rejected"
-#             }
-
-#             invoke_http(status_log_URL + "/add_event", json=log_data, method='POST')
-
-
-#     # Commit the changes to the database
-#     db.session.commit()
-
-#     return jsonify({
-#         'message': f'{len(updated_requests)} requests have been updated to Rejected',
-#         'updated_requests': [{'id': req.request_id, 'request_date': req.request_date, 'new_status': req.request_status} for req in updated_requests]
-#     }), 200
-
-
-@app.route('/request_dates/auto_reject', methods=['PUT'])
+@app.route("/auto_reject", methods=["PUT"])
 def auto_reject():
     """
     Automatically reject requests if any of their request_dates are more than 2 months old.
     """
     from datetime import datetime, timedelta
+
     today = datetime.today()
     two_months_ago = today - timedelta(days=60)
 
     # Step 1: Query all pending request dates older than 2 months
     pending_old_requests = RequestDates.query.filter(
-        RequestDates.request_status == 'Pending Approval',
-        RequestDates.request_date < two_months_ago.date()
+        RequestDates.request_status == "Pending Approval",
+        RequestDates.request_date < two_months_ago.date(),
     ).all()
 
     # Collect the unique request IDs to reject
@@ -574,12 +596,12 @@ def auto_reject():
         ).all()
 
         updated_requests = []
-        
+
         # Step 3: Batch update all related requests to "Rejected"
         for req in related_requests:
-            req.request_status = 'Rejected'
+            req.request_status = "Rejected"
             updated_requests.append(req)
-        
+
         # Batch commit all the changes to the database
         db.session.commit()
 
@@ -588,7 +610,7 @@ def auto_reject():
             data = {
                 "request_id": request_id,
                 "reason": "1 or more date(s) have been auto-rejected by the system",
-                "status": "Rejected"
+                "status": "Rejected",
             }
             update_reason_response = invoke_http(
                 request_URL + "/update_reason", json=data, method="PUT"
@@ -608,24 +630,34 @@ def auto_reject():
             log_data = {
                 "request_id": request_id,
                 "action": "The entire request has been auto-rejected by the system",
-                "reason": "Auto rejected due to one or more dates being older than 2 months"
+                "reason": "Auto rejected due to one or more dates being older than 2 months",
             }
-            invoke_http(status_log_URL + "/add_event", json=log_data, method='POST')
+            invoke_http(status_log_URL + "/add_event", json=log_data, method="POST")
 
         # Step 5: Return response with unique request IDs of rejected requests
-        return jsonify({
-            'message': f'{len(request_ids_to_reject)} unique requests have been updated to Rejected',
-            'requests': list(request_ids_to_reject)  # Return unique request IDs
-        }), 200
+        return (
+            jsonify(
+                {
+                    "message": f"{len(request_ids_to_reject)} unique requests have been updated to Rejected",
+                    "requests": list(
+                        request_ids_to_reject
+                    ),  # Return unique request IDs
+                }
+            ),
+            200,
+        )
 
     # If no requests need to be updated
-    return jsonify({
-        'message': 'No requests were found to be auto-rejected.',
-        'updated_requests': []
-    }), 200
+    return (
+        jsonify(
+            {
+                "message": "No requests were found to be auto-rejected.",
+                "updated_requests": [],
+            }
+        ),
+        200,
+    )
 
 
-
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5002, debug=True)
+# if __name__ == "__main__":
+#     app.run()

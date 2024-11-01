@@ -1,10 +1,11 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Blueprint
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
+from run import db
 
-app = Flask(__name__)
-app.config.from_object("config.Config")
-db = SQLAlchemy(app)
+app = Blueprint("employee", __name__)
+# app.config.from_object("config.Config")
+# db = SQLAlchemy(app)
 CORS(app)
 
 
@@ -18,10 +19,23 @@ class Employee(db.Model):
     position = db.Column(db.String(50), nullable=False)
     country = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(50), nullable=False)
-    reporting_manager = db.Column(db.Integer, db.ForeignKey("employee.staff_id"), nullable=True)
+    reporting_manager = db.Column(
+        db.Integer, db.ForeignKey("employee.staff_id"), nullable=True
+    )
     role = db.Column(db.Integer, nullable=False)
 
-    def __init__(self, staff_id, staff_fname, staff_lname, dept, position, country, email, role, reporting_manager=None):
+    def __init__(
+        self,
+        staff_id,
+        staff_fname,
+        staff_lname,
+        dept,
+        position,
+        country,
+        email,
+        role,
+        reporting_manager=None,
+    ):
         self.staff_id = staff_id
         self.staff_fname = staff_fname
         self.staff_lname = staff_lname
@@ -46,7 +60,12 @@ class Employee(db.Model):
         }
 
 
-@app.route("/employee/get_details/<int:staff_id>", methods=["GET"])
+@app.route("/")
+def hello():
+    return "This is employee.py"
+
+
+@app.route("/get_details/<int:staff_id>", methods=["GET"])
 def get_employee_details(staff_id):
     """
     Get employee details based on id
@@ -79,7 +98,7 @@ def get_employee_details(staff_id):
         return jsonify({"code": 500, "error": f"An error occurred: {e}"}), 500
 
 
-@app.route("/employee/get_staff/<int:staff_id>", methods=["GET"])
+@app.route("/get_staff/<int:staff_id>", methods=["GET"])
 def get_staff_by_manager(staff_id):
     """
     Get the list of employees who report to a specific manager based on staff_id
@@ -111,12 +130,20 @@ def get_staff_by_manager(staff_id):
         if staff_list:
             staff_data = [staff.json() for staff in staff_list]
             return jsonify({"code": 200, "data": staff_data}), 200
-        return jsonify({"code": 404, "message": f"No staff found reporting to manager with ID {staff_id}."}), 404
+        return (
+            jsonify(
+                {
+                    "code": 404,
+                    "message": f"No staff found reporting to manager with ID {staff_id}.",
+                }
+            ),
+            404,
+        )
     except Exception as e:
         return jsonify({"code": 500, "error": f"An error occurred: {e}"}), 500
 
 
-@app.route("/employee/get_team/<int:staff_id>", methods=["GET"])
+@app.route("/get_team/<int:staff_id>", methods=["GET"])
 def get_team(staff_id):
     """
     Get the list of employees who report to a specific manager based on staff_id
@@ -150,8 +177,16 @@ def get_team(staff_id):
         output = {"director_id": staff_id, "managers_and_teams": []}
 
         for manager in staff_list:
-            team_members = [member.staff_id for member in Employee.query.filter_by(reporting_manager=manager.staff_id).all()]
-            team = {"manager_id": manager.staff_id, "team_members": [manager.staff_id] + team_members}
+            team_members = [
+                member.staff_id
+                for member in Employee.query.filter_by(
+                    reporting_manager=manager.staff_id
+                ).all()
+            ]
+            team = {
+                "manager_id": manager.staff_id,
+                "team_members": [manager.staff_id] + team_members,
+            }
             output["managers_and_teams"].append(team)
 
         return jsonify(output), 200
@@ -159,7 +194,7 @@ def get_team(staff_id):
         return jsonify({"code": 500, "error": f"An error occurred: {e}"}), 500
 
 
-@app.route("/employee/get_all_employees", methods=["GET"])
+@app.route("/get_all_employees", methods=["GET"])
 def get_all_employees():
     """
     Get all staff IDs and their reporting managers.
@@ -203,7 +238,7 @@ def get_all_employees():
         return jsonify({"code": 500, "error": f"An error occurred: {e}"}), 500
 
 
-@app.route("/employee/get_all_employees_by_dept", methods=["GET"])
+@app.route("/get_all_employees_by_dept", methods=["GET"])
 def get_all_employees_by_dept():
     """
     Get all staff IDs and their details, grouped by department.
@@ -249,5 +284,5 @@ def get_all_employees_by_dept():
         return jsonify({"code": 500, "error": f"An error occurred: {e}"}), 500
 
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+# if __name__ == "__main__":
+#     app.run()

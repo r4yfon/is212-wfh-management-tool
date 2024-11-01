@@ -1,19 +1,20 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Blueprint
 from flask_sqlalchemy import SQLAlchemy
 import input_validation
 from os import environ
 import requests
-from employee import db, Employee
+from employee import Employee
 from flask_cors import CORS
 from invokes import invoke_http
 from datetime import datetime
+from run import db
 
 
-app = Flask(__name__)
-app.config.from_object("config.Config")
+app = Blueprint("request", __name__)
+# app.config.from_object("config.Config")
 
 # db = SQLAlchemy(app)
-db.init_app(app)
+# db.init_app(app)
 CORS(app)
 
 
@@ -52,8 +53,13 @@ request_dates_URL = (
 status_log_URL = environ.get("status_log_URL") or "http://localhost:5003/status_log"
 
 
+@app.route("/")
+def hello():
+    return "This is request.py"
+
+
 # Create a new request
-@app.route("/request/create", methods=["POST"])
+@app.route("/create", methods=["POST"])
 def create_request():
     """
     Create a new request
@@ -89,35 +95,60 @@ def create_request():
 
         # Check if length of apply_reason is at most 100 characters
         if (
-            input_validation.string_length_valid(input_string=apply_reason, max_length=100) == False):
-            return (jsonify({
+            input_validation.string_length_valid(
+                input_string=apply_reason, max_length=100
+            )
+            == False
+        ):
+            return (
+                jsonify(
+                    {
                         "code": 400,
                         "error": "Your request reason is too long. Please keep it under 100 characters.",
-                    }), 400,)
+                    }
+                ),
+                400,
+            )
 
         # Check if length of all requested_shifts are at most 5 characters
         requested_shifts_concat_str = "".join(request_dates.values())
         number_of_requested_shifts = len(request_dates)
-        if (input_validation.string_length_valid(
+        if (
+            input_validation.string_length_valid(
                 input_string=requested_shifts_concat_str,
-                max_length=(number_of_requested_shifts * 5),) == False):
-            return (jsonify(
+                max_length=(number_of_requested_shifts * 5),
+            )
+            == False
+        ):
+            return (
+                jsonify(
                     {
                         "code": 400,
                         "error": "One or more of your requested shifts is too long. Please keep it under 5 characters.",
-                    }), 400,)
+                    }
+                ),
+                400,
+            )
 
         # Check if dates that staff requested for are within 2 months before and 3 months after current date
         earliest_requested_date = min(request_dates.keys())
         latest_requested_date = max(request_dates.keys())
 
-        if (input_validation.check_date_valid(
-                earliest_requested_date, latest_requested_date) == False):
-            return (jsonify(
+        if (
+            input_validation.check_date_valid(
+                earliest_requested_date, latest_requested_date
+            )
+            == False
+        ):
+            return (
+                jsonify(
                     {
                         "code": 400,
                         "error": "Your selected range of dates are not within 2 months before and 3 months after the current date.",
-                    }), 400,)
+                    }
+                ),
+                400,
+            )
 
         try:
             response = requests.get(
@@ -129,12 +160,18 @@ def create_request():
                 employee_requests = []
         except Exception as e:
             return (
-                jsonify({
+                jsonify(
+                    {
                         "code": 500,
                         "error": f"An error occurred while getting employee requests for staff_id {staff_id}: {e}",
-                    }), 500,)
+                    }
+                ),
+                500,
+            )
 
-        existing_request_ids = [request_details["request_id"] for request_details in employee_requests]
+        existing_request_ids = [
+            request_details["request_id"] for request_details in employee_requests
+        ]
 
         # get all dates that staff has requested for from request_ids
         try:
@@ -147,19 +184,30 @@ def create_request():
             else:
                 requested_dates = []
         except Exception as e:
-            return (jsonify({
+            return (
+                jsonify(
+                    {
                         "code": 500,
                         "error": f"An error occurred while getting employee requests for staff_id {staff_id}: {e}",
-                    }), 500,)
+                    }
+                ),
+                500,
+            )
 
         check_date = input_validation.has_existing_request(
-            requested_dates, request_dates)
+            requested_dates, request_dates
+        )
 
         if check_date != False:
-            return (jsonify({
+            return (
+                jsonify(
+                    {
                         "code": 400,
                         "error": f"You have a duplicate request on {check_date}. Please check",
-                    }), 400,)
+                    }
+                ),
+                400,
+            )
 
         # Create and commit the new request to get the request_id
         new_request = Request(
@@ -176,8 +224,9 @@ def create_request():
                 json={
                     "request_id": new_request.request_id,
                     "request_dates": request_dates,
-                    "staff_id": staff_id
-                },)
+                    "staff_id": staff_id,
+                },
+            )
 
             if add_request_dates.status_code != 200:
                 raise Exception("Failed to add request dates.")
@@ -198,21 +247,30 @@ def create_request():
         invoke_http(status_log_URL + "/add_event", json=log_data, method="POST")
 
         return (
-            jsonify({
+            jsonify(
+                {
                     "code": 200,
                     "message": "Request created successfully.",
                     "data": new_request.json(),
-                }), 200,)
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
-        return (jsonify({
+        return (
+            jsonify(
+                {
                     "code": 500,
                     "error": f"An error occurred while creating the request. Details: {str(e)}",
-                }), 500,)
+                }
+            ),
+            500,
+        )
 
 
 # Get all requests
-@app.route("/request/get_all_requests", methods=["GET"])
+@app.route("/get_all_requests", methods=["GET"])
 def get_all_requests():
     """
     Get all WFH requests
@@ -246,7 +304,8 @@ def get_all_requests():
                     "apply_reason": request.apply_reason,
                     "reject_reason": request.reject_reason,
                 }
-                for request in requests]
+                for request in requests
+            ]
 
             return jsonify({"code": 200, "data": request_list})
         else:
@@ -254,14 +313,19 @@ def get_all_requests():
 
     except Exception as e:
         print("Error:", str(e))  # Debugging log
-        return (jsonify({
+        return (
+            jsonify(
+                {
                     "code": 500,
                     "error": f"An error occurred while fetching the requests. Details: {str(e)}",
-                }), 500,)
+                }
+            ),
+            500,
+        )
 
 
 # Get all requests made by a staff_id
-@app.route("/request/get_requests_by_staff_id/<int:staff_id>")
+@app.route("/get_requests_by_staff_id/<int:staff_id>")
 def get_requests_by_staff_id(staff_id):
     """
     Get all requests by staff id
@@ -295,13 +359,20 @@ def get_requests_by_staff_id(staff_id):
         requests = Request.query.filter_by(staff_id=staff_id).all()
         if requests:
             # Return a list of all requests
-            return jsonify({"code": 200, "data": [request.json() for request in requests]})
+            return jsonify(
+                {"code": 200, "data": [request.json() for request in requests]}
+            )
         else:
             # If no requests are found for the given staff_id
-            return (jsonify({
+            return (
+                jsonify(
+                    {
                         "code": 404,
                         "error": f"No requests found for staff_id: {staff_id}",
-                    }), 404,)
+                    }
+                ),
+                404,
+            )
 
     except Exception as e:
         # In case of an exception (e.g., database connection issues)
@@ -317,7 +388,7 @@ def get_requests_by_staff_id(staff_id):
 
 
 # Get request IDs made by a staff_id
-@app.route("/request/get_request_ids/<int:staff_id>")
+@app.route("/get_request_ids/<int:staff_id>")
 def get_request_ids_by_staff_id(staff_id):
     """
     Get request IDs by staff id
@@ -340,22 +411,32 @@ def get_request_ids_by_staff_id(staff_id):
             return jsonify({"code": 200, "data": request_ids})
         else:
             # If no requests are found for the given staff_id
-            return (jsonify({
+            return (
+                jsonify(
+                    {
                         "code": 404,
                         "data": [],
                         "error": f"No requests found for staff_id: {staff_id}",
-                    }), 404,)
+                    }
+                ),
+                404,
+            )
 
     except Exception as e:
         # In case of an exception (e.g., database connection issues)
-        return (jsonify({
+        return (
+            jsonify(
+                {
                     "code": 500,
                     "error": f"An error occurred while fetching the request IDs. Details: {str(e)}",
-                }), 500,)
+                }
+            ),
+            500,
+        )
 
 
 # Add the reason if the request is rejected
-@app.route("/request/update_reason", methods=["PUT"])
+@app.route("/update_reason", methods=["PUT"])
 def update_reason():
     """
     Update "reason" field when the request is rejected
@@ -385,28 +466,43 @@ def update_reason():
         request_record = Request.query.filter_by(request_id=request_id).first()
 
         if not request_record:
-            return (jsonify({
+            return (
+                jsonify(
+                    {
                         "code": 404,
                         "message": f"No request found for request ID {request_id}.",
-                    }), 404,)
+                    }
+                ),
+                404,
+            )
 
         request_record.reject_reason = request.json.get("reason")
 
         # Commit the changes to the database
         db.session.commit()
 
-        return (jsonify({
+        return (
+            jsonify(
+                {
                     "code": 200,
                     "message": f"Reason has been updated.",
                     "data": request_record.json(),
-                }), 200,)
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
-        return (jsonify({
+        return (
+            jsonify(
+                {
                     "code": 500,
                     "error": "An error occurred while updating the reason. " + str(e),
-                }), 500,)
+                }
+            ),
+            500,
+        )
 
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5001, debug=True)
+# if __name__ == "__main__":
+#     app.run()
