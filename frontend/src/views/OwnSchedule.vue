@@ -133,34 +133,40 @@ export default {
   },
 
   methods: {
-    handleNextClick() {
-      this.currentDate = this.getSGTDate(new Date(this.currentDate).setDate(
-        new Date(this.currentDate).getDate() + 7,
-      ));
-      const dateISO = new Date(this.currentDate).toISOString().split("T")[0];
-      if (!(dateISO in this.scheduledData)) {
-        this.getWeeklySchedule(this.userStore.user);
-      }
+    getSGTDate(date = new Date()) {
+      // If date is a number (timestamp), convert to Date
+      const dateObj = date instanceof Date ? date : new Date(date);
+      return new Date(dateObj.getTime() + (8 * 60 * 60 * 1000));
     },
+
     handlePrevClick() {
-      this.currentDate = this.getSGTDate(new Date(this.currentDate).setDate(
-        new Date(this.currentDate).getDate() - 7,
-      ));
-      const dateISO = new Date(this.currentDate).toISOString().split("T")[0];
-      if (!(dateISO in this.scheduledData)) {
-        this.getWeeklySchedule(this.userStore.user);
-      }
-    },
-    handleTodayClick() {
-      this.currentDate = this.getSGTDate();
+      const prevDate = new Date(this.currentDate);
+      prevDate.setDate(prevDate.getDate() - 7);
+      this.currentDate = this.getSGTDate(prevDate);
+
       const dateISO = new Date(this.currentDate).toISOString().split("T")[0];
       if (!(dateISO in this.scheduledData)) {
         this.getWeeklySchedule(this.userStore.user);
       }
     },
 
-    getSGTDate(date = new Date()) {
-      return new Date(date.getTime() + (8 * 60 * 60 * 1000)); // Add 8 hours
+    handleNextClick() {
+      const nextDate = new Date(this.currentDate);
+      nextDate.setDate(nextDate.getDate() + 7);
+      this.currentDate = this.getSGTDate(nextDate);
+
+      const dateISO = new Date(this.currentDate).toISOString().split("T")[0];
+      if (!(dateISO in this.scheduledData)) {
+        this.getWeeklySchedule(this.userStore.user);
+      }
+    },
+
+    handleTodayClick() {
+      this.currentDate = this.getSGTDate();
+      const dateISO = new Date(this.currentDate).toISOString().split("T")[0];
+      if (!(dateISO in this.scheduledData)) {
+        this.getWeeklySchedule(this.userStore.user);
+      }
     },
 
     getWeeklySchedule(user) {
