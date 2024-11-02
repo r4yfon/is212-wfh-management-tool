@@ -30,7 +30,7 @@ export default {
           start: new Date(new Date().getFullYear(), new Date().getMonth() - 2, new Date().getDate()).toISOString().split("T")[0],
           end: new Date(new Date().getFullYear(), new Date().getMonth() + 3, new Date().getDate()).toISOString().split("T")[0],
         },
-        height: '400px',
+        height: 'auto',
         headerToolbar: {
           left: 'prev,next today',
           center: 'title',
