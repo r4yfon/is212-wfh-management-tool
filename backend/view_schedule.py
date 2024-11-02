@@ -215,7 +215,7 @@ def o_get_org_schedule():
             dept_dict.update(initialize_dept_schedule(dept, staff_count, all_dates))
 
         # Query and process schedule data
-        results = fetch_schedule_data([])
+        results = fetch_schedule_data([RequestDates.request_status.in_(["Approved"])])
         for (staff_id, fname, lname, dept, position, manager, date, shift, status) in results:
             if status == "Approved":
                 staff_schedule = {"staff_id": staff_id, "name": f"{fname} {lname}", "position": position, "reporting_manager": manager, "request_status": status}
@@ -261,7 +261,7 @@ def m_get_team_schedule(staff_id):
                     # Fetch schedule data specifically for this subordinate
                     schedule_data = fetch_schedule_data([
                         Employee.reporting_manager == sub_id,
-                        RequestDates.request_status.in_(["Pending Approval", "Approved"])
+                        RequestDates.request_status.in_(["Approved"])
                     ])
 
                     # Populate the subordinate's schedule with dates and shifts
@@ -284,7 +284,7 @@ def m_get_team_schedule(staff_id):
                 team_schedule = {staff_id: initialize_dept_schedule(employee_dept, len(all_team_members), all_dates)[employee_dept]}
 
                 # Query and process team schedule data
-                results = fetch_schedule_data([RequestDates.request_status.in_(["Pending Approval", "Approved"])])
+                results = fetch_schedule_data([RequestDates.request_status.in_(["Approved"])])
 
                 # Populate the team schedule structure for each relevant team member
                 for (member_id, fname, lname, dept, position, manager, date, shift, status) in results:
@@ -307,7 +307,7 @@ def m_get_team_schedule(staff_id):
             dept_dict = initialize_dept_schedule(employee_dept, len(all_team_members), all_dates)
 
             # Query and process team schedule data
-            results = fetch_schedule_data([RequestDates.request_status.in_(["Pending Approval", "Approved"])])
+            results = fetch_schedule_data([RequestDates.request_status.in_(["Approved"])])
             for (staff_id, fname, lname, dept, position, manager, date, shift, status) in results:
                 if staff_id in all_team_members:
                     staff_schedule = {
@@ -339,13 +339,13 @@ def s_get_team_schedule(staff_id):
         # Initialize employee-specific schedule
         num_employee = db.session.query(Employee.dept, func.count(Employee.staff_id).label("staff_count")) \
                                 .filter(Employee.dept == employee_dept, Employee.position == employee_position,
-                                        Employee.role == employee_role, Employee.reporting_manager == employee_reporting_manager).group_by(Employee.dept).first()
+                                        Employee.role == employee_role, Employee.reporting_manager == employee_reporting_manager, Employee.staff_id != staff_id).group_by(Employee.dept).first()
 
         department, staff_count = num_employee
         dept_dict = initialize_dept_schedule(department, staff_count, all_dates)
 
         # Query and process specific employee's schedule data
-        results = fetch_schedule_data([RequestDates.request_status.in_(["Pending Approval", "Approved"]),
+        results = fetch_schedule_data([RequestDates.request_status.in_(["Approved"]),
                                     Employee.position == employee_position,
                                     Employee.role == employee_role])
         for (staff_id, fname, lname, dept, position, manager, date, shift, status) in results:
@@ -455,15 +455,15 @@ def get_wfh_status_by_team(staff_id):
 
     status = {}
     for result in results:
-        date_str = result[1].isoformat()  # Convert date to string in YYYY-MM-DD format
-        staff_id = result[0]  # staff_id
+        date_str = result[1].isoformat()
+        staff_id = result[0]
         if staff_id in all_team_members.keys():
             if date_str not in status:
-                status[date_str] = [staff_id]  # Initialize the list with the first staff_id
+                status[date_str] = [staff_id]
             elif staff_id not in status[date_str]:
                 status[date_str].append(
                     staff_id
-                )  # Add staff_id to the existing list for this date
+                )
 
     from datetime import datetime, timedelta
     from dateutil.relativedelta import relativedelta
@@ -496,7 +496,7 @@ def get_wfh_status_by_team(staff_id):
         {
             "code": 200,
             "data": status,
-            "num_employee_in_dept": num_employee_in_dept,  # Include the count of employees in the response
+            "num_employee_in_dept": num_employee_in_dept,
         }
     )
 
