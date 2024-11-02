@@ -339,7 +339,7 @@ def s_get_team_schedule(staff_id):
         # Initialize employee-specific schedule
         num_employee = db.session.query(Employee.dept, func.count(Employee.staff_id).label("staff_count")) \
                                 .filter(Employee.dept == employee_dept, Employee.position == employee_position,
-                                        Employee.role == employee_role, Employee.reporting_manager == employee_reporting_manager, Employee.staff_id != staff_id).group_by(Employee.dept).first()
+                                        Employee.role == employee_role, Employee.reporting_manager == employee_reporting_manager).group_by(Employee.dept).first()
 
         department, staff_count = num_employee
         dept_dict = initialize_dept_schedule(department, staff_count, all_dates)
@@ -347,7 +347,8 @@ def s_get_team_schedule(staff_id):
         # Query and process specific employee's schedule data
         results = fetch_schedule_data([RequestDates.request_status.in_(["Approved"]),
                                     Employee.position == employee_position,
-                                    Employee.role == employee_role])
+                                    Employee.role == employee_role,
+                                    Employee.staff_id != staff_id])
         for (staff_id, fname, lname, dept, position, manager, date, shift, status) in results:
             staff_schedule = {"staff_id": staff_id, "name": f"{fname} {lname}", "role": position, "reporting_manager": manager, "request_status": status}
             add_employee_to_schedule(dept_dict, dept, date.strftime("%Y-%m-%d"), shift, staff_schedule)
