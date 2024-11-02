@@ -229,6 +229,24 @@ def get_team_members(staff_id, data, visited=None, staff_details=None):
 # Endpoint to retrieve organizational schedule
 @app.route("/o_get_org_schedule", methods=["GET"])
 def o_get_org_schedule():
+    """
+    Success Response:
+            {
+            "department_name": {
+                "date": {
+                    "shift": [
+                        {
+                            "staff_id": 12345,
+                            "name": "John Doe",
+                            "position": "Engineer",
+                            "reporting_manager": "Manager Name",
+                            "request_status": "Approved"
+                        }
+                    ]
+                }
+            }
+        }
+    """
     try:
         all_dates = get_date_range()
         dept_dict = {}
@@ -245,7 +263,7 @@ def o_get_org_schedule():
             dept_dict.update(initialize_dept_schedule(dept, staff_count, all_dates))
 
         # Query and process schedule data
-        results = fetch_schedule_data([])
+        results = fetch_schedule_data([RequestDates.request_status.in_(["Approved"])])
         for (
             staff_id,
             fname,
@@ -286,6 +304,30 @@ def o_get_org_schedule():
 # Endpoint to retrieve manager's team schedule
 @app.route("/m_get_team_schedule/<int:staff_id>", methods=["GET"])
 def m_get_team_schedule(staff_id):
+    """
+    Parameters:
+    staff_id (int)
+    ---
+    Success Response:
+        {
+        "manager_id": {
+            "department_name": {
+                "date": {
+                    "shift": [
+                        {
+                            "staff_id": 12345,
+                            "name": "John Doe",
+                            "position": "Engineer",
+                            "reporting_manager": "Manager Name",
+                            "request_status": "Approved"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+
+    """
     try:
         all_dates = get_date_range()
         employee_details = invoke_http(
@@ -324,9 +366,7 @@ def m_get_team_schedule(staff_id):
                     schedule_data = fetch_schedule_data(
                         [
                             Employee.reporting_manager == sub_id,
-                            RequestDates.request_status.in_(
-                                ["Pending Approval", "Approved"]
-                            ),
+                            RequestDates.request_status.in_(["Approved"]),
                         ]
                     )
 
@@ -371,7 +411,7 @@ def m_get_team_schedule(staff_id):
 
                 # Query and process team schedule data
                 results = fetch_schedule_data(
-                    [RequestDates.request_status.in_(["Pending Approval", "Approved"])]
+                    [RequestDates.request_status.in_(["Approved"])]
                 )
 
                 # Populate the team schedule structure for each relevant team member
@@ -414,7 +454,7 @@ def m_get_team_schedule(staff_id):
 
             # Query and process team schedule data
             results = fetch_schedule_data(
-                [RequestDates.request_status.in_(["Pending Approval", "Approved"])]
+                [RequestDates.request_status.in_(["Approved"])]
             )
             for (
                 staff_id,
@@ -460,6 +500,26 @@ def m_get_team_schedule(staff_id):
 # Endpoint to retrieve specific employee's team schedule
 @app.route("/s_get_team_schedule/<int:staff_id>", methods=["GET"])
 def s_get_team_schedule(staff_id):
+    """
+    Parameters:
+    staff_id (int)
+    ---
+        {
+        "department_name": {
+            "date": {
+                "shift": [
+                    {
+                        "staff_id": 12345,
+                        "name": "Jane Smith",
+                        "role": "Engineer",
+                        "reporting_manager": "Manager Name",
+                        "request_status": "Approved"
+                    }
+                ]
+            }
+        }
+    }
+    """
     try:
         all_dates = get_date_range()
         employee_details = invoke_http(
@@ -491,9 +551,10 @@ def s_get_team_schedule(staff_id):
         # Query and process specific employee's schedule data
         results = fetch_schedule_data(
             [
-                RequestDates.request_status.in_(["Pending Approval", "Approved"]),
+                RequestDates.request_status.in_(["Approved"]),
                 Employee.position == employee_position,
                 Employee.role == employee_role,
+                Employee.staff_id != staff_id,
             ]
         )
         for (
@@ -535,6 +596,22 @@ def s_get_team_schedule(staff_id):
 # Retrieve wfh count and total by department
 @app.route("/get_wfh_status", methods=["GET"])
 def get_wfh_status():
+    """
+    {
+    "code": 200,
+    "data": {
+        "2024-10-30": [],
+        "2024-10-31": [],
+        "2024-11-01": [
+            140015,
+            140025
+        ],
+        "2024-11-02": [
+            140025,
+            140036
+        ],...
+    }
+    """
     results = (
         db.session.query(Employee.staff_id, RequestDates.request_date)
         .join(Request, Request.request_id == RequestDates.request_id)
@@ -594,6 +671,25 @@ def get_wfh_status():
 # Retrieve wfh count and total by department
 @app.route("/get_wfh_status_by_team/<int:staff_id>", methods=["GET"])
 def get_wfh_status_by_team(staff_id):
+    """
+    Parameters:
+    staff_id (int)
+    ---
+    {
+    "code": 200,
+    "data": {
+        "2024-10-30": [],
+        "2024-10-31": [],
+        "2024-11-01": [
+            140015,
+            140025
+        ],
+        "2024-11-02": [
+            140025,
+            140036
+        ],...
+    }
+    """
     response = invoke_http(employee_URL + "/get_all_employees", method="GET")
 
     # Recursive function to get all team members for a given manager
@@ -634,17 +730,15 @@ def get_wfh_status_by_team(staff_id):
 
     status = {}
     for result in results:
-        date_str = result[1].isoformat()  # Convert date to string in YYYY-MM-DD format
-        staff_id = result[0]  # staff_id
+        date_str = result[1].isoformat()
+        staff_id = result[0]
         if staff_id in all_team_members.keys():
             if date_str not in status:
                 status[date_str] = [
                     staff_id
                 ]  # Initialize the list with the first staff_id
             elif staff_id not in status[date_str]:
-                status[date_str].append(
-                    staff_id
-                )  # Add staff_id to the existing list for this date
+                status[date_str].append(staff_id)
 
     from datetime import datetime, timedelta
     from dateutil.relativedelta import relativedelta
@@ -678,7 +772,7 @@ def get_wfh_status_by_team(staff_id):
         {
             "code": 200,
             "data": status,
-            "num_employee_in_dept": num_employee_in_dept,  # Include the count of employees in the response
+            "num_employee_in_dept": num_employee_in_dept,
         }
     )
 

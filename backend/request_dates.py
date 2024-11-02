@@ -554,19 +554,13 @@ def get_staff_request(request_id):
             200,
         )
     except Exception as e:
-        return (
-            jsonify(
-                {
-                    "code": 500,
-                    "error": "An error occurred while retrieving request dates. "
-                    + str(e),
-                }
-            ),
-            500,
-        )
+        return jsonify({
+            "code": 500,
+            "error": "An error occurred while retrieving request dates. " + str(e)
+        }), 500
 
 
-@app.route("/auto_reject", methods=["PUT"])
+@app.route('/request_dates/auto_reject', methods=['PUT'])
 def auto_reject():
     """
     Automatically reject requests if any of their request_dates are more than 2 months old.
