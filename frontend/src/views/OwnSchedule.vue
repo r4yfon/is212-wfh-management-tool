@@ -205,3 +205,14 @@ export default {
   },
 };
 </script>
+
+<style>
+.fc-h-event {
+  white-space: normal;
+  overflow: hidden;
+}
+
+.fc-daygrid-event {
+  overflow: hidden;
+}
+</style>
