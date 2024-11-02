@@ -3,7 +3,21 @@ from flask_cors import CORS
 from run import db
 
 app = Blueprint("employee", __name__)
-CORS(app)
+CORS(
+    app,
+    resources={
+        r"/*": {
+            "origins": [
+                "https://is212-frontend.vercel.app",
+                "https://is212-backend.vercel.app",
+                "http://localhost:5173",
+            ],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization", "Accept"],
+            "supports_credentials": True,
+        }
+    },
+)
 
 
 class Employee(db.Model):

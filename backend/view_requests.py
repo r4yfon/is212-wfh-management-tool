@@ -7,7 +7,35 @@ from request_dates import RequestDates
 from run import db
 
 app = Blueprint("view_requests", __name__)
-CORS(app)
+CORS(
+    app,
+    resources={
+        r"/*": {
+            "origins": [
+                "https://is212-frontend.vercel.app",
+                "https://is212-backend.vercel.app",
+                "http://localhost:5173",
+            ],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization", "Accept"],
+            "expose_headers": ["Content-Type", "Authorization"],
+            "supports_credentials": True,
+            "max_age": 86400,
+        }
+    },
+)
+
+
+@app.after_request
+def after_request(response):
+    response.headers.add(
+        "Access-Control-Allow-Origin", "https://is212-frontend.vercel.app"
+    )
+    response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
+    response.headers.add("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS")
+    response.headers.add("Access-Control-Allow-Credentials", "true")
+    return response
+
 
 employee_URL = environ.get("EMPLOYEE_URL") or "http://localhost:5000/employee"
 request_URL = environ.get("REQUEST_URL") or "http://localhost:5001/request"

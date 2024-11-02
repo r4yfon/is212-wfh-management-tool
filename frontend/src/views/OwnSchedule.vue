@@ -4,8 +4,10 @@ import { url_paths } from "@/url_paths";
 fetch(`${url_paths.request_dates}/auto_reject`, {
   method: 'PUT',
   headers: {
-    'Content-Type': 'application/json'
-  }
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  },
+  credentials: 'include'
 })
   .then(response => {
     if (!response.ok) {
@@ -103,7 +105,7 @@ export default {
 
       selectedDate: new Date(),
       scheduledData: {},
-      currentDate: new Date(),
+      currentDate: this.getSGTDate(),
       userStore: null,
     };
   },
@@ -132,35 +134,41 @@ export default {
 
   methods: {
     handleNextClick() {
-      this.currentDate = new Date(this.currentDate).setDate(
+      this.currentDate = this.getSGTDate(new Date(this.currentDate).setDate(
         new Date(this.currentDate).getDate() + 7,
-      );
+      ));
       const dateISO = new Date(this.currentDate).toISOString().split("T")[0];
       if (!(dateISO in this.scheduledData)) {
         this.getWeeklySchedule(this.userStore.user);
       }
     },
     handlePrevClick() {
-      this.currentDate = new Date(this.currentDate).setDate(
+      this.currentDate = this.getSGTDate(new Date(this.currentDate).setDate(
         new Date(this.currentDate).getDate() - 7,
-      );
+      ));
       const dateISO = new Date(this.currentDate).toISOString().split("T")[0];
       if (!(dateISO in this.scheduledData)) {
         this.getWeeklySchedule(this.userStore.user);
       }
     },
     handleTodayClick() {
-      this.currentDate = new Date();
+      this.currentDate = this.getSGTDate();
       const dateISO = new Date(this.currentDate).toISOString().split("T")[0];
       if (!(dateISO in this.scheduledData)) {
         this.getWeeklySchedule(this.userStore.user);
       }
     },
+
+    getSGTDate(date = new Date()) {
+      return new Date(date.getTime() + (8 * 60 * 60 * 1000)); // Add 8 hours
+    },
+
     getWeeklySchedule(user) {
       const staff_id = user.staff_id;
       if ((!this.currentDate) instanceof Date) {
         this.currentDate = new Date();
       }
+      console.log(this.currentDate)
       fetch(
         `${url_paths.view_schedule}/weekly/${staff_id}/${new Date(this.currentDate).toISOString().split("T")[0]}`,
       )

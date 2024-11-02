@@ -13,7 +13,21 @@ from sqlalchemy import func
 from run import db
 
 app = Blueprint("view_schedule", __name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
+CORS(
+    app,
+    resources={
+        r"/*": {
+            "origins": [
+                "https://is212-frontend.vercel.app",
+                "https://is212-backend.vercel.app",
+                "http://localhost:5173",
+            ],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization", "Accept"],
+            "supports_credentials": True,
+        }
+    },
+)
 
 employee_URL = environ.get("EMPLOYEE_URL") or "http://localhost:5000/employee"
 request_URL = environ.get("REQUEST_URL") or "http://localhost:5001/request"

@@ -4,7 +4,21 @@ from flask_cors import CORS
 from os import environ
 
 app = Blueprint("reject_requests", __name__)
-CORS(app)
+CORS(
+    app,
+    resources={
+        r"/*": {
+            "origins": [
+                "https://is212-frontend.vercel.app",
+                "https://is212-backend.vercel.app",
+                "http://localhost:5173",
+            ],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization", "Accept"],
+            "supports_credentials": True,
+        }
+    },
+)
 
 request_URL = environ.get("REQUEST_URL") or "http://localhost:5001/request"
 request_dates_URL = (

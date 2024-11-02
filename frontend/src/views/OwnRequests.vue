@@ -85,8 +85,10 @@ export default {
         fetch(`${url_paths.request_dates}/auto_reject`, {
             method: 'PUT',
             headers: {
-                'Content-Type': 'application/json'
-            }
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            credentials: 'include'
         })
             .then(response => {
                 if (!response.ok) {
@@ -104,7 +106,13 @@ export default {
         // Format the data to the structure needed for the table
         formatData() {
             // #####################################################################################
-            fetch(`${url_paths.view_requests}/s_retrieve_requests/${userStore.user.staff_id}`)
+            fetch(`${url_paths.view_requests}/s_retrieve_requests/${userStore.user.staff_id}`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                credentials: 'include'
+            })
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
@@ -190,7 +198,7 @@ export default {
                     }
                     return response.json();
                 })
-                .then(responseData => {
+                .then(() => {
                     this.buttonIsLoading = true;
                     // console.log('Success:', responseData);
                     this.formatData();

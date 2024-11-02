@@ -6,7 +6,29 @@ from os import environ
 from run import db
 
 app = Blueprint("request_dates", __name__)
-CORS(app)
+CORS(
+    app,
+    resources={
+        r"/*": {
+            "origins": [
+                "https://is212-frontend.vercel.app",
+                "https://is212-backend.vercel.app",
+                "http://localhost:5173",
+            ],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": [
+                "Content-Type",
+                "Authorization",
+                "Accept",
+                "X-Requested-With",
+            ],
+            "expose_headers": ["Content-Type", "Authorization"],
+            "supports_credentials": True,
+            "max_age": 86400,
+            "vary_header": True,
+        }
+    },
+)
 
 
 class RequestDates(db.Model):
@@ -554,99 +576,134 @@ def get_staff_request(request_id):
             200,
         )
     except Exception as e:
-        return jsonify({
-            "code": 500,
-            "error": "An error occurred while retrieving request dates. " + str(e)
-        }), 500
+        return (
+            jsonify(
+                {
+                    "code": 500,
+                    "error": "An error occurred while retrieving request dates. "
+                    + str(e),
+                }
+            ),
+            500,
+        )
 
 
-@app.route('/request_dates/auto_reject', methods=['PUT'])
+@app.route("/auto_reject", methods=["PUT"])
 def auto_reject():
     """
     Automatically reject requests if any of their request_dates are more than 2 months old.
     """
     from datetime import datetime, timedelta
 
-    today = datetime.today()
-    two_months_ago = today - timedelta(days=60)
+    # Handle preflight request
+    if request.method == "OPTIONS":
+        response = jsonify({"status": "ok"})
+        response.headers.add("Access-Control-Allow-Methods", "PUT, OPTIONS")
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type")
+        response.headers.add(
+            "Access-Control-Allow-Origin", "https://is212-frontend.vercel.app"
+        )
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        return response, 200
 
-    # Step 1: Query all pending request dates older than 2 months
-    pending_old_requests = RequestDates.query.filter(
-        RequestDates.request_status == "Pending Approval",
-        RequestDates.request_date < two_months_ago.date(),
-    ).all()
+    try:
+        today = datetime.today()
+        two_months_ago = today - timedelta(days=60)
 
-    # Collect the unique request IDs to reject
-    request_ids_to_reject = {req.request_id for req in pending_old_requests}
-
-    # Step 2: Query all request_dates with the identified request_ids
-    if request_ids_to_reject:
-        related_requests = RequestDates.query.filter(
-            RequestDates.request_id.in_(request_ids_to_reject)
+        # Step 1: Query all pending request dates older than 2 months
+        pending_old_requests = RequestDates.query.filter(
+            RequestDates.request_status == "Pending Approval",
+            RequestDates.request_date < two_months_ago.date(),
         ).all()
 
-        updated_requests = []
+        # Collect the unique request IDs to reject
+        request_ids_to_reject = {req.request_id for req in pending_old_requests}
 
-        # Step 3: Batch update all related requests to "Rejected"
-        for req in related_requests:
-            req.request_status = "Rejected"
-            updated_requests.append(req)
+        # Step 2: Query all request_dates with the identified request_ids
+        if request_ids_to_reject:
+            related_requests = RequestDates.query.filter(
+                RequestDates.request_id.in_(request_ids_to_reject)
+            ).all()
 
-        # Batch commit all the changes to the database
-        db.session.commit()
+            updated_requests = []
 
-        # Step 4: Update the reason in the original request table for each request
-        for request_id in request_ids_to_reject:
-            data = {
-                "request_id": request_id,
-                "reason": "1 or more date(s) have been auto-rejected by the system",
-                "status": "Rejected",
-            }
-            update_reason_response = invoke_http(
-                request_URL + "/update_reason", json=data, method="PUT"
-            )
+            # Step 3: Batch update all related requests to "Rejected"
+            for req in related_requests:
+                req.request_status = "Rejected"
+                updated_requests.append(req)
 
-            if update_reason_response.get("code") != 200:
-                return jsonify(
-                    {
-                        "code": update_reason_response.get("code", 500),
-                        "message": update_reason_response.get(
-                            "message", "Failed to update reason for request."
-                        ),
-                    }
-                ), update_reason_response.get("code", 500)
+            # Batch commit all the changes to the database
+            db.session.commit()
 
-            # Log the rejection event for the request
-            log_data = {
-                "request_id": request_id,
-                "action": "The entire request has been auto-rejected by the system",
-                "reason": "Auto rejected due to one or more dates being older than 2 months",
-            }
-            invoke_http(status_log_URL + "/add_event", json=log_data, method="POST")
+            # Step 4: Update the reason in the original request table for each request
+            for request_id in request_ids_to_reject:
+                data = {
+                    "request_id": request_id,
+                    "reason": "1 or more date(s) have been auto-rejected by the system",
+                    "status": "Rejected",
+                }
+                update_reason_response = invoke_http(
+                    request_URL + "/update_reason", json=data, method="PUT"
+                )
 
-        # Step 5: Return response with unique request IDs of rejected requests
-        return (
-            jsonify(
+                if update_reason_response.get("code") != 200:
+                    return jsonify(
+                        {
+                            "code": update_reason_response.get("code", 500),
+                            "message": update_reason_response.get(
+                                "message", "Failed to update reason for request."
+                            ),
+                        }
+                    ), update_reason_response.get("code", 500)
+
+                # Log the rejection event for the request
+                log_data = {
+                    "request_id": request_id,
+                    "action": "The entire request has been auto-rejected by the system",
+                    "reason": "Auto rejected due to one or more dates being older than 2 months",
+                }
+                invoke_http(status_log_URL + "/add_event", json=log_data, method="POST")
+
+            # Step 5: Return response with unique request IDs of rejected requests
+            response = jsonify(
                 {
                     "message": f"{len(request_ids_to_reject)} unique requests have been updated to Rejected",
                     "requests": list(
                         request_ids_to_reject
                     ),  # Return unique request IDs
                 }
+            )
+
+            # Add CORS headers to the response
+            response.headers.add(
+                "Access-Control-Allow-Origin", "https://is212-frontend.vercel.app"
+            )
+            response.headers.add("Access-Control-Allow-Credentials", "true")
+            return response, 200
+
+        # If no requests need to be updated
+        return (
+            jsonify(
+                {
+                    "message": "No requests were found to be auto-rejected.",
+                    "updated_requests": [],
+                }
             ),
             200,
         )
 
-    # If no requests need to be updated
-    return (
-        jsonify(
+    except Exception as e:
+        error_response = jsonify(
             {
-                "message": "No requests were found to be auto-rejected.",
-                "updated_requests": [],
+                "message": "An error occurred while auto-rejecting requests",
+                "error": str(e),
             }
-        ),
-        200,
-    )
+        )
+        error_response.headers.add(
+            "Access-Control-Allow-Origin", "https://is212-frontend.vercel.app"
+        )
+        error_response.headers.add("Access-Control-Allow-Credentials", "true")
+        return error_response, 500
 
 
 # if __name__ == "__main__":

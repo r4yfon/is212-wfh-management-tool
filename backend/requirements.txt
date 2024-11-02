@@ -5,7 +5,7 @@ click==8.1.7
 colorama==0.4.6
 flask==3.0.3
 flask-cors==5.0.0
-# flask-sqlalchemy==3.1.1
+flask-sqlalchemy==3.1.1
 flask-testing==0.8.1
 greenlet==3.1.1
 idna==3.10

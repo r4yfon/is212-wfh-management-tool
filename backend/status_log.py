@@ -2,10 +2,25 @@ from flask import request, jsonify, Blueprint
 from flask_cors import CORS
 from datetime import datetime
 from run import db
+import os
 
 
 app = Blueprint("status_log", __name__)
-CORS(app)
+CORS(
+    app,
+    resources={
+        r"/*": {
+            "origins": [
+                "https://is212-frontend.vercel.app",
+                "https://is212-backend.vercel.app",
+                "http://localhost:5173",
+            ],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization", "Accept"],
+            "supports_credentials": True,
+        }
+    },
+)
 
 
 class StatusLog(db.Model):
