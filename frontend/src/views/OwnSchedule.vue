@@ -168,7 +168,6 @@ export default {
       if ((!this.currentDate) instanceof Date) {
         this.currentDate = new Date();
       }
-      console.log(this.currentDate)
       fetch(
         `${url_paths.view_schedule}/weekly/${staff_id}/${new Date(this.currentDate).toISOString().split("T")[0]}`,
       )
