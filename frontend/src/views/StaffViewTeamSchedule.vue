@@ -100,17 +100,20 @@ export default {
       const formattedEvents = [];
       const team = this.selectedTeam;
 
-      const teamMembers = Object.values(employeesByDept[team]).filter(member => member.reporting_manager === this.user_store.user.reporting_manager);
-      // console.log(teamMembers)
+      const teamMembers = Object.values(employeesByDept[team])
+        .filter(member => member.reporting_manager === this.user_store.user.reporting_manager && member.staff_id !== this.user_store.user.staff_id);
 
       for (const date in teamSchedule[team]) {
+        const departmentStrength = teamSchedule[team].num_employee - 1;
         if (date !== 'num_employee') {
-          const departmentStrength = teamSchedule[team].num_employee;
-          const AMCount = teamSchedule[team][date].AM.length;
-          const PMCount = teamSchedule[team][date].PM.length;
-          // console.log(teamSchedule[team][date].PM);
-          const FullCount = teamSchedule[team][date].Full.length;
+          const AMArray = teamSchedule[team][date].AM.filter(member => member.reporting_manager === this.user_store.user.reporting_manager);
+          const PMArray = teamSchedule[team][date].PM.filter(member => member.reporting_manager === this.user_store.user.reporting_manager);
+          const FullArray = teamSchedule[team][date].Full.filter(member => member.reporting_manager === this.user_store.user.reporting_manager);
+          const AMCount = AMArray.length;
+          const PMCount = PMArray.length;
+          const FullCount = FullArray.length;
           const inOfficeCount = departmentStrength - AMCount - PMCount - FullCount;
+
 
           const inOfficeStaffDetails = teamMembers
             .map(staff => ({
@@ -118,11 +121,15 @@ export default {
               staff_id: staff.staff_id,
               role: staff.role
             }))
-            .filter(staff =>
-              !teamSchedule[team][date].AM.some(s => s.staff_id === staff.staff_id) &&
-              !teamSchedule[team][date].PM.some(s => s.staff_id === staff.staff_id) &&
-              !teamSchedule[team][date].Full.some(s => s.staff_id === staff.staff_id)
-            );
+            .filter(staff => {
+              const amStaff = teamSchedule[team][date].AM.map(s => s.staff_id);
+              const pmStaff = teamSchedule[team][date].PM.map(s => s.staff_id);
+              const fullStaff = teamSchedule[team][date].Full.map(s => s.staff_id);
+
+              return !amStaff.includes(staff.staff_id) &&
+                !pmStaff.includes(staff.staff_id) &&
+                !fullStaff.includes(staff.staff_id);
+            });
 
           formattedEvents.push(
             {
@@ -131,7 +138,7 @@ export default {
               color: this.workColors['WFH - AM'],
               extendedProps: {
                 amCount: AMCount,
-                staffDetails: teamSchedule[team][date].AM,
+                staffDetails: AMArray,
               },
             },
             {
@@ -140,7 +147,7 @@ export default {
               color: this.workColors['WFH - PM'],
               extendedProps: {
                 pmCount: PMCount,
-                staffDetails: teamSchedule[team][date].PM,
+                staffDetails: PMArray,
               },
             },
             {
@@ -149,7 +156,7 @@ export default {
               color: this.workColors['WFH - Full'],
               extendedProps: {
                 fullCount: FullCount,
-                staffDetails: teamSchedule[team][date].Full,
+                staffDetails: FullArray,
               },
             },
             {
@@ -166,7 +173,6 @@ export default {
       }
 
       this.calendarOptions.events = formattedEvents;
-      // console.log(this.calendarOptions.events)
     },
 
     filterStaffDetails(staffList) {
@@ -178,12 +184,6 @@ export default {
     },
   },
   watch: {
-    // searchTerm() {
-    //   this.filteredAMStaffNames = this.filterStaffNames(this.clickedEventDetails?.staffNames || []);
-    //   this.filteredPMStaffNames = this.filterStaffNames(this.clickedEventDetails?.pmStaffNames || []);
-    //   this.filteredFullStaffNames = this.filterStaffNames(this.clickedEventDetails?.fullStaffNames || []);
-    //   this.filteredInOfficeStaffNames = this.filterStaffNames(this.clickedEventDetails?.inOfficeStaffNames || []);
-    // },
     showDialog(value) {
       if (!value) {
         this.searchTerm = ''; // Clear the search bar
@@ -249,14 +249,6 @@ export default {
 </template>
 
 <style>
-.fc-h-event .fc-event-title {
-  white-space: normal;
-}
-
-.fc-event-main {
-  padding: 0.25rem;
-}
-
 .search-container {
   position: sticky;
   top: 0;

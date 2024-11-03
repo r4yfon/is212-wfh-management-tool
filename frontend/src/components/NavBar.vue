@@ -32,16 +32,15 @@ const userStore = useMainStore();
           </RouterLink>
 
           <!-- manager view staff requests -->
-          <RouterLink
-            v-if="userStore.user.role === 3 || (userStore.user.role === 1 && userStore.user.position === 'Director')"
-            to="/viewstaffrequests" class="btn d-none d-md-block align-content-center">
+          <RouterLink v-if="userStore.user.role !== 2" to="/viewstaffrequests"
+            class="btn d-none d-md-block align-content-center">
             View Staff Requests
           </RouterLink>
 
           <!-- staff view team schedule -->
           <RouterLink to="/staffweeklyschedule" v-if="userStore.user.role === 2"
             class="btn d-none d-md-block align-content-center">
-            View Team Schedule
+            Team Schedule
           </RouterLink>
 
           <!-- HR and director view schedule -->
