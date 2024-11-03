@@ -266,7 +266,7 @@ export default {
 }
 
 .staff-table-container {
-  max-height: 300px;
+  max-height: 100%;
   overflow-y: auto;
 }
 
