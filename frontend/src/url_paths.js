@@ -7,5 +7,3 @@ export const url_paths = {
   view_requests: import.meta.env.VITE_VIEW_REQUESTS_API_URL,
   reject_requests: import.meta.env.VITE_REJECT_REQUESTS_API_URL,
 };
-
-
