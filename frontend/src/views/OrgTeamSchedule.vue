@@ -552,4 +552,11 @@ export default {
   text-decoration: none;
   color: black;
 }
+
+.v-card-title {
+  position: sticky;
+  top: 0;
+  background-color: white;
+  z-index: 1000;
+}
 </style>
