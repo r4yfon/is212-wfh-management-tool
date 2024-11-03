@@ -157,6 +157,7 @@ export default {
     mounted() {
         const userStore = useMainStore();
         this.user = userStore.user;
+        this.tab = this.$route.query.tab ? parseInt(this.$route.query.tab) : 1; // Default to "Pending Approval" if no tab is set
         this.formatData(this.user);
     },
     methods: {
