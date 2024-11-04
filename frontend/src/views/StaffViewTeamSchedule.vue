@@ -265,6 +265,7 @@ export default {
       <FullCalendar ref="fullCalendar" :options="calendarOptions" />
       <v-dialog v-model="showDialog" max-width="70%">
         <v-card>
+          <v-card-title>{{ clickedDateString }}</v-card-title>
           <v-card-text>
             <!-- <div class="search-container">
               <v-text-field v-model="searchTerm" label="Search" outlined dense hide-details></v-text-field>
