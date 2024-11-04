@@ -6,10 +6,11 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import { useMainStore } from '@/store.js';
 import DatePicker from 'primevue/datepicker';
 import { url_paths } from '@/url_paths';
+import { AgGridVue } from "ag-grid-vue3";
 
 export default {
   components: {
-    FullCalendar, DatePicker
+    FullCalendar, DatePicker, AgGridVue
   },
   data() {
     return {
@@ -19,10 +20,51 @@ export default {
         'WFH - Full': '#BA55D3',
         Office: '#86CBED',
       },
-      showDialog: false,
       clickedDateString: null,
       clickedEventDetails: null,
-      searchTerm: '',
+      // searchTerm: '',
+      columnDefs: [
+        { headerName: "Staff Name", field: "name", suppressMovable: true, filter: true },
+        { headerName: "Staff ID", field: "staff_id", suppressMovable: true, filter: true },
+        { headerName: "Role", field: "role", suppressMovable: true, filter: true },
+        // {
+        //   headerName: "WFH Status",
+        //   field: "wfhStatus",
+        //   cellStyle: params => {
+        //     switch(params.value) {
+        //       case 'WFH - AM': return { color: '#F48BA9' };
+        //       case 'WFH - PM': return { color: '#FFB6C1' };
+        //       case 'WFH - Full': return { color: '#BA55D3' };
+        //       default: return { color: 'green' }; // In Office
+        //     }
+        //   },
+        //   suppressMovable: true,
+        //   filter: true
+        // },
+        {
+          headerName: "WFH Status",
+          field: "wfhStatus",
+          cellStyle: params => params.value === 'In Office' ? { color: 'green' } : { color: 'red' },
+          suppressMovable: true,
+          filter: true
+        },
+      ],
+      gridOptions: {
+        defaultColDef: {
+          resizable: false,
+        },
+        domLayout: 'autoHeight',
+        autoSizeStrategy: {
+          type: "fitGridWidth",
+          defaultMinWidth: 100,
+        },
+
+      },
+      showDialog: false,
+
+      clickedDateString: null,
+      clickedEventDepartment: null,
+
       calendarOptions: {
         plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
         initialView: 'dayGridWeek',
@@ -58,7 +100,8 @@ export default {
     },
     filteredStaffList() {
       return this.filterStaffDetails(this.clickedEventDetails.staffDetails || []);
-    }
+  }
+
   },
   methods: {
     handleEventClick(arg) {
@@ -78,6 +121,7 @@ export default {
       // console.log(hasPeople)
 
       this.showDialog = hasPeople;
+
     },
 
     async fetchAndDisplayData() {
@@ -119,7 +163,8 @@ export default {
             .map(staff => ({
               name: staff.staff_name,
               staff_id: staff.staff_id,
-              role: staff.role
+              role: staff.role,
+              wfhStatus: "In Office"
             }))
             .filter(staff => {
               const amStaff = teamSchedule[team][date].AM.map(s => s.staff_id);
@@ -165,7 +210,8 @@ export default {
               color: this.workColors.Office,
               extendedProps: {
                 inOfficeCount: inOfficeCount,
-                staffDetails: inOfficeStaffDetails,
+                // staffDetails: inOfficeStaffDetails,
+                staffDetails: staffDetails.filter(staff => staff.wfhStatus === 'In Office')
               },
             }
           );
@@ -175,23 +221,30 @@ export default {
       this.calendarOptions.events = formattedEvents;
     },
 
-    filterStaffDetails(staffList) {
-      return staffList.filter(staff =>
-        staff.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        staff.staff_id.toString().includes(this.searchTerm) ||
-        staff.role.toLowerCase().includes(this.searchTerm.toLowerCase())
-      );
+    filterStaffDetails() {
+      // return staffList.filter(staff =>
+      //   staff.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+      //   staff.staff_id.toString().includes(this.searchTerm) ||
+      //   staff.role.toLowerCase().includes(this.searchTerm.toLowerCase())
+      // );
+      return this.clickedEventDetails?.staffDetails || [];
     },
   },
   watch: {
-    showDialog(value) {
-      if (!value) {
-        this.searchTerm = ''; // Clear the search bar
-      }
-    },
+    // searchTerm() {
+    //   this.filteredAMStaffNames = this.filterStaffNames(this.clickedEventDetails?.staffNames || []);
+    //   this.filteredPMStaffNames = this.filterStaffNames(this.clickedEventDetails?.pmStaffNames || []);
+    //   this.filteredFullStaffNames = this.filterStaffNames(this.clickedEventDetails?.fullStaffNames || []);
+    //   this.filteredInOfficeStaffNames = this.filterStaffNames(this.clickedEventDetails?.inOfficeStaffNames || []);
+    // },
+    // showDialog(value) {
+    //   if (!value) {
+    //     this.searchTerm = '';
+    //   }
+    // },
     user_store: {
       handler() {
-        this.fetchAndDisplayData(); // Refetch data if user data changes
+        this.fetchAndDisplayData();
       },
       deep: true
     },
@@ -218,28 +271,16 @@ export default {
       <FullCalendar ref="fullCalendar" :options="calendarOptions" />
       <v-dialog v-model="showDialog" max-width="70%">
         <v-card>
-          <v-card-title>Staff</v-card-title>
           <v-card-text>
-            <div class="search-container">
+            <!-- <div class="search-container">
               <v-text-field v-model="searchTerm" label="Search" outlined dense hide-details></v-text-field>
-            </div>
+            </div> -->
             <div class="staff-table-container">
-              <v-table class="staff-table">
-                <thead>
-                  <tr>
-                    <th>Staff Name</th>
-                    <th>Staff ID</th>
-                    <th>Role</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(staff, index) in filteredStaffList" :key="index">
-                    <td>{{ staff.name }}</td>
-                    <td>{{ staff.staff_id }}</td>
-                    <td>{{ staff.role }}</td>
-                  </tr>
-                </tbody>
-              </v-table>
+              <AgGridVue  class="ag-theme-quartz"
+                :gridOptions="gridOptions"
+                :rowData="filteredStaffList"
+                :columnDefs="columnDefs">
+              </AgGridVue>
             </div>
           </v-card-text>
         </v-card>
@@ -262,20 +303,8 @@ export default {
   overflow-y: auto;
 }
 
-.staff-table thead th {
-  position: sticky;
-  top: 0;
-  background-color: #f9f9f9;
-  z-index: 2;
-  /* Ensure it's above the content */
-  border-bottom: 2px solid #ddd;
-  padding: 10px;
-  text-align: left;
-}
-
-.staff-table tbody td {
-  padding: 10px;
-  text-align: left;
-  border-bottom: 1px solid #ddd;
+.ag-theme-alpine {
+  width: 100%;
+  height: 100%;
 }
 </style>

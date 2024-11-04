@@ -19,6 +19,7 @@
     </aside>
 
     <section class="flex-grow-1">
+      <v-btn class="mb-3" color="#37474F" @click="redirectToViewStaffRequests">View Approved Staff Requests</v-btn>
       <FullCalendar ref="fullCalendar" :options="calendarOptions" />
 
       <v-dialog v-model="showDialog" max-width="60%">
@@ -55,8 +56,20 @@ import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-quartz.css";
 import { AgGridVue } from "ag-grid-vue3";
 import { useMainStore } from '@/store';
+import { useRouter } from 'vue-router';
 
 export default {
+  setup(){
+    const router = useRouter();
+
+    const redirectToViewStaffRequests = () => {
+      router.push({ path: '/viewstaffrequests', query: { tab: 2 } });
+    };
+
+    return {
+      redirectToViewStaffRequests,
+    };
+  },   
   props: {
     role: {
       type: String,

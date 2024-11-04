@@ -35,5 +35,5 @@ coverage
 *.tsbuildinfo
 
 backend/*.env
-frontend/*.env
+frontend/*.env.*
 */.vercel
