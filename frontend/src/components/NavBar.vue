@@ -121,10 +121,10 @@ const userStore = useMainStore();
               Schedule</v-btn>
             <v-btn class="justify-content-start" href="/requestslist" @click="toggleMenu" variant="plain">
               My Requests</v-btn>
-            <v-btn v-if="userStore.user.role != 2" class="justify-content-start" href="/viewstaffrequests"
+            <v-btn  v-if="userStore.user.role === 3 || (userStore.user.role === 1 && userStore.user.position === 'Director')" class="justify-content-start" href="/viewstaffrequests"
               @click="toggleMenu" variant="plain">View
               Staff Requests</v-btn>
-            <v-btn class="justify-content-start" href="/staffweeklyschedule" @click="toggleMenu" variant="plain">View
+            <v-btn v-if="userStore.user.role == 2" class="justify-content-start" href="/staffweeklyschedule" @click="toggleMenu" variant="plain">View
               Team Schedule</v-btn>
             <v-btn v-if="userStore.user.role != 2" class="justify-content-start" href="/org_schedule"
               @click="toggleMenu" variant="plain">Organisation Schedule</v-btn>
