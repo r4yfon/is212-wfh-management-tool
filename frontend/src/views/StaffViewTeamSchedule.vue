@@ -27,24 +27,17 @@ export default {
         { headerName: "Staff Name", field: "name", suppressMovable: true, filter: true },
         { headerName: "Staff ID", field: "staff_id", suppressMovable: true, filter: true },
         { headerName: "Role", field: "role", suppressMovable: true, filter: true },
-        // {
-        //   headerName: "WFH Status",
-        //   field: "wfhStatus",
-        //   cellStyle: params => {
-        //     switch(params.value) {
-        //       case 'WFH - AM': return { color: '#F48BA9' };
-        //       case 'WFH - PM': return { color: '#FFB6C1' };
-        //       case 'WFH - Full': return { color: '#BA55D3' };
-        //       default: return { color: 'green' }; // In Office
-        //     }
-        //   },
-        //   suppressMovable: true,
-        //   filter: true
-        // },
         {
           headerName: "WFH Status",
           field: "wfhStatus",
-          cellStyle: params => params.value === 'In Office' ? { color: 'green' } : { color: 'red' },
+          cellStyle: params => {
+            switch (params.value) {
+              case 'WFH - AM': return { color: 'red' };
+              case 'WFH - PM': return { color: 'red' };
+              case 'WFH - Full': return { color: 'red' };
+              default: return { color: 'green' }; // In Office
+            }
+          },
           suppressMovable: true,
           filter: true
         },
@@ -61,8 +54,6 @@ export default {
 
       },
       showDialog: false,
-
-      clickedDateString: null,
       clickedEventDepartment: null,
 
       calendarOptions: {
@@ -100,7 +91,7 @@ export default {
     },
     filteredStaffList() {
       return this.filterStaffDetails(this.clickedEventDetails.staffDetails || []);
-  }
+    }
 
   },
   methods: {
@@ -151,8 +142,11 @@ export default {
         const departmentStrength = teamSchedule[team].num_employee - 1;
         if (date !== 'num_employee') {
           const AMArray = teamSchedule[team][date].AM.filter(member => member.reporting_manager === this.user_store.user.reporting_manager);
+          AMArray.map(staff => staff.wfhStatus = 'WFH - AM');
           const PMArray = teamSchedule[team][date].PM.filter(member => member.reporting_manager === this.user_store.user.reporting_manager);
+          PMArray.map(staff => staff.wfhStatus = 'WFH - PM');
           const FullArray = teamSchedule[team][date].Full.filter(member => member.reporting_manager === this.user_store.user.reporting_manager);
+          FullArray.map(staff => staff.wfhStatus = 'WFH - Full');
           const AMCount = AMArray.length;
           const PMCount = PMArray.length;
           const FullCount = FullArray.length;
@@ -211,7 +205,7 @@ export default {
               extendedProps: {
                 inOfficeCount: inOfficeCount,
                 // staffDetails: inOfficeStaffDetails,
-                staffDetails: staffDetails.filter(staff => staff.wfhStatus === 'In Office')
+                staffDetails: inOfficeStaffDetails.filter(staff => staff.wfhStatus === 'In Office')
               },
             }
           );
@@ -276,9 +270,7 @@ export default {
               <v-text-field v-model="searchTerm" label="Search" outlined dense hide-details></v-text-field>
             </div> -->
             <div class="staff-table-container">
-              <AgGridVue  class="ag-theme-quartz"
-                :gridOptions="gridOptions"
-                :rowData="filteredStaffList"
+              <AgGridVue class="ag-theme-quartz" :gridOptions="gridOptions" :rowData="filteredStaffList"
                 :columnDefs="columnDefs">
               </AgGridVue>
             </div>
