@@ -1,4 +1,4 @@
-from flask import jsonify, Blueprint
+from flask import Flask, request, jsonify
 import requests
 from os import environ
 from datetime import datetime, timedelta
@@ -10,24 +10,12 @@ from flask_cors import CORS
 from invokes import invoke_http
 from datetime import datetime, timedelta
 from sqlalchemy import func
-from run import db
+from database import db
 
-app = Blueprint("view_schedule", __name__)
-CORS(
-    app,
-    resources={
-        r"/*": {
-            "origins": [
-                "https://is212-frontend.vercel.app",
-                "https://is212-backend.vercel.app",
-                "http://localhost:5173",
-            ],
-            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-            "allow_headers": ["Content-Type", "Authorization", "Accept"],
-            "supports_credentials": True,
-        }
-    },
-)
+app = Flask(__name__)
+app.config.from_object("config.Config")
+db.init_app(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 employee_URL = environ.get("EMPLOYEE_URL") or "http://localhost:5000/employee"
 request_URL = environ.get("REQUEST_URL") or "http://localhost:5001/request"
@@ -36,7 +24,7 @@ request_dates_URL = (
 )
 
 
-@app.route("/")
+@app.route("/view_schedule/")
 def hello():
     return "This is view_schedule.py"
 
@@ -61,7 +49,7 @@ def get_week_from_date(date_entered):
     return start_date, end_date
 
 
-@app.route("/weekly/<int:staff_id>/<string:date_entered>")
+@app.route("/view_schedule/weekly/<int:staff_id>/<string:date_entered>")
 def view_weekly_schedule(staff_id, date_entered):
     """
     View weekly schedule based on staff_id and date entered
@@ -241,7 +229,7 @@ def get_team_members(staff_id, data, visited=None, staff_details=None):
 
 
 # Endpoint to retrieve organizational schedule
-@app.route("/o_get_org_schedule", methods=["GET"])
+@app.route("/view_schedule/o_get_org_schedule", methods=["GET"])
 def o_get_org_schedule():
     """
     Success Response:
@@ -316,7 +304,7 @@ def o_get_org_schedule():
 
 
 # Endpoint to retrieve manager's team schedule
-@app.route("/m_get_team_schedule/<int:staff_id>", methods=["GET"])
+@app.route("/view_schedule/m_get_team_schedule/<int:staff_id>", methods=["GET"])
 def m_get_team_schedule(staff_id):
     """
     Parameters:
@@ -512,7 +500,7 @@ def m_get_team_schedule(staff_id):
 
 
 # Endpoint to retrieve specific employee's team schedule
-@app.route("/s_get_team_schedule/<int:staff_id>", methods=["GET"])
+@app.route("/view_schedule/s_get_team_schedule/<int:staff_id>", methods=["GET"])
 def s_get_team_schedule(staff_id):
     """
     Parameters:
@@ -608,7 +596,7 @@ def s_get_team_schedule(staff_id):
 
 
 # Retrieve wfh count and total by department
-@app.route("/get_wfh_status", methods=["GET"])
+@app.route("/view_schedule/get_wfh_status", methods=["GET"])
 def get_wfh_status():
     """
     {
@@ -683,7 +671,7 @@ def get_wfh_status():
 
 
 # Retrieve wfh count and total by department
-@app.route("/get_wfh_status_by_team/<int:staff_id>", methods=["GET"])
+@app.route("/view_schedule/get_wfh_status_by_team/<int:staff_id>", methods=["GET"])
 def get_wfh_status_by_team(staff_id):
     """
     Parameters:
@@ -791,5 +779,5 @@ def get_wfh_status_by_team(staff_id):
     )
 
 
-# if __name__ == "__main__":
-#     app.run()
+if __name__ == "__main__":
+    app.run()

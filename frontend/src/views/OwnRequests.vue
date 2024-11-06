@@ -120,21 +120,22 @@ export default {
                     return response.json();
                 })
                 .then(data => {
-                    const rawData = data["data"];
-                    // console.log(data)
-                    this.items = rawData.flatMap((item) =>
-                        item.wfh_dates.map((wfh) => ({
-                            request_id: item.request_id,
-                            creationdate: item.creation_date,
-                            wfhRequestDate: wfh.request_date,
-                            shift: wfh.request_shift,
-                            status: wfh.request_status,
-                            withdraw: wfh.withdraw_reason,
-                            applyReason: item.apply_reason,
-                            withdrawReason: wfh.withdraw_reason,
-                            rescindReason: wfh.rescind_reason,
-                        }))
-                    );
+                    const rawData = data;
+                    if (rawData.length > 0) {
+                        this.items = rawData.flatMap((item) =>
+                            item.wfh_dates.map((wfh) => ({
+                                request_id: item.request_id,
+                                creationdate: item.creation_date,
+                                wfhRequestDate: wfh.request_date,
+                                shift: wfh.request_shift,
+                                status: wfh.request_status,
+                                withdraw: wfh.withdraw_reason,
+                                applyReason: item.apply_reason,
+                                withdrawReason: wfh.withdraw_reason,
+                                rescindReason: wfh.rescind_reason,
+                            }))
+                        );
+                    }
                 })
                 .catch(error => {
                     console.error('Error fetching requests:', error);

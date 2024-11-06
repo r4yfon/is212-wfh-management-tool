@@ -1,51 +1,44 @@
-from flask import jsonify, Blueprint, request
+from flask import Flask, request, jsonify
+from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from os import environ
+from database import db
+
+# Create Flask app first
+app = Flask(__name__)
+app.config.from_object("config.Config")
+
+# Define CORS settings
+ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "https://is212-frontend.vercel.app",
+    "https://is212-backend.vercel.app",
+]
+
+# Configure CORS with credentials support
+CORS(app, resources={r"/*": {"origins": "*"}})
+
+
+# Initialize SQLAlchemy after app creation
+db.init_app(app)
+
+# Import models after db initialization to avoid circular imports
 from employee import Employee
 from request import Request
 from request_dates import RequestDates
-from run import db
-
-app = Blueprint("view_requests", __name__)
-CORS(
-    app,
-    supports_credentials=True,
-    resources={
-        r"/*": {
-            "origins": [
-                "https://is212-frontend.vercel.app",
-                "https://is212-backend.vercel.app",
-                "http://localhost:5173",
-            ],
-            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-            "allow_headers": ["Content-Type", "Authorization", "Accept"],
-            "expose_headers": ["Content-Type", "Authorization"],
-            "supports_credentials": True,
-            "max_age": 86400,
-        }
-    },
-)
 
 
 @app.after_request
 def after_request(response):
     origin = request.headers.get("Origin")
-    allowed_origins = [
-        "https://is212-frontend.vercel.app",
-        "https://is212-backend.vercel.app",
-        "http://localhost:5173",
-    ]
-
-    if origin in allowed_origins:
-        response.headers.add("Access-Control-Allow-Origin", origin)
-        response.headers.add("Access-Control-Allow-Credentials", "true")
-        response.headers.add(
-            "Access-Control-Allow-Headers", "Content-Type,Authorization,Accept"
-        )
-        response.headers.add(
-            "Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS"
-        )
+    if origin in ALLOWED_ORIGINS:
+        response.headers.set("Access-Control-Allow-Origin", origin)
+        response.headers.set("Access-Control-Allow-Credentials", "true")
     return response
+
+
+with app.app_context():
+    db.create_all()
 
 
 employee_URL = environ.get("EMPLOYEE_URL") or "http://localhost:5000/employee"
@@ -55,14 +48,30 @@ request_dates_URL = (
 )
 
 
-@app.route("/")
+@app.route("/view_requests/")
 def hello():
     return "This is view_requests.py"
 
 
 # Staff view own requests
-@app.route("/s_retrieve_requests/<int:s_staff_id>", methods=["GET"])
+@app.route(
+    "/view_requests/s_retrieve_requests/<int:s_staff_id>", methods=["GET", "OPTIONS"]
+)
 def s_retrieve_requests(s_staff_id):
+    """Handle staff request retrieval with CORS support"""
+
+    # Handle preflight OPTIONS request
+    if request.method == "OPTIONS":
+        response = jsonify({"status": "ok"})
+        origin = request.headers.get("Origin")
+        if origin in ALLOWED_ORIGINS:
+            response.headers.set("Access-Control-Allow-Origin", origin)
+            response.headers.set("Access-Control-Allow-Methods", "GET, OPTIONS")
+            response.headers.set(
+                "Access-Control-Allow-Headers", "Content-Type, Authorization, Accept"
+            )
+            response.headers.set("Access-Control-Allow-Credentials", "true")
+        return response
     """
     Parameters:
     staff_id (int): The staff_id
@@ -105,63 +114,54 @@ def s_retrieve_requests(s_staff_id):
         }
     ]
     """
+    # Original GET logic
     try:
-        # Perform an inner join between Request and RequestDates tables where staff_id matches
-        results = (
-            db.session.query(Request, RequestDates)
-            .join(RequestDates, Request.request_id == RequestDates.request_id)
-            .filter(Request.staff_id == s_staff_id)
-            .all()
-        )
+        # Get all requests for this staff
+        requests = Request.query.filter_by(staff_id=s_staff_id).all()
 
-        # Prepare response data
-        request_list = []
-        request_dict_map = {}
+        # Format response
+        requests_list = []
+        for req in requests:
+            request_dates = RequestDates.query.filter_by(
+                request_id=req.request_id
+            ).all()
 
-        for request, request_date in results:
-            if request.request_id not in request_dict_map:
-                request_dict = {
-                    "request_id": request.request_id,
-                    "staff_id": request.staff_id,
-                    "creation_date": request.creation_date.isoformat(),
-                    "apply_reason": request.apply_reason,
-                    "reject_reason": request.reject_reason,
-                    "wfh_dates": [],
+            wfh_dates = []
+            for date in request_dates:
+                wfh_dates.append(
+                    {
+                        "request_date_id": date.request_date_id,
+                        "request_date": str(date.request_date),
+                        "request_shift": date.request_shift,
+                        "request_status": date.request_status,
+                        "rescind_reason": date.rescind_reason,
+                        "withdraw_reason": date.withdraw_reason,
+                    }
+                )
+
+            requests_list.append(
+                {
+                    "request_id": req.request_id,
+                    "staff_id": req.staff_id,
+                    "creation_date": str(req.creation_date),
+                    "apply_reason": req.apply_reason,
+                    "reject_reason": req.reject_reason,
+                    "wfh_dates": wfh_dates,
                 }
-                request_dict_map[request.request_id] = request_dict
-                request_list.append(request_dict)
-            else:
-                request_dict = request_dict_map[request.request_id]
+            )
 
-            # Collect request date information
-            request_date_dict = {
-                "request_date_id": request_date.request_date_id,
-                "request_date": request_date.request_date.isoformat(),
-                "request_shift": request_date.request_shift,
-                "request_status": request_date.request_status,
-                "rescind_reason": request_date.rescind_reason,
-                "withdraw_reason": request_date.withdraw_reason,
-            }
-
-            # Append the date to the list of dates for this request
-            request_dict["wfh_dates"].append(request_date_dict)
-
-        # Return the data in JSON format
-        return jsonify({"code": 200, "data": request_list}), 200
+        response = jsonify(requests_list)
+        origin = request.headers.get("Origin")
+        if origin in ALLOWED_ORIGINS:
+            response.headers.set("Access-Control-Allow-Origin", origin)
+            response.headers.set("Access-Control-Allow-Credentials", "true")
+        return response
 
     except Exception as e:
-        return (
-            jsonify(
-                {
-                    "code": 500,
-                    "error": f"An error occurred while retrieving requests for staff_id {s_staff_id}: {e}",
-                }
-            ),
-            500,
-        )
+        return jsonify({"error": str(e)}), 500
 
 
-@app.route("/m_retrieve_requests/<int:m_staff_id>", methods=["GET"])
+@app.route("/view_requests/m_retrieve_requests/<int:m_staff_id>", methods=["GET"])
 def m_retrieve_requests(m_staff_id):
     """
     Success response:
@@ -290,5 +290,5 @@ def m_retrieve_requests(m_staff_id):
         )
 
 
-# if __name__ == "__main__":
-#     app.run()
+if __name__ == "__main__":
+    app.run()

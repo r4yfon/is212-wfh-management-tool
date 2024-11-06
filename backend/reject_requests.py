@@ -1,24 +1,15 @@
-from flask import request, jsonify, Blueprint
+from flask import Flask, request, jsonify
+from flask_sqlalchemy import SQLAlchemy
 from invokes import invoke_http
 from flask_cors import CORS
 from os import environ
+from database import db
 
-app = Blueprint("reject_requests", __name__)
-CORS(
-    app,
-    resources={
-        r"/*": {
-            "origins": [
-                "https://is212-frontend.vercel.app",
-                "https://is212-backend.vercel.app",
-                "http://localhost:5173",
-            ],
-            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-            "allow_headers": ["Content-Type", "Authorization", "Accept"],
-            "supports_credentials": True,
-        }
-    },
-)
+app = Flask(__name__)
+app.config.from_object("config.Config")
+CORS(app, resources={r"/*": {"origins": "*"}})
+db.init_app(app)
+
 
 request_URL = environ.get("REQUEST_URL") or "http://localhost:5001/request"
 request_dates_URL = (
@@ -134,5 +125,5 @@ def reject_request():
         )
 
 
-# if __name__ == "__main__":
-#     app.run()
+if __name__ == "__main__":
+    app.run()

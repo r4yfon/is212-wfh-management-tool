@@ -49,11 +49,11 @@
 
       <!-- display attendance rate if manager is about to approve request -->
       <v-card-text v-else-if="newStatus === 'Approved'">
-        <p>Requested date(s): {{ this.request_dates.join(", ") }}</p>
+        <p>Requested date(s): {{ request_dates.join(", ") }}</p>
         <p>By approving this request,</p>
-        <div v-for="request_date in this.request_dates" :key="request_date" class="mb-3">
+        <div v-for="request_date in request_dates" :key="request_date" class="mb-3">
           <p>
-            {{ request_date }}: {{ dept_wfh_schedule[request_date].length + 1 }}/{{ this.num_employees_in_dept
+            {{ request_date }}: {{ dept_wfh_schedule[request_date].length + 1 }}/{{ num_employees_in_dept
             }}
             employees in the department will be WFH.
           </p>
@@ -125,12 +125,14 @@ export default {
   emits: ['refresh-data'],
 
   computed: {
-    attendance_in_office(request_date) {
-      return ((1 - ((this.dept_wfh_schedule[request_date].length + 1) / this.num_employees_in_dept)) * 100).toFixed(2);
-    },
+
   },
 
   methods: {
+    attendance_in_office(request_date) {
+      return ((1 - ((this.dept_wfh_schedule[request_date].length + 1) / this.num_employees_in_dept)) * 100).toFixed(2);
+    },
+
     openDialog(newStatus) {
       this.dialogOpened = true;
       this.newStatus = newStatus;

@@ -1,29 +1,20 @@
-from flask import request, jsonify, Blueprint
+from flask import Flask, request, jsonify
+from flask_sqlalchemy import SQLAlchemy
 import input_validation
 from os import environ
 import requests
+from database import db
+from employee import Employee
 from flask_cors import CORS
 from invokes import invoke_http
 from datetime import datetime
-from run import db
 
 
-app = Blueprint("request", __name__)
-CORS(
-    app,
-    resources={
-        r"/*": {
-            "origins": [
-                "https://is212-frontend.vercel.app",
-                "https://is212-backend.vercel.app",
-                "http://localhost:5173",
-            ],
-            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-            "allow_headers": ["Content-Type", "Authorization", "Accept"],
-            "supports_credentials": True,
-        }
-    },
-)
+app = Flask(__name__)
+app.config.from_object("config.Config")
+CORS(app, resources={r"/*": {"origins": "*"}})
+
+db.init_app(app)
 
 
 class Request(db.Model):
@@ -61,13 +52,13 @@ request_dates_URL = (
 status_log_URL = environ.get("STATUS_LOG_URL") or "http://localhost:5003/status_log"
 
 
-@app.route("/")
+@app.route("/request/")
 def hello():
     return "This is request.py"
 
 
 # Create a new request
-@app.route("/create", methods=["POST"])
+@app.route("/request/create", methods=["POST"])
 def create_request():
     """
     Create a new request
@@ -278,7 +269,7 @@ def create_request():
 
 
 # Get all requests
-@app.route("/get_all_requests", methods=["GET"])
+@app.route("/request/get_all_requests", methods=["GET"])
 def get_all_requests():
     """
     Get all WFH requests
@@ -333,7 +324,7 @@ def get_all_requests():
 
 
 # Get all requests made by a staff_id
-@app.route("/get_requests_by_staff_id/<int:staff_id>")
+@app.route("/request/get_requests_by_staff_id/<int:staff_id>")
 def get_requests_by_staff_id(staff_id):
     """
     Get all requests by staff id
@@ -396,7 +387,7 @@ def get_requests_by_staff_id(staff_id):
 
 
 # Get request IDs made by a staff_id
-@app.route("/get_request_ids/<int:staff_id>")
+@app.route("/request/get_request_ids/<int:staff_id>")
 def get_request_ids_by_staff_id(staff_id):
     """
     Get request IDs by staff id
@@ -444,7 +435,7 @@ def get_request_ids_by_staff_id(staff_id):
 
 
 # Add the reason if the request is rejected
-@app.route("/update_reason", methods=["PUT"])
+@app.route("/request/update_reason", methods=["PUT"])
 def update_reason():
     """
     Update "reason" field when the request is rejected
@@ -512,5 +503,5 @@ def update_reason():
         )
 
 
-# if __name__ == "__main__":
-#     app.run()
+if __name__ == "__main__":
+    app.run()

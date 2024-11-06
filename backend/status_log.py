@@ -1,26 +1,13 @@
-from flask import request, jsonify, Blueprint
+from flask import Flask, request, jsonify
+from flask_sqlalchemy import SQLAlchemy
+from database import db
 from flask_cors import CORS
 from datetime import datetime
-from run import db
-import os
 
 
-app = Blueprint("status_log", __name__)
-CORS(
-    app,
-    resources={
-        r"/*": {
-            "origins": [
-                "https://is212-frontend.vercel.app",
-                "https://is212-backend.vercel.app",
-                "http://localhost:5173",
-            ],
-            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-            "allow_headers": ["Content-Type", "Authorization", "Accept"],
-            "supports_credentials": True,
-        }
-    },
-)
+app = Flask(__name__)
+app.config.from_object("config.Config")
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 
 class StatusLog(db.Model):
@@ -51,13 +38,13 @@ class StatusLog(db.Model):
         }
 
 
-@app.route("/")
+@app.route("/status_log/")
 def hello():
     return "This is status_log.py"
 
 
 # Add event to the log
-@app.route("/add_event", methods=["POST"])
+@app.route("/status_log/add_event", methods=["POST"])
 def add_event():
     """
     Log a new status change event.
@@ -120,5 +107,5 @@ def add_event():
         )
 
 
-# if __name__ == "__main__":
-#     app.run()
+if __name__ == "__main__":
+    app.run()

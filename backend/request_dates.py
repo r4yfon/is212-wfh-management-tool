@@ -1,34 +1,14 @@
-from flask import request, jsonify, Blueprint
+from flask import Flask, request, jsonify
+from database import db
 from request import Request
 from flask_cors import CORS
 from invokes import invoke_http
 from os import environ
-from run import db
 
-app = Blueprint("request_dates", __name__)
-CORS(
-    app,
-    resources={
-        r"/*": {
-            "origins": [
-                "https://is212-frontend.vercel.app",
-                "https://is212-backend.vercel.app",
-                "http://localhost:5173",
-            ],
-            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-            "allow_headers": [
-                "Content-Type",
-                "Authorization",
-                "Accept",
-                "X-Requested-With",
-            ],
-            "expose_headers": ["Content-Type", "Authorization"],
-            "supports_credentials": True,
-            "max_age": 86400,
-            "vary_header": True,
-        }
-    },
-)
+app = Flask(__name__)
+app.config.from_object("config.Config")
+CORS(app, resources={r"/*": {"origins": "*"}})
+db.init_app(app)
 
 
 class RequestDates(db.Model):
@@ -78,13 +58,13 @@ request_URL = environ.get("REQUEST_URL") or "http://localhost:5001/request"
 status_log_URL = environ.get("STATUS_LOG_URL") or "http://localhost:5003/status_log"
 
 
-@app.route("/")
+@app.route("/request_dates/")
 def hello():
     return "This is request_dates.py"
 
 
 # Create
-@app.route("/create", methods=["POST"])
+@app.route("/request_dates/create", methods=["POST"])
 def create_request_dates():
     """
     Create a new request date
@@ -191,7 +171,7 @@ def create_request_dates():
 
 
 # Retrieve
-@app.route("/get_by_request_id/<int:request_id>")
+@app.route("/request_dates/get_by_request_id/<int:request_id>")
 def get_request_dates(request_id):
     """
     Get request dates by request ID
@@ -229,7 +209,7 @@ def get_request_dates(request_id):
         )
 
 
-@app.route("/get_by_request_ids", methods=["POST"])
+@app.route("/request_dates/get_by_request_ids", methods=["POST"])
 def get_request_dates_in_batch():
     """
     Get request dates by multiple request IDs in a list
@@ -286,7 +266,7 @@ def get_request_dates_in_batch():
 
 
 # Change status to all the records that belongs to the same request_id
-@app.route("/change_all_status", methods=["PUT"])
+@app.route("/request_dates/change_all_status", methods=["PUT"])
 def change_all_status():
     """
     Parameters:
@@ -391,7 +371,7 @@ def change_all_status():
 
 
 # Withdraw or rescind some of the dates in a request
-@app.route("/change_partial_status", methods=["PUT"])
+@app.route("/request_dates/change_partial_status", methods=["PUT"])
 def change_partial_status():
     """
     Parameters:
@@ -525,7 +505,7 @@ def change_partial_status():
 
 
 # get staff's pending and approved pending withdrawal requests
-@app.route("/get_staff_request/<int:request_id>")
+@app.route("/request_dates/get_staff_request/<int:request_id>")
 def get_staff_request(request_id):
     """
     Get request dates by request ID
@@ -595,17 +575,6 @@ def auto_reject():
     """
     from datetime import datetime, timedelta
 
-    # Handle preflight request
-    if request.method == "OPTIONS":
-        response = jsonify({"status": "ok"})
-        response.headers.add("Access-Control-Allow-Methods", "PUT, OPTIONS")
-        response.headers.add("Access-Control-Allow-Headers", "Content-Type")
-        response.headers.add(
-            "Access-Control-Allow-Origin", "https://is212-frontend.vercel.app"
-        )
-        response.headers.add("Access-Control-Allow-Credentials", "true")
-        return response, 200
-
     try:
         today = datetime.today()
         two_months_ago = today - timedelta(days=60)
@@ -673,12 +642,6 @@ def auto_reject():
                     ),  # Return unique request IDs
                 }
             )
-
-            # Add CORS headers to the response
-            response.headers.add(
-                "Access-Control-Allow-Origin", "https://is212-frontend.vercel.app"
-            )
-            response.headers.add("Access-Control-Allow-Credentials", "true")
             return response, 200
 
         # If no requests need to be updated
@@ -699,12 +662,8 @@ def auto_reject():
                 "error": str(e),
             }
         )
-        error_response.headers.add(
-            "Access-Control-Allow-Origin", "https://is212-frontend.vercel.app"
-        )
-        error_response.headers.add("Access-Control-Allow-Credentials", "true")
         return error_response, 500
 
 
-# if __name__ == "__main__":
-#     app.run()
+if __name__ == "__main__":
+    app.run()
