@@ -7,7 +7,6 @@ fetch(`${url_paths.request_dates}/auto_reject`, {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
   },
-  credentials: 'include'
 })
   .then(response => {
     if (!response.ok) {
