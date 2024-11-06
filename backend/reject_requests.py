@@ -1,5 +1,4 @@
 from flask import Flask, request, jsonify
-from flask_sqlalchemy import SQLAlchemy
 from invokes import invoke_http
 from flask_cors import CORS
 from os import environ
@@ -126,4 +125,4 @@ def reject_request():
 
 
 if __name__ == "__main__":
-    app.run()
+    app.run(port=5102, debug=True)

@@ -1,66 +1,17 @@
 from flask import Flask, request, jsonify
-from database import db
-from request import Request
+from database import db, Request, RequestDates
 from flask_cors import CORS
 from invokes import invoke_http
 from os import environ
 
 app = Flask(__name__)
 app.config.from_object("config.Config")
-CORS(app, resources={r"/*": {"origins": "*"}})
 db.init_app(app)
-
-
-class RequestDates(db.Model):
-    __tablename__ = "request_dates"
-
-    request_date_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    request_id = db.Column(
-        db.Integer, db.ForeignKey("request.request_id"), nullable=False
-    )
-    request_date = db.Column(db.Date, nullable=False)
-    request_shift = db.Column(db.String(5), nullable=False)
-    request_status = db.Column(db.String(20), nullable=False)
-    rescind_reason = db.Column(db.String(100), nullable=True)
-    withdraw_reason = db.Column(db.String(100), nullable=True)
-
-    def __init__(
-        self,
-        request_id,
-        request_date,
-        request_shift,
-        request_date_id=None,
-        request_status="Pending Approval",
-        withdraw_reason=None,
-        rescind_reason=None,
-    ):
-        self.request_date_id = request_date_id
-        self.request_id = request_id
-        self.request_date = request_date
-        self.request_shift = request_shift
-        self.request_status = request_status
-        self.rescind_reason = rescind_reason
-        self.withdraw_reason = withdraw_reason
-
-    def json(self):
-        return {
-            "request_date_id": self.request_date_id,
-            "request_id": self.request_id,
-            "request_date": self.request_date.isoformat(),
-            "request_shift": self.request_shift,
-            "request_status": self.request_status,
-            "withdraw_reason": self.withdraw_reason,
-            "rescind_reason": self.rescind_reason,
-        }
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 
 request_URL = environ.get("REQUEST_URL") or "http://localhost:5001/request"
 status_log_URL = environ.get("STATUS_LOG_URL") or "http://localhost:5003/status_log"
-
-
-@app.route("/request_dates/")
-def hello():
-    return "This is request_dates.py"
 
 
 # Create
@@ -568,7 +519,7 @@ def get_staff_request(request_id):
         )
 
 
-@app.route("/auto_reject", methods=["PUT"])
+@app.route("/request_dates/auto_reject", methods=["PUT"])
 def auto_reject():
     """
     Automatically reject requests if any of their request_dates are more than 2 months old.
@@ -666,4 +617,4 @@ def auto_reject():
 
 
 if __name__ == "__main__":
-    app.run()
+    app.run(port=5002, debug=True)

@@ -1,6 +1,5 @@
 from flask import Flask, request, jsonify
-from flask_sqlalchemy import SQLAlchemy
-from database import db
+from database import db, StatusLog
 from flask_cors import CORS
 from datetime import datetime
 
@@ -8,39 +7,6 @@ from datetime import datetime
 app = Flask(__name__)
 app.config.from_object("config.Config")
 CORS(app, resources={r"/*": {"origins": "*"}})
-
-
-class StatusLog(db.Model):
-    __tablename__ = "Status_Log"
-
-    log_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    request_id = db.Column(
-        db.Integer, db.ForeignKey("request.request_id"), nullable=False
-    )
-    log_date = db.Column(db.DateTime, default=datetime.utcnow)
-    action = db.Column(db.String(100), nullable=False)
-    reason = db.Column(db.String(100), nullable=True)
-
-    request = db.relationship("Request", backref="status_logs")
-
-    def __init__(self, request_id, action, reason=None):
-        self.request_id = request_id
-        self.action = action
-        self.reason = reason
-
-    def json(self):
-        return {
-            "log_id": self.log_id,
-            "request_id": self.request_id,
-            "log_date": self.log_date.isoformat(),
-            "action": self.action,
-            "reason": self.reason,
-        }
-
-
-@app.route("/status_log/")
-def hello():
-    return "This is status_log.py"
 
 
 # Add event to the log
@@ -108,4 +74,4 @@ def add_event():
 
 
 if __name__ == "__main__":
-    app.run()
+    app.run(port=5003, debug=True)

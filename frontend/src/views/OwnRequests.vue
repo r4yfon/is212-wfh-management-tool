@@ -88,16 +88,12 @@ export default {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             },
-            credentials: 'include'
         })
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
                 }
                 return response.json();
-            })
-            .then(() => {
-                // console.log('Success');
             })
             .catch(error => console.error('Error updating status:', error));
         this.formatData();
@@ -111,7 +107,6 @@ export default {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
                 },
-                credentials: 'include'
             })
                 .then(response => {
                     if (!response.ok) {

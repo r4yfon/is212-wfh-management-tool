@@ -1,10 +1,8 @@
 from flask import Flask, request, jsonify
-from flask_sqlalchemy import SQLAlchemy
 import input_validation
 from os import environ
 import requests
-from database import db
-from employee import Employee
+from database import db, Request
 from flask_cors import CORS
 from invokes import invoke_http
 from datetime import datetime
@@ -13,36 +11,7 @@ from datetime import datetime
 app = Flask(__name__)
 app.config.from_object("config.Config")
 CORS(app, resources={r"/*": {"origins": "*"}})
-
 db.init_app(app)
-
-
-class Request(db.Model):
-    __tablename__ = "request"
-
-    request_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    staff_id = db.Column(db.Integer, db.ForeignKey("employee.staff_id"), nullable=False)
-    creation_date = db.Column(db.Date, nullable=False)
-    apply_reason = db.Column(db.String(100), nullable=False)
-    reject_reason = db.Column(db.String(100), nullable=True)
-
-    def __init__(
-        self, staff_id, creation_date, apply_reason, reject_reason=None, request_id=None
-    ):
-        self.request_id = request_id
-        self.staff_id = staff_id
-        self.creation_date = creation_date
-        self.apply_reason = apply_reason
-        self.reject_reason = reject_reason
-
-    def json(self):
-        return {
-            "request_id": self.request_id,
-            "staff_id": self.staff_id,
-            "creation_date": self.creation_date.isoformat(),
-            "apply_reason": self.apply_reason,
-            "reject_reason": self.reject_reason,
-        }
 
 
 request_URL = environ.get("REQUEST_URL") or "http://localhost:5001/request"
@@ -504,4 +473,4 @@ def update_reason():
 
 
 if __name__ == "__main__":
-    app.run()
+    app.run(port=5001, debug=True)

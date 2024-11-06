@@ -1,45 +1,14 @@
-from flask import Flask, request, jsonify
-from flask_sqlalchemy import SQLAlchemy
+from flask import Flask, jsonify
 from flask_cors import CORS
 from os import environ
 from database import db
 
-# Create Flask app first
 app = Flask(__name__)
 app.config.from_object("config.Config")
-
-# Define CORS settings
-ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "https://is212-frontend.vercel.app",
-    "https://is212-backend.vercel.app",
-]
-
-# Configure CORS with credentials support
+db.init_app(app)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-
-# Initialize SQLAlchemy after app creation
-db.init_app(app)
-
-# Import models after db initialization to avoid circular imports
-from employee import Employee
-from request import Request
-from request_dates import RequestDates
-
-
-@app.after_request
-def after_request(response):
-    origin = request.headers.get("Origin")
-    if origin in ALLOWED_ORIGINS:
-        response.headers.set("Access-Control-Allow-Origin", origin)
-        response.headers.set("Access-Control-Allow-Credentials", "true")
-    return response
-
-
-with app.app_context():
-    db.create_all()
-
+from database import Employee, Request, RequestDates
 
 employee_URL = environ.get("EMPLOYEE_URL") or "http://localhost:5000/employee"
 request_URL = environ.get("REQUEST_URL") or "http://localhost:5001/request"
@@ -48,30 +17,9 @@ request_dates_URL = (
 )
 
 
-@app.route("/view_requests/")
-def hello():
-    return "This is view_requests.py"
-
-
 # Staff view own requests
-@app.route(
-    "/view_requests/s_retrieve_requests/<int:s_staff_id>", methods=["GET", "OPTIONS"]
-)
+@app.route("/view_requests/s_retrieve_requests/<int:s_staff_id>", methods=["GET"])
 def s_retrieve_requests(s_staff_id):
-    """Handle staff request retrieval with CORS support"""
-
-    # Handle preflight OPTIONS request
-    if request.method == "OPTIONS":
-        response = jsonify({"status": "ok"})
-        origin = request.headers.get("Origin")
-        if origin in ALLOWED_ORIGINS:
-            response.headers.set("Access-Control-Allow-Origin", origin)
-            response.headers.set("Access-Control-Allow-Methods", "GET, OPTIONS")
-            response.headers.set(
-                "Access-Control-Allow-Headers", "Content-Type, Authorization, Accept"
-            )
-            response.headers.set("Access-Control-Allow-Credentials", "true")
-        return response
     """
     Parameters:
     staff_id (int): The staff_id
@@ -114,7 +62,6 @@ def s_retrieve_requests(s_staff_id):
         }
     ]
     """
-    # Original GET logic
     try:
         # Get all requests for this staff
         requests = Request.query.filter_by(staff_id=s_staff_id).all()
@@ -151,10 +98,6 @@ def s_retrieve_requests(s_staff_id):
             )
 
         response = jsonify(requests_list)
-        origin = request.headers.get("Origin")
-        if origin in ALLOWED_ORIGINS:
-            response.headers.set("Access-Control-Allow-Origin", origin)
-            response.headers.set("Access-Control-Allow-Credentials", "true")
         return response
 
     except Exception as e:
@@ -291,4 +234,4 @@ def m_retrieve_requests(m_staff_id):
 
 
 if __name__ == "__main__":
-    app.run()
+    app.run(port=5101, debug=True)

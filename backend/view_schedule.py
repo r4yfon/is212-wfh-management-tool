@@ -2,15 +2,12 @@ from flask import Flask, request, jsonify
 import requests
 from os import environ
 from datetime import datetime, timedelta
-from request import Request
-from employee import Employee
-from request_dates import RequestDates
 from input_validation import check_date_valid
 from flask_cors import CORS
 from invokes import invoke_http
 from datetime import datetime, timedelta
 from sqlalchemy import func
-from database import db
+from database import db, Employee, Request, RequestDates
 
 app = Flask(__name__)
 app.config.from_object("config.Config")
@@ -22,11 +19,6 @@ request_URL = environ.get("REQUEST_URL") or "http://localhost:5001/request"
 request_dates_URL = (
     environ.get("REQUEST_DATES_URL") or "http://localhost:5002/request_dates"
 )
-
-
-@app.route("/view_schedule/")
-def hello():
-    return "This is view_schedule.py"
 
 
 def get_week_from_date(date_entered):
@@ -780,4 +772,4 @@ def get_wfh_status_by_team(staff_id):
 
 
 if __name__ == "__main__":
-    app.run()
+    app.run(port=5100, debug=True)

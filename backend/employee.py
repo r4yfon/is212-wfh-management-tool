@@ -1,68 +1,12 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
-from database import db
+from database import db, Employee
 
 
 app = Flask(__name__)
 app.config.from_object("config.Config")
 CORS(app, resources={r"/*": {"origins": "*"}})
 db.init_app(app)
-
-
-class Employee(db.Model):
-    __tablename__ = "employee"
-
-    staff_id = db.Column(db.Integer, primary_key=True)
-    staff_fname = db.Column(db.String(50), nullable=False)
-    staff_lname = db.Column(db.String(50), nullable=False)
-    dept = db.Column(db.String(50), nullable=False)
-    position = db.Column(db.String(50), nullable=False)
-    country = db.Column(db.String(50), nullable=False)
-    email = db.Column(db.String(50), nullable=False)
-    reporting_manager = db.Column(
-        db.Integer, db.ForeignKey("employee.staff_id"), nullable=True
-    )
-    role = db.Column(db.Integer, nullable=False)
-
-    def __init__(
-        self,
-        staff_id,
-        staff_fname,
-        staff_lname,
-        dept,
-        position,
-        country,
-        email,
-        role,
-        reporting_manager=None,
-    ):
-        self.staff_id = staff_id
-        self.staff_fname = staff_fname
-        self.staff_lname = staff_lname
-        self.dept = dept
-        self.position = position
-        self.country = country
-        self.email = email
-        self.reporting_manager = reporting_manager
-        self.role = role
-
-    def json(self):
-        return {
-            "staff_id": self.staff_id,
-            "staff_fname": self.staff_fname,
-            "staff_lname": self.staff_lname,
-            "dept": self.dept,
-            "position": self.position,
-            "country": self.country,
-            "email": self.email,
-            "reporting_manager": self.reporting_manager,
-            "role": self.role,
-        }
-
-
-@app.route("/employee/")
-def hello():
-    return "This is employee.py"
 
 
 @app.route("/employee/get_details/<int:staff_id>", methods=["GET"])
@@ -285,4 +229,4 @@ def get_all_employees_by_dept():
 
 
 if __name__ == "__main__":
-    app.run()
+    app.run(port=5000, debug=True)
