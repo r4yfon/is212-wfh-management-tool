@@ -47,7 +47,10 @@
                             <v-progress-circular indeterminate :size="15" :width="2" color="primary" class="me-1">
                             </v-progress-circular>
                         </span>
-                        Confirm</v-btn>
+                        <span v-if="actionSuccess">
+                            <v-icon>mdi-check</v-icon>
+                        </span>
+                        {{ actionSuccess ? "Success" : "Confirm" }}</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -70,6 +73,7 @@ export default {
             selectedItem: null,
             items: [],
             buttonIsLoading: false,
+            actionSuccess: false,
             headers: [
                 { title: 'Request ID', value: 'request_id', key: "request_id" },
                 { title: 'Creation Date', value: 'creationdate', key: "creationdate" },
@@ -183,6 +187,7 @@ export default {
                 "shift": item.shift
             };
 
+            this.buttonIsLoading = true;
             fetch(`${url_paths.request_dates}/change_partial_status`, {
                 method: 'PUT',
                 headers: {
@@ -197,11 +202,15 @@ export default {
                     return response.json();
                 })
                 .then(() => {
-                    this.buttonIsLoading = true;
                     // console.log('Success:', responseData);
+                    this.buttonIsLoading = false;
+                    this.actionSuccess = true;
                     this.formatData();
+                    setTimeout(() => {
+                        this.actionSuccess = false;
+                        this.withdrawDialog = false
+                    }, 300);
                 })
-                .then(() => this.withdrawDialog = false)
                 .catch(error => console.error('Error updating status:', error));
         }
 

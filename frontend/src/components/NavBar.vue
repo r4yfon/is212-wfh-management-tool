@@ -323,8 +323,6 @@ export default {
             }, 300);
           } catch (error) {
             console.error("Error:", error);
-            // Optional: Show error to user
-            // this.$emit('show-error', error.message);
           } finally {
             this.loading = false;
           };
@@ -365,8 +363,6 @@ export default {
 
           } catch (error) {
             console.error("Error:", error);
-            // Optional: Show error to user
-            // this.$emit('show-error', error.message);
           } finally {
             this.loading = false;
           }
