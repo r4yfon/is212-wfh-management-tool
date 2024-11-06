@@ -100,7 +100,10 @@ const userStore = useMainStore();
                   <v-progress-circular indeterminate :size="15" :width="2" color="primary"
                     class="me-1"></v-progress-circular>
                 </span>
-                Apply
+                <span v-if="applySuccess">
+                  <v-icon>mdi-check</v-icon>
+                </span>
+                {{ applySuccess ? "Success" : "Apply" }}
               </v-btn>
               <v-btn color="red-darken-1" @click="dialog = false">Cancel</v-btn>
             </v-card-actions>
@@ -118,11 +121,6 @@ const userStore = useMainStore();
           <div class="d-flex flex-column my-3 row-gap-3">
             <RouterLink to="/" @click="toggleMenu" class="text-decoration-none text-black px-3 text-uppercase">
               View Schedule
-            </RouterLink>
-
-            <RouterLink to="/requestslist" @click="toggleMenu"
-              class="text-decoration-none text-black px-3 text-uppercase">
-              My Requests
             </RouterLink>
 
             <RouterLink to="/requestslist" @click="toggleMenu"
@@ -170,6 +168,7 @@ export default {
     return {
       dialog: false,
       loading: false,
+      applySuccess: false,
       requestType: "one-time",
       isMenuOpen: false,
       dayOfWeek: "",
@@ -286,77 +285,101 @@ export default {
       }
       return isValid
     },
-    validateAndConfirmApply() {
+    async validateAndConfirmApply() {
       if (this.validateInputs()) {
         this.loading = true;
         // console.log("newEvent", this.newEvent);
         if (
           this.requestType === "one-time"
         ) {
-          fetch(`${url_paths.request}/create`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              staff_id: this.newEvent.staffId,
-              request_dates: {
-                [this.newEvent.date]: this.newEvent.shift,
-              },
-              apply_reason: this.newEvent.reason,
-            }),
-          })
-            .then((response) => response.json())
-            // .then((data) => {
-            // console.log("Success:", data);
-            // })
-            .catch((error) => {
-              console.error("Error:", error);
-            })
-            .finally(() => {
-              this.loading = false;
-              setTimeout(200);
-              this.dialog = false;
+          try {
+            const response = await fetch(`${url_paths.request}/create`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                staff_id: this.newEvent.staffId,
+                request_dates: {
+                  [this.newEvent.date]: this.newEvent.shift,
+                },
+                apply_reason: this.newEvent.reason,
+              }),
             });
-        } else if (
-          this.requestType === "recurring"
-        ) {
-          const recurringDates = this.convertRecurringToObject(
-            this.newEvent.date,
-            this.newEvent.endDate,
-            this.newEvent.shift,
-          );
-          fetch(`${url_paths.request}/create`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              staff_id: this.newEvent.staffId,
-              request_date: new Date().toISOString().split("T")[0],
-              request_dates: recurringDates,
-              apply_reason: this.newEvent.reason,
-            }),
-          })
-            .then((response) => response.json())
-            // .then((data) => {
-            // console.log("Success:", data);
-            // })
-            .catch((error) => {
-              console.error("Error:", error);
-            })
-            .finally(() => {
-              this.loading = false;
-              setTimeout(200);
+
+            const data = await response.json();
+            // console.log(data);
+            if (!response.ok) {
+              if (data.error?.includes("You have a duplicate request")) {
+                this.errors.date = data.error;
+              }
+              throw new Error(data.error || 'Request failed')
+            };
+
+            // Only execute on success
+            this.applySuccess = true;
+            setTimeout(() => {
               this.dialog = false;
-              this.newEvent.date = "";
-              this.newEvent.endDate = "";
-              this.newEvent.shift = "";
-              this.newEvent.reason = "";
-              this.newEvent.requestType = "one-time";
-              this.newEvent.recurrence = "";
+              this.applySuccess = false;
+              this.resetForm();
+            }, 300);
+          } catch (error) {
+            console.error("Error:", error);
+            // Optional: Show error to user
+            // this.$emit('show-error', error.message);
+          } finally {
+            this.loading = false;
+          };
+        } else if (this.requestType === "recurring") {
+          try {
+            const recurringDates = this.convertRecurringToObject(
+              this.newEvent.date,
+              this.newEvent.endDate,
+              this.newEvent.shift,
+            );
+
+            const response = await fetch(`${url_paths.request}/create`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                staff_id: this.newEvent.staffId,
+                request_date: new Date().toISOString().split("T")[0],
+                request_dates: recurringDates,
+                apply_reason: this.newEvent.reason,
+              }),
             });
-        } else {
-          // alert("Please fill in all required fields and try again.");
-          this.loading = false;
+
+            const data = await response.json();
+            if (!response.ok) {
+              if (data.error?.includes("You have a duplicate request")) {
+                this.errors.date = data.error;
+                this.errors.endDate = data.error;
+              }
+              throw new Error(data.error || 'Request failed')
+            };
+            // Only execute on success
+            this.applySuccess = true;
+            setTimeout(() => {
+              this.dialog = false;
+              this.applySuccess = false;
+              this.resetForm();
+            }, 300);
+
+          } catch (error) {
+            console.error("Error:", error);
+            // Optional: Show error to user
+            // this.$emit('show-error', error.message);
+          } finally {
+            this.loading = false;
+          }
         }
       }
+    },
+
+    resetForm() {
+      this.newEvent.date = "";
+      this.newEvent.endDate = "";
+      this.newEvent.shift = "";
+      this.newEvent.reason = "";
+      this.newEvent.requestType = "one-time";
     }
   }
 }

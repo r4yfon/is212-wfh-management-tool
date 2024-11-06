@@ -26,7 +26,7 @@
                             </v-btn>
                         </td>
                         <td>
-                            <div>{{ item.remarks }}</div>
+                            <div>{{ item.applyReason }}</div>
                         </td>
                     </tr>
                 </template>
@@ -77,7 +77,7 @@ export default {
                 { title: 'Shift', value: 'shift', key: "shift" },
                 { title: 'Status', value: 'status', key: "status" },
                 { title: 'Actions', value: 'actions', key: "actions" },
-                { title: 'Remarks', value: 'remarks', key: "remarks" }
+                { title: 'Apply Reason', value: 'applyReason', key: "applyReason" }
             ]
         };
     },
@@ -130,7 +130,9 @@ export default {
                             shift: wfh.request_shift,
                             status: wfh.request_status,
                             withdraw: wfh.withdraw_reason,
-                            Remarks: item.reject_reason
+                            applyReason: item.apply_reason,
+                            withdrawReason: wfh.withdraw_reason,
+                            rescindReason: wfh.rescind_reason,
                         }))
                     );
                 })

@@ -1,4 +1,4 @@
-from flask import jsonify, Blueprint
+from flask import jsonify, Blueprint, request
 from flask_cors import CORS
 from os import environ
 from employee import Employee
@@ -9,6 +9,7 @@ from run import db
 app = Blueprint("view_requests", __name__)
 CORS(
     app,
+    supports_credentials=True,
     resources={
         r"/*": {
             "origins": [
@@ -28,12 +29,22 @@ CORS(
 
 @app.after_request
 def after_request(response):
-    response.headers.add(
-        "Access-Control-Allow-Origin", "https://is212-frontend.vercel.app"
-    )
-    response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
-    response.headers.add("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS")
-    response.headers.add("Access-Control-Allow-Credentials", "true")
+    origin = request.headers.get("Origin")
+    allowed_origins = [
+        "https://is212-frontend.vercel.app",
+        "https://is212-backend.vercel.app",
+        "http://localhost:5173",
+    ]
+
+    if origin in allowed_origins:
+        response.headers.add("Access-Control-Allow-Origin", origin)
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        response.headers.add(
+            "Access-Control-Allow-Headers", "Content-Type,Authorization,Accept"
+        )
+        response.headers.add(
+            "Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS"
+        )
     return response
 
 

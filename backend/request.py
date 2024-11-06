@@ -211,7 +211,7 @@ def create_request():
                 jsonify(
                     {
                         "code": 400,
-                        "error": f"You have a duplicate request on {check_date}. Please check",
+                        "error": f"You have a duplicate request on {check_date}. Please check.",
                     }
                 ),
                 400,
