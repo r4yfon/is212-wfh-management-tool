@@ -43,7 +43,7 @@ const allowedRoles = {
   "/team_schedule/manager": [3],
 };
 
-router.beforeEach(async (to, from, next) => {
+router.beforeEach((to, from, next) => {
   const store = useMainStore();
   const userRole = store.user.role;
   const userPosition = store.user.position;

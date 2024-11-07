@@ -124,13 +124,11 @@ export default {
 
   emits: ['refresh-data'],
 
-  computed: {
+  methods: {
     attendance_in_office(request_date) {
       return ((1 - ((this.dept_wfh_schedule[request_date].length + 1) / this.num_employees_in_dept)) * 100).toFixed(2);
     },
-  },
 
-  methods: {
     openDialog(newStatus) {
       this.dialogOpened = true;
       this.newStatus = newStatus;
