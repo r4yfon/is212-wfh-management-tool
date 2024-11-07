@@ -171,7 +171,7 @@ export default {
     getWeeklySchedule(user) {
       const staff_id = user.staff_id;
       if ((!this.currentDate) instanceof Date) {
-        this.currentDate = new Date();
+        this.currentDate = this.getSGTDate();
       }
       fetch(
         `${url_paths.view_schedule}/weekly/${staff_id}/${new Date(this.currentDate).toISOString().split("T")[0]}`,
