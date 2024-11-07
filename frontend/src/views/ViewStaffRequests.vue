@@ -119,16 +119,16 @@ export default {
                 { title: 'Status', value: 'status', key: 'status' },
             ],
             headerActions: [
-                { title: 'Apply Reason', value: 'apply_reason', key: 'apply_reason' },
                 { title: 'Actions', value: 'actions', key: 'actions' },
+            ],
+            headerApproveReason: [
+                { title: 'Apply Reason', value: 'apply_reason', key: 'apply_reason' },
             ],
             headerRescindReason: [
                 { title: 'Rescind Reason', value: 'rescind_reason', key: 'rescind_reason' },
             ],
             headerWithdrawReason: [
-                { title: 'Apply Reason', value: 'apply_reason', key: 'apply_reason' },
                 { title: 'Withdraw Reason', value: 'withdraw_reason', key: 'withdraw_reason' },
-                { title: 'Actions', value: 'actions', key: 'actions' },
             ],
             headerRejectReason: [
                 { title: 'Reject Reason', value: 'reject_reason', key: 'reject_reason' },
@@ -197,14 +197,15 @@ export default {
         },
 
         currentHeaders(n) {
+            // 1: Pending approval, 2: Approved, 3: Pending withdrawal, 4: Rescinded, 5: Rejected
             if (n === 3) {
-                return [...this.headers, ...this.headerWithdrawReason];
+                return [...this.headers, ...this.headerWithdrawReason, ...this.headerActions];
             } else if (n === 4) {
                 return [...this.headers, ...this.headerRescindReason];
             } else if (n === 5) {
                 return [...this.headers, ...this.headerRejectReason];
             } else {
-                return [...this.headers, ...this.headerActions];
+                return [...this.headers, ...this.headerApproveReason, ...this.headerActions];
             }
         },
 

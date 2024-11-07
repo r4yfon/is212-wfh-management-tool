@@ -16,30 +16,22 @@
     Rescind
   </v-btn>
 
-  <v-btn v-if="item.status === 'Pending Withdrawl'" @click="openDialog('Withdrawn')" color="green" :item="item"
+  <v-btn v-if="item.status === 'Pending Withdrawal'" @click="openDialog('Withdrawn')" color="green" :item="item"
     variant="outlined" small>
-    Approve Withdrawal
+    Approve
+  </v-btn>
+  <v-btn v-if="item.status === 'Pending Withdrawal'" @click="openDialog('Rejected Withdrawal')" color="red" :item="item"
+    variant="outlined" small>
+    Reject
   </v-btn>
 
   <!-- popup -->
   <v-dialog v-model="dialogOpened" max-width="600">
 
     <v-card>
-      <!-- for request that will be approved -->
-      <v-card-title v-if="this.newStatus === 'Approved'">
-        Approve request
-      </v-card-title>
-      <!-- for request that will be rejected -->
-      <v-card-title v-else-if="this.newStatus === 'Rejected'">
-        Reject request
-      </v-card-title>
-      <!-- for request that will be withdrawn -->
-      <v-card-title v-else-if="this.newStatus === 'Withdrawn'">
-        Approve request withdrawal
-      </v-card-title>
-      <!-- for request that will be rescinded -->
-      <v-card-title v-else-if="this.newStatus === 'Rescinded'">
-        Select requested dates to rescind
+
+      <v-card-title>
+        {{ dialogTitle[newStatus] }}
       </v-card-title>
 
       <!-- loading indicator -->
@@ -80,6 +72,14 @@
         <v-text-field v-model="reason" outlined label="Reason for rejection"
           :error-messages="errorMessages.reason"></v-text-field>
       </v-card-text>
+
+      <!-- input reason (applies to all ManagerActions) -->
+      <v-card-text v-else-if="newStatus === 'Withdrawn' || newStatus === 'Rejected Withdrawal'">
+        <p>{{ newStatus === 'Withdrawn' ? 'Date to be withdrawn' : 'Date requested' }}: {{ request_dates[0] }}</p>
+      </v-card-text>
+
+
+
       <v-card-actions>
         <v-btn @click="closeDialog" text>Cancel</v-btn>
         <v-btn @click="confirmAction(item)" color="pink" text>
@@ -116,6 +116,14 @@ export default {
         datesToRescind: [],
         reason: []
       },
+
+      dialogTitle: {
+        Approved: 'Approve request',
+        Rejected: 'Reject request',
+        Withdrawn: 'Approve request withdrawal',
+        Rescinded: 'Select requested dates to rescind',
+        "Rejected Withdrawal": "Reject withdrawal"
+      }
     }
   },
   props: {
@@ -132,6 +140,8 @@ export default {
     openDialog(newStatus) {
       this.dialogOpened = true;
       this.newStatus = newStatus;
+
+
 
       if (newStatus === "Approved") {
         const item_request_id = this.item.request_id;
@@ -163,6 +173,11 @@ export default {
             this.isLoading = false;
           })
       }
+
+      if (newStatus === "Withdrawn" || newStatus === "Rejected Withdrawal") {
+        console.log(this.item)
+        this.request_dates = [this.item.request_date];
+      }
     },
 
     closeDialog() {
@@ -180,6 +195,7 @@ export default {
       this.errorMessages.reason = [];
       this.errorMessages.datesToRescind = [];
 
+      // error messages
       if (this.newStatus !== "Approved" && !this.reason) {
         this.errorMessages.reason.push("Reason cannot be empty");
       }
@@ -190,6 +206,12 @@ export default {
         this.approveRejectWithdraw(item);
       } else if (this.newStatus === "Rescinded" && this.noErrorMessages()) {
         this.rescind(item);
+      }
+
+      if (this.newStatus === "Withdrawn") {
+        this.managerApproveWithdrawal(item);
+      } else if (this.newStatus === "Rejected Withdrawal") {
+        this.managerRejectWithdrawal(item);
       }
     },
 
@@ -256,6 +278,49 @@ export default {
           this.closeDialog();
         })
     },
+
+    managerApproveWithdrawal(item) {
+      this.buttonIsLoading = true;
+      fetch(`${url_paths.request_dates}/change_partial_status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          "request_id": item.request_id,
+          "status": "Withdrawn",
+          "dates": this.request_dates,
+          "shift": item.shift,
+          "reason": item.withdraw_reason
+        })
+      })
+        .then(() => {
+          this.buttonIsLoading = false;
+          this.$emit('refresh-data');
+          this.closeDialog();
+        })
+    },
+
+    managerRejectWithdrawal(item) {
+      this.buttonIsLoading = true;
+      fetch(`${url_paths.request_dates}/change_partial_status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          "request_id": item.request_id,
+          "status": "Approved",
+          "dates": this.request_dates,
+          "shift": item.shift,
+        })
+      })
+        .then(() => {
+          this.buttonIsLoading = false;
+          this.$emit('refresh-data');
+          this.closeDialog();
+        })
+    }
   },
 }
 
