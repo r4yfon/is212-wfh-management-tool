@@ -47,6 +47,7 @@ const timeMapping = {
   "Pending: WFH - PM": { start: 14, end: 18 },
   "Pending: WFH - Full": { start: 9, end: 18 },
   "Office": { start: 9, end: 18 },
+  "Pending: Office": { start: 9, end: 18 },
   "Pending Withdrawal: WFH - AM": { start: 9, end: 13 },
   "Pending Withdrawal: WFH - PM": { start: 14, end: 18 },
   "Pending Withdrawal: WFH - Full": { start: 9, end: 18 },
