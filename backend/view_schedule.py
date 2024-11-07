@@ -122,7 +122,7 @@ def view_weekly_schedule(staff_id, date_entered):
                     ]
                 elif request_info["request_status"] == "Pending Withdrawal":
                     weekly_arrangement[str(request_date)] = [
-                        f'Home - {request_info["request_shift"]}',
+                        f'WFH - {request_info["request_shift"]}',
                         "Pending: Office",
                     ]
                 elif request_info["request_status"] == "Pending Approval":
