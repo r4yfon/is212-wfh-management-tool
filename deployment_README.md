@@ -21,7 +21,7 @@ The application is deployed using the following cloud services:
 - View own schedule (weekly, daily)
 - Apply for WFH request (one-time or recurring)
    - If employee already has a request for a specific shift (AM/PM/Full) for a day, they cannot apply for the same or overlapping shift
-      - e.g., If Sirirat is working from home on 08 November 2024 for the PM shift, she cannot apply for another WFH request on 08 November 2024 for the PM or Full shift, but can apply to WFH for the AM shift
+   - e.g., If Sirirat is working from home on 08 November 2024 for the PM shift, she cannot apply for another WFH request on 08 November 2024 for the PM or Full shift, but can apply to WFH for the AM shift
 - View WFH requests made by oneself
 - Withdraw a WFH request (only if request's status is "Pending approval" or "Approved")
 - WFH requests will have one of the following statuses:
