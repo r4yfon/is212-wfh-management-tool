@@ -20,13 +20,27 @@ The application is deployed using the following cloud services:
 
 - View own schedule (weekly, daily)
 - Apply for WFH request (one-time or recurring)
+   - If employee already has a request for a specific shift (AM/PM/Full) for a day, they cannot apply for the same or overlapping shift
+      - e.g., If Sirirat is working from home on 08 November 2024 for the PM shift, she cannot apply for another WFH request on 08 November 2024 for the PM or Full shift, but can apply to WFH for the AM shift
 - View WFH requests made by oneself
-- Withdraw requests made by oneself that have status "Pending Approval" or "Approved"
+- Withdraw a WFH request (only if request's status is "Pending approval" or "Approved")
+- WFH requests will have one of the following statuses:
+   - "Pending approval": when employee first makes a request, it needs to be approved by their direct superior
+      - For CEO Jack Sim, his requests will be automatically approved 
+   - "Approved": WFH request is approved by employee's direct superior
+   - "Withdrawn": employee makes a WFH request, but withdraws it afterwards
+      - If WFH request has not yet been approved by direct superior, i.e., current status is "Pending approval", request will be withdrawn automatically without requiring approval from direct superior
+      - If WFH request has already been approved by direct superior, i.e., current status is "Approved", withdrawal will need to be approved by direct superior again (new status is "Pending withdrawal")
+   - "Rejected": WFH request is rejected by direct superior
+   - "Rescinded": WFH request was previously approved by direct superior, but superior changes their mind and now wants that subordinate to report back to office for that day
 
 ### HR & Management (Role 1)
 
 - View work arrangements by department (In Office, WFH - AM, WFH - PM, WFH - Full)
 - Easily see when the attendance rate of a department in office on a particular day is below 50%
+- Approve or reject work-from-home requests made by their direct subordinates
+- Rescind previously-approved WFH requests made by their direct subordinates
+- Given that a request has already been approved, when the direct subordinate withdraws a request, HR and Management can approve the request (request's status becomes "Withdrawn") or reject it (status goes back to "Approved")
 
 ### Director (Role 1)
 
@@ -34,6 +48,7 @@ The application is deployed using the following cloud services:
 - Approve or reject work-from-home requests made by their direct subordinates
 - Rescind previously-approved WFH requests made by their direct subordinates
 - Easily see when the attendance rate of a particular team in office on a particular day is below 50%
+- Given that a request has already been approved, when the direct subordinate withdraws a request, HR and Management can approve the request (request's status becomes "Withdrawn") or reject it (status goes back to "Approved")
 
 ### Manager (Role 3)
 
@@ -62,17 +77,20 @@ You can log in as different types of users to test various functionalities:
    - Name: Derek Tan
    - Department: Sales
    - Staff ID: 140001
+   - Derek Tan is a direct subordinate of Jack Sim, so his WFH requests will be handled by Jack Sim
 
 1. Manager (Role 3)
 
    - Name: Siti Abdullah
    - Department: Sales
    - Staff ID: 140879
+   - Siti Abdullah is a direct subordinate of Derek Tan, so her WFH requests will be handled by Derek Tan
 
 1. Employee (Role 2)
    - Name: Sirirat Chaiyaporn
    - Department: Sales
    - Staff ID: 140001
+   - Sirirat Chaiyaporn is a direct subordinate of Siti Abdullah, so her WFH requests will be handled by Siti Abdullah
 
 The roles are predefined in the application given the approval by the teaching team that we do not need to create the login and authentication process. To switch between roles, you can click on the user icon in the top right corner of the application.
 
