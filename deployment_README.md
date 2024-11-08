@@ -1,6 +1,6 @@
 # WFH Management Tool - Cloud Deployment
 
-This project is a deploymeny of a work-from-home management tool that consists of a backend built with Flask and a frontend built with Vue 3 using Vite.
+This project is a deployment of a work-from-home management tool that consists of a backend built with Flask and a frontend built with Vue 3 using Vite.
 
 
 ## Deployment Links
