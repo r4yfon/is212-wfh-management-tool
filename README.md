@@ -91,31 +91,33 @@ The frontend is built with Vue 3 and Vite, utilising libraries like Vuetify for 
    git clone https://github.com/r4yfon/is212-wfh-management-tool.git
    ```
 
+2. Place the 2 different .env.dev files provided in the `frontend` and `backend` directories.
+
 ### Database Setup
 
-2. Run the SQL script in the `backend/SQL` directory to create the database and tables.
+3. Run the SQL script in the `backend/SQL` directory to create the database and tables.
 
 ### Backend Setup
 
-3. Navigate to the backend directory:
+4. Navigate to the backend directory:
 
    ```sh
    cd backend
    ```
 
-4. Install dependencies:
+5. Install dependencies:
 
    ```sh
    pip install -r requirements.txt
    ```
 
-5. On Windows, run the `run_flask.bat` script:
+6. On Windows, run the `run_flask.bat` script:
 
    ```sh
    run_flask.bat
    ```
 
-6. Otherwise, run each Flask application individually:
+7. Otherwise, run each Flask application individually:
    ```sh
    python employee.py
    python request.py
@@ -128,19 +130,19 @@ The frontend is built with Vue 3 and Vite, utilising libraries like Vuetify for 
 
 ### Frontend Setup
 
-7. Navigate to the `frontend` directory:
+8. Navigate to the `frontend` directory:
 
    ```sh
    cd ../frontend
    ```
 
-8. Install the dependencies:
+9. Install the dependencies:
 
    ```sh
    npm install
    ```
 
-9. Compile and Hot-Reload for Development:
+10. Compile and Hot-Reload for Development:
 
    ```sh
    npm run dev
