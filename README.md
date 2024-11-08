@@ -6,25 +6,57 @@ This project is a work-from-home management tool that consists of a backend buil
 
 WFH Management Tool is a comprehensive solution designed to manage work-from-home (WFH) schedules for employees. It consists of a backend built with Flask and a frontend developed using Vue 3 with Vite. The tool facilitates various functionalities such as employee management, WFH request handling, schedule viewing, and status logging.
 
-### Key Features:
-
-- Employee Management: Manage employee data including personal details and roles.
-- WFH Requests: Employees can submit one-time or recurring WFH requests.
-- Schedule Management: View and manage WFH schedules for employees.
-- Request Handling: Approve, reject, or rescind WFH requests.
-- Status Logging: Log and track the status changes of WFH requests.
-
 ## Prerequisites
 
 - Node.js and npm
 - Python 3.x
 - MySQL
 
-## Deployment
+## Key Features
 
-The project is deployed on Vercel, with the frontend and backend hosted on the platform. The database is managed using NeonDB, a serverless PostgreSQL database provider.
+### For All Users (Employees)
 
-The deployed version of the application can be accessed via [https://is212-frontend.vercel.app/](https://is212-frontend.vercel.app/).
+- View own schedule (weekly, daily)
+- Apply for WFH request (one-time or recurring)
+  - If employee already has a request for a specific shift (AM/PM/Full) for a day, they cannot apply for the same or overlapping shift
+  - e.g., If Sirirat is working from home on 08 November 2024 for the PM shift, she cannot apply for another WFH request on 08 November 2024 for the PM or Full shift, but can apply to WFH for the AM shift
+- View WFH requests made by oneself
+- Withdraw a WFH request (only if request's status is "Pending approval" or "Approved")
+- WFH requests will have one of the following statuses:
+  - "Pending approval": when employee first makes a request, it needs to be approved by their direct superior
+    - For CEO Jack Sim, his requests will be automatically approved
+  - "Approved": WFH request is approved by employee's direct superior
+  - "Withdrawn": employee makes a WFH request, but withdraws it afterwards
+    - If WFH request has not yet been approved by direct superior, i.e., current status is "Pending approval", request will be withdrawn automatically without requiring approval from direct superior
+    - If WFH request has already been approved by direct superior, i.e., current status is "Approved", withdrawal will need to be approved by direct superior again (new status is "Pending withdrawal")
+  - "Rejected": WFH request is rejected by direct superior
+  - "Rescinded": WFH request was previously approved by direct superior, but superior changes their mind and now wants that subordinate to report back to office for that day
+
+### HR & Management (Role 1)
+
+- View work arrangements by department (In Office, WFH - AM, WFH - PM, WFH - Full)
+- Easily see when the attendance rate of a department in office on a particular day is below 50%
+- Approve or reject work-from-home requests made by their direct subordinates
+- Rescind previously-approved WFH requests made by their direct subordinates
+- Given that a request has already been approved, when the direct subordinate withdraws a request, HR and Management can approve the request (request's status becomes "Withdrawn") or reject it (status goes back to "Approved")
+
+### Director (Role 1)
+
+- View the work arrangements of the teams of the managers under a director (In Office, WFH - AM, WFH - PM, WFH - Full)
+- Approve or reject work-from-home requests made by their direct subordinates
+- Rescind previously-approved WFH requests made by their direct subordinates
+- Easily see when the attendance rate of a particular team in office on a particular day is below 50%
+- Given that a request has already been approved, when the direct subordinate withdraws a request, HR and Management can approve the request (request's status becomes "Withdrawn") or reject it (status goes back to "Approved")
+
+### Manager (Role 3)
+
+- View the work arrangements of the team under oneself (In Office, WFH - AM, WFH - PM, WFH - Full)
+- Approve or reject work-from-home requests within their team (direct subordinates)
+- Rescind previously-approved WFH requests made by their direct subordinates
+
+### Employee (Role 2)
+
+- View the schedule of one's colleagues in the same team (i.e. excluding the manager and oneself)
 
 ## Database
 

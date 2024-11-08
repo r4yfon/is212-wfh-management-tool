@@ -1,5 +1,8 @@
 # WFH Management Tool - Cloud Deployment
 
+This project is a deploymeny of a work-from-home management tool that consists of a backend built with Flask and a frontend built with Vue 3 using Vite.
+
+
 ## Deployment Links
 
 - Frontend: [https://is212-frontend.vercel.app](https://is212-frontend.vercel.app)
@@ -14,9 +17,9 @@ The application is deployed using the following cloud services:
 - Backend: Vercel (Flask microservices)
 - Database: NeonDB (PostgreSQL database)
 
-## Features Available
+## Key Features
 
-### General
+### For All Users (Employees)
 
 - View own schedule (weekly, daily)
 - Apply for WFH request (one-time or recurring)
@@ -26,7 +29,7 @@ The application is deployed using the following cloud services:
 - Withdraw a WFH request (only if request's status is "Pending approval" or "Approved")
 - WFH requests will have one of the following statuses:
    - "Pending approval": when employee first makes a request, it needs to be approved by their direct superior
-      - For CEO Jack Sim, his requests will be automatically approved 
+      - For CEO Jack Sim, his requests will be automatically approved
    - "Approved": WFH request is approved by employee's direct superior
    - "Withdrawn": employee makes a WFH request, but withdraws it afterwards
       - If WFH request has not yet been approved by direct superior, i.e., current status is "Pending approval", request will be withdrawn automatically without requiring approval from direct superior
@@ -96,6 +99,6 @@ The roles are predefined in the application given the approval by the teaching t
 
 ## Known Limitations
 
-- The application is optimised for desktop viewing
+- The application is optimised for desktop viewing, with little consideration for mobile viewports
 - Session data is stored in browser localStorage
 - API rate limits may apply for free-tier cloud services
